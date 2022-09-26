@@ -1,8 +1,13 @@
+from typing import Tuple
+
 from .registry import MetaParent
 
 import json
 import logging
 import argparse
+
+
+AgentId = Tuple[str, int]
 
 
 def parse_args():

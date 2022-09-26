@@ -1,5 +1,5 @@
 import torch.nn as nn
-from v2.utils import MetaParent
+from utils.registry import MetaParent
 
 
 class BaseAgent(metaclass=MetaParent):

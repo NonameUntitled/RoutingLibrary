@@ -1,0 +1,24 @@
+{
+  "simulation": {
+    "type": "simulation",
+    "conveyor1": {
+      "type": "conveyor",
+      "max_speed": 100,
+      "length": 3,
+      "energy_consumption": 1.0,
+      "checkpoints": [],
+      "oracle": false
+    },
+    "conveyor2": {
+      "type": "conveyor",
+      "max_speed": 100,
+      "length": 3,
+      "energy_consumption": 1.0,
+      "checkpoints": [],
+      "oracle": false
+    },
+    "diverter1": {
+      "type": "diverter"
+    }
+  }
+}

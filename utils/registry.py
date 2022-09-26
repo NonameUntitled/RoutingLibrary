@@ -27,7 +27,10 @@ class MetaParent(type):
                 if config_name in base_class._subclasses:
                     raise ValueError("Class with name `{}` is already registered".format(config_name))
                 base_class._subclasses[config_name] = scls
+            scls.config_name = config_name
 
+        if 'config_name' not in cls.__dict__:
+            cls.config_name = None
         cls.__init_subclass__ = __init_subclass__
 
         @classmethod

@@ -8,7 +8,7 @@ import networkx as nx
 from typing import Union
 from functools import partial
 
-from v2.utils import MetaParent
+from utils.registry import MetaParent
 
 
 class BaseEncoder(metaclass=MetaParent):

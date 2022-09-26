@@ -1,5 +1,5 @@
 from . import TorchAgent
-from v2.ml import BaseEncoder
+from ml import BaseEncoder
 
 
 class DQNAgent(TorchAgent, config_name='dqn'):

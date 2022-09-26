@@ -1,4 +1,4 @@
-from v2.utils import MetaParent
+from utils.registry import MetaParent
 
 
 class BaseEnvironment(metaclass=MetaParent):
