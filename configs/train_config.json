@@ -1,6 +1,5 @@
 {
   "type": "conveyor",
-
   "diverter": {
     "type": "addsdfsd",
     "here_we_need_some_variabes": 23,
@@ -21,7 +20,6 @@
     "here_we_need_some_variabes": true,
     "here_we_need_some_variabes": true
   },
-
   "topology": {
     "type": "from_file",
     "filepath": "./tolopology"
@@ -38,7 +36,6 @@
     "max_edge_length": 100,
     "length_distribution": "uniform"
   },
-
   "agent": {
     "type": "random",
     "neighbors_prefix": "neighbors_nodes",
@@ -67,14 +64,22 @@
       },
       {
         "type": "concat",
-        "input_prefixes": ["neighbor_nodes_emb", "destination_node_emb", "adj_matrix", "current_node_emb"],
+        "input_prefixes": [
+          "neighbor_nodes_emb",
+          "destination_node_emb",
+          "adj_matrix",
+          "current_node_emb"
+        ],
         "dim": 1,
         "output_prefix": "combined_state"
       },
       {
         "type": "tower",
         "prefix": "combined_state",
-        "hidden_dims": [64, 64],
+        "hidden_dims": [
+          64,
+          64
+        ],
         "output_dim": 100500,
         "output_prefix": "node_scores"
       },
@@ -121,7 +126,10 @@
       },
       {
         "type": "concat",
-        "input_prefixes": ["shifted_neighbors", "shifted_destination"],
+        "input_prefixes": [
+          "shifted_neighbors",
+          "shifted_destination"
+        ],
         "dim": 1,
         "output_prefix": "combined_state"
       },
@@ -129,7 +137,10 @@
         "type": "tower",
         "input_prefix": "combined_state",
         "input_dim": 20,
-        "hidden_dims": [64, 64],
+        "hidden_dims": [
+          64,
+          64
+        ],
         "output_dim": 10,
         "output_prefix": "predicted_node_emb"
       },
@@ -148,28 +159,103 @@
       }
     ]
   },
-
+  "agent_4": {
+    "type": "ppo",
+    "discount_factor": 0.5,
+    "ratio_clip": 0.05,
+    "embeddings": [
+      {
+        "type": "shared_embedding_encoder",
+        "prefix": "current_node",
+        "embeddings_prefix": "graph",
+        "output_prefix": "current_node_emb"
+      },
+      {
+        "type": "shared_embedding_encoder",
+        "prefix": "neighbor_nodes",
+        "embeddings_prefix": "graph",
+        "output_prefix": "neighbor_nodes_emb"
+      },
+      {
+        "type": "shared_embedding_encoder",
+        "prefix": "destination_node",
+        "embeddings_prefix": "graph",
+        "output_prefix": "destination_node_emb"
+      },
+      {
+        "type": "concat",
+        "input_prefixes": [
+          "current_node_emb",
+          "destination_node_emb"
+        ],
+        "dim": 1,
+        "output_prefix": "addr_with_dest_emb"
+      }
+    ],
+    "actor": {
+      "type": "base_actor",
+      "layers": [
+        {
+          "type": "tower",
+          "input_prefix": "addr_with_dest_emb",
+          "input_dim": 20,
+          "hidden_dims": [
+            64,
+            64
+          ],
+          "output_dim": 1,
+          "output_prefix": "actor_emb"
+        },
+        {
+          "type": "euclidean_distance",
+          "left_operand_prefix": "neighbor_nodes",
+          "right_operand_prefix": "actor_emb",
+          "dim": 1,
+          "output_prefix": "neighbor_nodes_to_actor_emb_dist"
+        },
+        {
+          "type": "normalize_to_probs",
+          "input_prefix": "neighbor_nodes_to_actor_emb_dist",
+          "dim": 1,
+          "output_prefix": "next_nodes"
+        }
+      ]
+    },
+    "critic": {
+      "type": "base_critic",
+      "layers": [
+        {
+          "type": "tower",
+          "input_prefix": "addr_with_dest_emb",
+          "input_dim": 20,
+          "hidden_dims": [
+            64,
+            64
+          ],
+          "output_dim": 1,
+          "output_prefix": "actor_emb"
+        }
+      ]
+    }
+  },
   "pretrain": {
     "type": "dijkstra",
     "stable_topology": true,
     "steps_num": 5000,
-
     "current_node_prefix": "current_node",
     "neighbors_nodes_prefix": 123,
     "target_node_prefix": 123,
     "next_node_prefix": 123,
-
     "optimizer": {
       "type": "adam"
     }
   },
-
   "train": {
     "multi_agent": true,
     "type": "scenario",
     "scenario_1": {
-    "type": "from_file"
-  },
+      "type": "from_file"
+    },
     "scenario_2": {
       "type": "sequence"
     },

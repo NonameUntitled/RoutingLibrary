@@ -1,15 +1,14 @@
-from v2.agents import BaseAgent
-from v2.utils import parse_args
+from agents import BaseAgent
+from utils import parse_args
 
 
 def train():
-    args = parse_args()
+    params = parse_args()
 
-    params = args.params
-
-    BaseAgent.create_from_config(params['agent_1'])  # random
-    BaseAgent.create_from_config(params['agent_2'])  # dqn
-    BaseAgent.create_from_config(params['agent_3'])  # reinforce
+    # BaseAgent.create_from_config(params['agent_1'])  # random
+    # BaseAgent.create_from_config(params['agent_2'])  # dqn
+    # BaseAgent.create_from_config(params['agent_3'])  # reinforce
+    BaseAgent.create_from_config(params['agent_4'])  # ppo
 
 
 if __name__ == '__main__':

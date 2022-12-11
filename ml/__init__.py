@@ -8,7 +8,7 @@ import networkx as nx
 from typing import Union
 from functools import partial
 
-from v2.utils import MetaParent
+from utils import MetaParent
 
 
 class BaseEncoder(metaclass=MetaParent):
@@ -69,3 +69,9 @@ def add_dim(x: torch.Tensor, dim_size: int, add_first: bool) -> torch.Tensor:
         x = x.unsqueeze(0 if add_first else -1)
 
     return x
+
+
+class TensorWithMask:
+    def __init__(self, tensor: torch.Tensor, mask: torch.BoolTensor):
+        self.tensor = tensor
+        self.mask = mask

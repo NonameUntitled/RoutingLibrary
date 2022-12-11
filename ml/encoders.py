@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from typing import List
 
-from . import BaseEncoder, BaseDistance
+from . import BaseEncoder, BaseDistance, TensorWithMask
 
 
 class TorchEncoder(BaseEncoder, nn.Module):
@@ -72,10 +72,10 @@ class SharedEmbeddingEncoder(TorchEncoder, config_name='shared_embedding_encoder
 class SubtractionEncoder(TorchEncoder, config_name='subtraction'):
 
     def __init__(
-            self,
-            left_operand_prefix: str,
-            right_operand_prefix: str,
-            output_prefix: str
+        self,
+        left_operand_prefix: str,
+        right_operand_prefix: str,
+        output_prefix: str
     ):
         super().__init__()
         self._left_operand_prefix = left_operand_prefix
@@ -153,7 +153,7 @@ class TowerBlock(nn.Module):
         self._init_weights(self._linear, initializer_range)
 
     def forward(self, x):
-        return self._layernorm(self._dropout(self._relu(self._ff1(x))) + x)
+        return self._layernorm(self._dropout(self._relu(self._linear(x))) + x)
 
 
 class TowerEncoder(TorchEncoder, config_name='tower'):
