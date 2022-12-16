@@ -4,7 +4,12 @@ import torch
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
-    def __init__(self, actor: BaseActor, critic: BaseCritic, discount_factor: float, ratio_clip: float):
+    def __init__(
+            self, actor: BaseActor,
+            critic: BaseCritic,
+            discount_factor: float,
+            ratio_clip: float
+    ):
         super().__init__()
         self._actor = actor
         self._critic = critic
@@ -16,8 +21,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         return cls(
             actor=BaseActor.create_from_config(config['actor']),
             critic=BaseCritic.create_from_config(config['critic']),
-            discount_factor=config['discount_factor'],
-            ratio_clip=config['ratio_clip']
+            discount_factor=config.get('discount_factor', 0.99),
+            ratio_clip=config.get('ratio_clip', 0.2)
         )
 
     def forward(self, state: State) -> Tuple[State, Policy, Value, Value]:
