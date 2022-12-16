@@ -31,11 +31,11 @@ class State(ABC):
 
 class BaseActor(TorchAgent, config_name='base_actor'):
     @abstractmethod
-    def act(self, state: State) -> Tuple[State, Policy]:
+    def forward(self, state: State) -> Tuple[State, Policy]:
         pass
 
 
 class BaseCritic(TorchAgent, config_name='base_critic'):
     @abstractmethod
-    def value(self, state: State) -> Value:
+    def forward(self, state: State) -> Value:
         pass

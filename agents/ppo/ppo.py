@@ -21,9 +21,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         )
 
     def forward(self, state: State) -> Tuple[State, Policy, Value, Value]:
-        next_state, policy = self._actor.act(state)
-        curr_v_func = self._critic.value(state)
-        q_estimate = self._critic.value(next_state)
+        next_state, policy = self._actor.forward(state)
+        curr_v_func = self._critic.forward(state)
+        q_estimate = self._critic.forward(next_state)
         return next_state, policy, curr_v_func, q_estimate
 
     def loss(
@@ -35,7 +35,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             rewards: List[Reward],
             end_v_old: Value,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        _, policy = self._actor.act(state)
+        _, policy = self._actor.forward(state)
         policy_tensor = policy.to_tensor()
         policy_old_tensor = policy_old.to_tensor()
         prob_ratio = policy_tensor / policy_old_tensor
@@ -48,5 +48,5 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         weighted_prob = advantage * prob_ratio
         weighted_clipped_prob = torch.clamp(prob_ratio, 1 - self.ratio_clip, 1 + self.ratio_clip) * advantage
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
-        critic_loss = (advantage + start_v_old_tensor - self._critic.value(state).to_tensor()) ** 2
+        critic_loss = (advantage + start_v_old_tensor - self._critic.forward(state).to_tensor()) ** 2
         return actor_loss, critic_loss
