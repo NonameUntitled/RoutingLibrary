@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Callable, Dict, Optional, List, Any
+from typing import Callable, Dict, Optional, Any
 
 Aggregator = Callable[[Optional[float], float], float]
 

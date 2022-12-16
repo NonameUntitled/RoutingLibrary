@@ -4,7 +4,7 @@ import scipy.sparse as sp
 
 from typing import Union
 
-from . import BaseEmbedding
+from ml import BaseEmbedding
 
 
 class HOPEEmbedding(BaseEmbedding, config_name='hope'):
