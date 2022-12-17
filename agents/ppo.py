@@ -1,6 +1,9 @@
-from agents.ppo.types import *
-from typing import List
+from typing import List, Tuple
 import torch
+
+from agents import Policy, State, Value, Reward, TorchAgent
+from agents.actor import BaseActor
+from agents.critic import BaseCritic
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):

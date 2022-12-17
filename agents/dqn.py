@@ -1,4 +1,4 @@
-from .common import TorchAgent
+from agents import TorchAgent
 from ml import BaseEncoder
 
 

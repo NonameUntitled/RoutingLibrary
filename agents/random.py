@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from agents.common import TorchAgent
+from agents import TorchAgent
 
 
 class RandomAgent(TorchAgent, config_name='random'):
