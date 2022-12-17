@@ -1,9 +1,14 @@
-from abc import ABC
+from abc import abstractmethod, ABC
 
-from torch import nn
+from torch import nn, Tensor
 
 from utils import MetaParent
-from .ppo import *
+
+
+class TensorLike:
+    @abstractmethod
+    def to_tensor(self) -> Tensor:
+        pass
 
 
 class BaseAgent(metaclass=MetaParent):
@@ -11,7 +16,6 @@ class BaseAgent(metaclass=MetaParent):
 
 
 class TorchAgent(BaseAgent, nn.Module):
-
     def __init__(self):
         super().__init__()
 

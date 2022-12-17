@@ -42,7 +42,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             # Если есть трейсы разной длины видимо надо с маской что-то делать
             rewards: List[Reward],
             end_v_old: Value,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> None:
         _, policy = self._actor.forward(state)
         policy_tensor = policy.to_tensor()
         policy_old_tensor = policy_old.to_tensor()
