@@ -193,7 +193,7 @@
       }
     ],
     "actor": {
-      "type": "base_actor",
+      "type": "tower_actor",
       "layers": [
         {
           "type": "tower",
@@ -222,7 +222,7 @@
       ]
     },
     "critic": {
-      "type": "base_critic",
+      "type": "tower_critic",
       "layers": [
         {
           "type": "tower",

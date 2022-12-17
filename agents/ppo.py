@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import torch
 
-from agents import Policy, State, Value, Reward, TorchAgent
+from agents.common import Policy, State, Value, Reward, TorchAgent, BaseAgent
 from agents.actor import BaseActor
 from agents.critic import BaseCritic
 
@@ -22,8 +22,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     @classmethod
     def create_from_config(cls, config):
         return cls(
-            actor=BaseActor.create_from_config(config['actor']),
-            critic=BaseCritic.create_from_config(config['critic']),
+            actor=BaseAgent.create_from_config(config['actor']),
+            critic=BaseAgent.create_from_config(config['critic']),
             discount_factor=config.get('discount_factor', 0.99),
             ratio_clip=config.get('ratio_clip', 0.2)
         )
