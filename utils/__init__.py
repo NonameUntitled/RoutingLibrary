@@ -1,8 +1,13 @@
 import argparse
 import json
 import logging
+import os
 
 from .registry import MetaParent
+from .tensorboard_writers import TensorboardTimer, TensorboardWriter
+
+GLOBAL_TENSORBOARD_WRITER = None
+LOGS_DIR = './tensorboard_logs'
 
 
 def parse_args():
@@ -11,7 +16,16 @@ def parse_args():
     args = parser.parse_args()
     with open(args.params) as f:
         params = json.load(f)
+
+    if 'experiment_name' in params:
+        global GLOBAL_TENSORBOARD_WRITER
+        GLOBAL_TENSORBOARD_WRITER = create_tensorboard(params['experiment_name'])
+
     return params
+
+
+def create_tensorboard(experiment_name):
+    return TensorboardWriter(log_dir=os.path.join(LOGS_DIR, experiment_name))
 
 
 def create_logger(

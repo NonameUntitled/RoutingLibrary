@@ -1,4 +1,5 @@
 {
+  "experiment_name": "basic_experiment",
   "type": "conveyor",
   "diverter": {
     "type": "addsdfsd",
