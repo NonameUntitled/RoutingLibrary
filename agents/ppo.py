@@ -74,7 +74,12 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         return total_loss
 
-    def _compute_advantage_score(self, start_v_old: Value, rewards: List[Reward], end_v_old: Value):
+    def _compute_advantage_score(
+            self,
+            start_v_old: Value,
+            rewards: List[Reward],
+            end_v_old: Value
+    ):
         end_v_old_tensor = end_v_old.to_tensor()
         advantage = start_v_old.to_tensor()
         for reward in rewards:
