@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from agents.common import TorchAgent, State, Value
+from agents.common import TorchAgent, State, Value, ThreeNodesState
 
 
 class BaseCritic(TorchAgent, config_name='base_critic'):
@@ -13,5 +13,5 @@ class TowerCritic(BaseCritic, config_name='tower_critic'):
     def __init__(self):
         super().__init__()
 
-    def forward(self, state: State) -> Value:
-        pass
+    def forward(self, state: ThreeNodesState) -> Value:
+        raise NotImplementedError()

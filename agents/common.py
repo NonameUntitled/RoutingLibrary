@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from torch import Tensor, nn
 
+from ml import TensorWithMask
 from utils import MetaParent
 
 
@@ -34,3 +35,14 @@ class Policy(TensorLike, ABC):
 
 class State(ABC):
     pass
+
+
+class ThreeNodesState(State):
+    def __init__(
+            self, current_node: TensorWithMask,
+            neighbor_nodes: TensorWithMask,
+            destination_node: TensorWithMask
+    ):
+        self.current_node = current_node
+        self.neighbor_nodes = neighbor_nodes
+        self.destination_node = destination_node

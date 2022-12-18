@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from typing import List
 
-from ml import BaseEncoder, BaseDistance
+from ml import BaseEncoder, BaseDistance, TensorWithMask
 
 
 class TorchEncoder(BaseEncoder, nn.Module):
@@ -135,7 +135,7 @@ class ConcatEncoder(TorchEncoder, config_name='concat'):
         return inputs
 
 
-class TowerBlock(nn.Module):
+class TowerBlock(TorchEncoder, nn.Module):
 
     def __init__(
             self,
@@ -150,7 +150,7 @@ class TowerBlock(nn.Module):
         self._relu = nn.ReLU()
         self._layernorm = nn.LayerNorm(output_dim, eps=eps)
         self._dropout = nn.Dropout(p=dropout)
-        self._init_weights(self._linear, initializer_range)
+        TorchEncoder._init_weights(self._linear, initializer_range)
 
     def forward(self, x):
         return self._layernorm(self._dropout(self._relu(self._linear(x))) + x)
@@ -160,8 +160,7 @@ class TowerEncoder(TorchEncoder, config_name='tower'):
 
     def __init__(
             self,
-            prefix: str,
-            hidden_sizes: List[int],
+            hidden_dims: List[int],
             output_prefix: str = None,
             input_dim: int = None,
             output_dim: int = None,
@@ -170,44 +169,40 @@ class TowerEncoder(TorchEncoder, config_name='tower'):
             eps: float = 1e-12
     ):
         super().__init__()
-        self._prefix = prefix
-        self._hidden_sizes = hidden_sizes
+        self._hidden_sizes = hidden_dims
         self._output_prefix = output_prefix or self._prefix
 
         self._input_projector = nn.Identity()
         if input_dim is not None:
-            self._input_projector = nn.Linear(input_dim, hidden_sizes[0])
+            self._input_projector = nn.Linear(input_dim, hidden_dims[0])
             self._init_weights(self._input_projector, initializer_range)
 
         self._layers = nn.Sequential(
             *[
                 TowerBlock(
-                    input_dim=hidden_sizes[i],
-                    output_dim=hidden_sizes[i + 1],
+                    input_dim=hidden_dims[i],
+                    output_dim=hidden_dims[i + 1],
                     eps=eps,
                     dropout=dropout,
                     initializer_range=initializer_range
                 )
-                for i in range(len(hidden_sizes) - 1)
+                for i in range(len(hidden_dims) - 1)
             ]
         )
 
         self._output_projector = nn.Identity()
         if output_dim is not None:
-            self._output_projector = nn.Linear(hidden_sizes[-1], output_dim)
-            self._init_weights(self._output_projector, initializer_range)
+            self._output_projector = nn.Linear(hidden_dims[-1], output_dim)
+            TorchEncoder._init_weights(self._output_projector, initializer_range)
 
-    def forward(self, inputs):
-        embeddings = inputs[self._prefix]
+    def forward(self, inputs: TensorWithMask):
+        embeddings = inputs.tensor
 
         embeddings = self._input_projector(embeddings)
         embeddings = self._layers(embeddings)
         embeddings = self._output_projector(embeddings)
 
-        inputs[self._output_prefix] = embeddings
-        inputs[f'{self._output_prefix}.mask'] = inputs['{}.mask'.format(self._prefix)]
-
-        return inputs
+        return TensorWithMask(embeddings, embeddings[inputs.mask])
 
 
 class SoftmaxEncoder(TorchEncoder, config_name='softmax'):
