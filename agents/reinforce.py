@@ -1,5 +1,5 @@
-from ml import BaseEncoder
 from agents import TorchAgent
+from ml import BaseEncoder
 
 
 class ReinforceAgent(TorchAgent, config_name='reinforce'):

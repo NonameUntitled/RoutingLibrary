@@ -24,4 +24,3 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
     def forward(self, state: ThreeNodesState) -> Tuple[State, Policy]:
         raise NotImplementedError()
-

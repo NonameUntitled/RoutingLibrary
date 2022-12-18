@@ -1,12 +1,11 @@
+from functools import partial
+from typing import Union
+
+import networkx as nx
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-import numpy as np
-import networkx as nx
-
-from typing import Union
-from functools import partial
 
 from utils import MetaParent
 

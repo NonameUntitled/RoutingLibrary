@@ -1,7 +1,7 @@
+from typing import List
+
 import torch
 import torch.nn as nn
-
-from typing import List
 
 from ml import BaseEncoder, BaseDistance, TensorWithMask
 
@@ -72,10 +72,10 @@ class SharedEmbeddingEncoder(TorchEncoder, config_name='shared_embedding_encoder
 class SubtractionEncoder(TorchEncoder, config_name='subtraction'):
 
     def __init__(
-        self,
-        left_operand_prefix: str,
-        right_operand_prefix: str,
-        output_prefix: str
+            self,
+            left_operand_prefix: str,
+            right_operand_prefix: str,
+            output_prefix: str
     ):
         super().__init__()
         self._left_operand_prefix = left_operand_prefix

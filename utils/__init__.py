@@ -1,8 +1,8 @@
-from .registry import MetaParent
-
+import argparse
 import json
 import logging
-import argparse
+
+from .registry import MetaParent
 
 
 def parse_args():

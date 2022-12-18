@@ -1,9 +1,10 @@
 from typing import List, Tuple
+
 import torch
 from torch import Tensor
 
-from agents.common import Policy, State, Value, Reward, TorchAgent, BaseAgent
 from agents.actor import BaseActor
+from agents.common import Policy, State, Value, Reward, TorchAgent, BaseAgent
 from agents.critic import BaseCritic
 
 
@@ -22,7 +23,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         self._actor = actor
         self._critic = critic
         self._discount_factor = discount_factor
-        self._ratio_clip = ratio_clip,
+        self._ratio_clip = ratio_clip
         self._actor_loss_weight = actor_loss_weight
 
     @classmethod

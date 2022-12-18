@@ -1,8 +1,8 @@
-import numpy as np
-import networkx as nx
-import scipy.sparse as sp
-
 from typing import Union
+
+import networkx as nx
+import numpy as np
+import scipy.sparse as sp
 
 from ml import BaseEmbedding
 
