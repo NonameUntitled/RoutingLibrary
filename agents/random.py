@@ -1,7 +1,9 @@
+from typing import Dict
+
 import numpy as np
 import torch
 
-from agents import TorchAgent
+from agents.common import TorchAgent
 
 
 class RandomAgent(TorchAgent, config_name='random'):
