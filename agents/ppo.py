@@ -17,8 +17,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             critic: BaseCritic,
             discount_factor: float,
             ratio_clip: float,
-            actor_loss_weight: float = 1.0,
-            critic_loss_weight: float = 1.0
+            actor_loss_weight: float,
+            critic_loss_weight: float
     ):
         assert 0 < discount_factor < 1, 'Incorrect `discount_factor` choice'
         assert 0 < ratio_clip < 1, 'Incorrect `ratio_clip` choice'
@@ -38,7 +38,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             critic=BaseEncoder.create_from_config(config['critic']),
             discount_factor=config.get('discount_factor', 0.99),
             ratio_clip=config.get('ratio_clip', 0.2),
-            actor_loss_weight=config.get('actor_loss_weight', 0.5)
+            actor_loss_weight=config.get('actor_loss_weight', 1.0),
+            critic_loss_weight=config.get('critic_loss_weight', 1.0)
         )
 
     def forward(self, state: State) -> Tuple[State, Policy, Value, Value]:
