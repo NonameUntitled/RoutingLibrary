@@ -1,7 +1,8 @@
 import inspect
+from abc import ABCMeta
 
 
-class MetaParent(type):
+class MetaParent(ABCMeta):
 
     def __init__(cls, name, base, params, **kwargs):
         super().__init__(name, base, params)

@@ -1,5 +1,6 @@
+from typing import Callable, Dict, Optional, Any
+
 import pandas as pd
-from typing import Callable, Dict, Optional, List, Any
 
 Aggregator = Callable[[Optional[float], float], float]
 
@@ -30,7 +31,8 @@ class EventLog:  # TODO [Vladimir Baikalov]: Create common logger, add tensorboa
             self._records.append(new_record)
         else:
             for aggregator_name, aggregator in self._aggregators.items():
-                self._records[event_period][aggregator_name] = aggregator(self._records[event_period][aggregator_name], value)
+                self._records[event_period][aggregator_name] = aggregator(self._records[event_period][aggregator_name],
+                                                                          value)
 
     def log_event(self, time: float, value: Any):
         event_period = int(time / self._period)
@@ -57,7 +59,6 @@ class EventLog:  # TODO [Vladimir Baikalov]: Create common logger, add tensorboa
 
     def max_period(self):
         return self._records[-1][0]
-
 
 
 class EventSeries:

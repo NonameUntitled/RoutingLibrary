@@ -1,10 +1,10 @@
-import numpy as np
-import networkx as nx
-import scipy.sparse as sp
-
 from typing import Union
 
-from . import BaseEmbedding
+import networkx as nx
+import numpy as np
+import scipy.sparse as sp
+
+from ml.common import BaseEmbedding
 
 
 class HOPEEmbedding(BaseEmbedding, config_name='hope'):

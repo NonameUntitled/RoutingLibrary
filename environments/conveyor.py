@@ -1,4 +1,4 @@
-from . import BaseEnvironment
+from environments import BaseEnvironment
 
 
 class ConveyorEnvironment(BaseEnvironment, config_name='conveyor'):
