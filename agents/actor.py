@@ -22,5 +22,5 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             ff_net=TowerEncoder.create_from_config(config['ff_net'])
         )
 
-    def forward(self, state: ThreeNodesState) -> Tuple[State, Policy]:
+    def forward(self, state: ThreeNodesState) -> Tuple[ThreeNodesState, Policy]:
         raise NotImplementedError()
