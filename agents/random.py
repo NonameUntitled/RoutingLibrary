@@ -3,7 +3,7 @@ from typing import Dict
 import numpy as np
 import torch
 
-from agents.common import TorchAgent
+from agents import TorchAgent
 
 
 class RandomAgent(TorchAgent, config_name='random'):

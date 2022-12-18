@@ -3,7 +3,13 @@ from typing import List
 import torch
 import torch.nn as nn
 
-from ml.common import BaseEncoder, BaseDistance, TensorWithMask
+from utils import MetaParent
+
+from ml.typing import TensorWithMask
+
+
+class BaseEncoder(metaclass=MetaParent):
+    pass
 
 
 class TorchEncoder(BaseEncoder, nn.Module):
@@ -20,12 +26,6 @@ class TorchEncoder(BaseEncoder, nn.Module):
             b=2 * initializer_range
         )
         nn.init.zeros_(layer.bias)
-
-
-class TorchDistance(BaseDistance, nn.Module):
-
-    def __init__(self):
-        super().__init__()
 
 
 class SharedEmbeddingEncoder(TorchEncoder, config_name='shared_embedding_encoder'):
@@ -232,7 +232,7 @@ class SoftmaxEncoder(TorchEncoder, config_name='softmax'):
         return inputs
 
 
-class EuclideanDistance(TorchDistance, config_name='euclidean_distance'):
+class EuclideanDistance(TorchEncoder, config_name='euclidean_distance'):
 
     def __init__(
             self,
