@@ -3,9 +3,8 @@ from typing import List, Tuple
 import torch
 from torch import Tensor
 
-from agents.actor import BaseActor
-from agents.common import Policy, State, Value, Reward, TorchAgent, BaseAgent
-from agents.critic import BaseCritic
+from agents.common import TorchAgent
+from ml import BaseEncoder, BaseActor, BaseCritic, Reward, Value, Policy, State
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
@@ -29,8 +28,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     @classmethod
     def create_from_config(cls, config):
         return cls(
-            actor=BaseAgent.create_from_config(config['actor']),
-            critic=BaseAgent.create_from_config(config['critic']),
+            actor=BaseEncoder.create_from_config(config['actor']),
+            critic=BaseEncoder.create_from_config(config['critic']),
             discount_factor=config.get('discount_factor', 0.99),
             ratio_clip=config.get('ratio_clip', 0.2),
             actor_loss_weight=config.get('actor_loss_weight', 0.5)

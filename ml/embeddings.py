@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 import scipy.sparse as sp
 
-from ml import BaseEmbedding
+from ml.common import BaseEmbedding
 
 
 class HOPEEmbedding(BaseEmbedding, config_name='hope'):

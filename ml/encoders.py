@@ -3,7 +3,7 @@ from typing import List
 import torch
 import torch.nn as nn
 
-from ml import BaseEncoder, BaseDistance, TensorWithMask
+from ml.common import BaseEncoder, BaseDistance, TensorWithMask
 
 
 class TorchEncoder(BaseEncoder, nn.Module):

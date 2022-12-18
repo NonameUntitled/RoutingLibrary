@@ -1,13 +1,19 @@
 from abc import abstractmethod
 from typing import Tuple
 
-from agents.common import TorchAgent, State, Policy, ThreeNodesState
-from ml.encoders import TowerEncoder
+from ml.common import State, Value, Policy, ThreeNodesState
+from ml.encoders import TorchEncoder, TowerEncoder
 
 
-class BaseActor(TorchAgent, config_name='base_actor'):
+class BaseActor(TorchEncoder, config_name='base_actor'):
     @abstractmethod
     def forward(self, state: State) -> Tuple[State, Policy]:
+        pass
+
+
+class BaseCritic(TorchEncoder, config_name='base_critic'):
+    @abstractmethod
+    def forward(self, state: State) -> Value:
         pass
 
 
@@ -23,4 +29,12 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         )
 
     def forward(self, state: ThreeNodesState) -> Tuple[ThreeNodesState, Policy]:
+        raise NotImplementedError()
+
+
+class TowerCritic(BaseCritic, config_name='tower_critic'):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, state: ThreeNodesState) -> Value:
         raise NotImplementedError()
