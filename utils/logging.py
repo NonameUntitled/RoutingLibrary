@@ -109,8 +109,13 @@ class EventSeries:
                 self._log(period, coeff * self.period)
             self._log(end_period, coeff * end_gap)
 
-    def getSeries(self, add_avg=False, avg_col='avg',
-                  sum_col='sum', count_col='count'):
+    def getSeries(
+            self,
+            add_avg=False,
+            avg_col='avg',
+            sum_col='sum',
+            count_col='count'
+    ):
         df = pd.DataFrame(self.records, columns=self.columns, index=self.record_periods)
         if add_avg:
             df[avg_col] = df[sum_col] / df[count_col]

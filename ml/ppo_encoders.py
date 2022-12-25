@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Tuple
 
-from ml.common import State, Value, Policy, ThreeNodesState
+from ml.typing import State, Value, Policy, ThreeNodesState
 from ml.encoders import TorchEncoder, TowerEncoder
 
 

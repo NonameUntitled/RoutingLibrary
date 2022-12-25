@@ -4,7 +4,19 @@ import networkx as nx
 import numpy as np
 import scipy.sparse as sp
 
-from ml.common import BaseEmbedding
+from utils import MetaParent
+
+
+class BaseEmbedding(metaclass=MetaParent):
+    """
+    Abstract class for graph node embeddings.
+    """
+
+    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight: str):
+        raise NotImplementedError()
+
+    def transform(self, nodes):
+        raise NotImplementedError()
 
 
 class HOPEEmbedding(BaseEmbedding, config_name='hope'):

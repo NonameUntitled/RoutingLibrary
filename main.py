@@ -1,4 +1,4 @@
-from agents.common import BaseAgent
+from agents import BaseAgent
 from utils import parse_args
 
 
