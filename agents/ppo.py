@@ -50,7 +50,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         next_state, policy = self._actor.forward(**inputs[self._prefix])
         curr_v_func = self._critic.forward(**inputs[self._prefix])  # (batch_size)
-        q_estimate = self._critic.forward(next_state)  # (batch_size)
+        q_estimate = self._critic.forward(**{**inputs[self._prefix], 'state': next_state})  # (batch_size)
         # TODO [Vladimir Baikalov]: make same inerface for every agent's forward function
         inputs[self._out_prefix] = {
             "next_state": next_state,

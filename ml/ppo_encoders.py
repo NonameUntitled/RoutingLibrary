@@ -68,16 +68,16 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
 
 class TowerCritic(BaseCritic, config_name='tower_critic'):
-    def __init__(self, encoder: TorchEncoder, ff_net: TorchEncoder):
+    def __init__(self, embedder: TorchEncoder, ff_net: TorchEncoder):
         super().__init__()
         self._ff_net = ff_net
-        self._encoder = encoder
+        self._embedder = embedder
 
     @classmethod
     def create_from_config(cls, config):
         return cls(
             ff_net=TowerEncoder.create_from_config(config['ff_net']),
-            encoder=TorchEncoder.create_from_config(config['embedder'])
+            embedder=TorchEncoder.create_from_config(config['embedder'])
         )
 
     def forward(
