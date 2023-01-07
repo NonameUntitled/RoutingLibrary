@@ -162,8 +162,12 @@
   },
   "agent_4": {
     "type": "ppo",
+    "prefix": "ppo_input",
     "actor": {
       "type": "tower_actor",
+      "embedder": {
+        "type": "shared_embedding_encoder"
+      },
       "ff_net": {
         "type": "tower",
         "input_dim": 20,
@@ -171,25 +175,23 @@
           64,
           64
         ],
-        "output_dim": 1,
-        "output_prefix": "actor_emb"
+        "output_dim": 1
       }
     },
     "critic": {
       "type": "tower_critic",
-      "layers": [
-        {
-          "type": "tower",
-          "input_prefix": "addr_with_dest_emb",
-          "input_dim": 20,
-          "hidden_dims": [
-            64,
-            64
-          ],
-          "output_dim": 1,
-          "output_prefix": "actor_emb"
-        }
-      ]
+      "embedder": {
+        "type": "shared_embedding_encoder"
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 20,
+        "hidden_dims": [
+          64,
+          64
+        ],
+        "output_dim": 1
+      }
     }
   },
   "pretrain": {
