@@ -48,15 +48,16 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         )
 
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        next_state, policy = self._actor.forward(**inputs[self._prefix])
-        curr_v_func = self._critic.forward(**inputs[self._prefix])  # (batch_size)
-        q_estimate = self._critic.forward(**{**inputs[self._prefix], 'state': next_state})  # (batch_size)
+        ppo_input = inputs[self._prefix]
+        next_state, policy = self._actor.forward(**ppo_input)
+        curr_v_func = self._critic.forward(**ppo_input)  # (batch_size)
+        q_estimate = self._critic.forward(**{**ppo_input, 'state': next_state})  # (batch_size)
         # TODO [Vladimir Baikalov]: make same inerface for every agent's forward function
         inputs[self._out_prefix] = {
-            "next_state": next_state,
-            "policy": policy,
-            "curr_v_func": curr_v_func,
-            "q_estimate": q_estimate
+            'state': ppo_input,
+            'policy': policy,
+            'curr_v_func': curr_v_func,
+            'q_estimate': q_estimate
         }
         return inputs
 
@@ -70,7 +71,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             rewards,
             end_v_old
     ) -> Tensor:
-        _, policy = self._actor.forward(state)
+        _, policy = self._actor.forward(**state)
         policy_tensor = policy
         policy_old_tensor = policy_old
         prob_ratio = policy_tensor / policy_old_tensor
@@ -82,7 +83,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         weighted_clipped_prob = torch.clamp(prob_ratio, 1 - self.ratio_clip, 1 + self.ratio_clip) * advantage
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
-        critic_loss = (advantage + start_v_old_tensor - self._critic.forward(state).to_tensor()) ** 2
+        critic_loss = (advantage + start_v_old_tensor - self._critic.forward(**state)) ** 2
         total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss
 
         return total_loss
