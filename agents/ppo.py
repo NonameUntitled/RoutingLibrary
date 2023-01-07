@@ -4,8 +4,9 @@ import torch
 from torch import Tensor
 
 from agents import TorchAgent
+from ml.encoders import BaseEncoder
 
-from ml.encoders import BaseEncoder, TorchEncoder
+from ml.ppo_encoders import BaseActor, BaseCritic
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
@@ -13,8 +14,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             self,
             prefix: str,
             out_prefix: str,
-            actor: TorchEncoder,
-            critic: TorchEncoder,
+            actor: BaseActor,
+            critic: BaseCritic,
             discount_factor: float,
             ratio_clip: float,
             actor_loss_weight: float,

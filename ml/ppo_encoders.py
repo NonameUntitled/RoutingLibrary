@@ -1,13 +1,38 @@
+from abc import abstractmethod
 from typing import Tuple
 
 from torch import Tensor
 
-from ml.functions import concat, euclidean_distance, softmax, sample
 from ml.encoders import TorchEncoder, TowerEncoder
+from ml.functions import concat, euclidean_distance, softmax, sample
 from ml.typing import TensorWithMask
 
 
-class TowerActor(TorchEncoder, config_name='tower_actor'):
+class BaseActor(TorchEncoder, config_name='base_actor'):
+    @abstractmethod
+    def forward(
+            self,
+            state: Tensor,
+            neighbour: TensorWithMask,
+            destination: Tensor,
+            storage,
+            **kwargs) -> Tuple[Tensor, Tensor]:
+        pass
+
+
+class BaseCritic(TorchEncoder, config_name='base_critic'):
+    @abstractmethod
+    def forward(
+            self,
+            state: Tensor,
+            destination: Tensor,
+            storage,
+            **kwargs
+    ) -> Tensor:
+        pass
+
+
+class TowerActor(BaseActor, config_name='tower_actor'):
     def __init__(self, embedder: TorchEncoder, ff_net: TorchEncoder):
         super().__init__()
         self._ff_net = ff_net
@@ -42,7 +67,7 @@ class TowerActor(TorchEncoder, config_name='tower_actor'):
         return next_neighbour, neighbour_probs
 
 
-class TowerCritic(TorchEncoder, config_name='tower_critic'):
+class TowerCritic(BaseCritic, config_name='tower_critic'):
     def __init__(self, encoder: TorchEncoder, ff_net: TorchEncoder):
         super().__init__()
         self._ff_net = ff_net
