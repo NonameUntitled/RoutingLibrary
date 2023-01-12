@@ -37,5 +37,7 @@ def euclidean_distance(left_tensor: TensorWithMask, right_tensor: Tensor, dim) -
     return TensorWithMask(distances, left_tensor.mask)
 
 
-def sample(probs: Tensor) -> Tensor:
-    raise NotImplementedError()
+def sample(values: Tensor, probs: Tensor) -> Tensor:
+    distr = torch.distributions.Categorical(probs)
+    # TODO what dims?
+    return values[distr.sample()]

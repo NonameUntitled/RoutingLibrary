@@ -63,7 +63,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
         neighbour_logits = euclidean_distance(neighbour_embs, destination_embs, dim=1)
         neighbour_probs = softmax(TensorWithMask(1 / (neighbour_logits.tensor + 1e-18), neighbour_logits.mask), dim=1)
-        next_neighbour = sample(neighbour_probs)
+        next_neighbour = sample(neighbour.tensor, neighbour_probs)
         return next_neighbour, neighbour_probs
 
 

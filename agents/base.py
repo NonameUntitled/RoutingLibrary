@@ -12,7 +12,11 @@ class BaseAgent(metaclass=MetaParent):
 
 class TorchAgent(BaseAgent, nn.Module):
     @abstractmethod
-    def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def forward(self, inputs: Dict[str, Any]):
+        pass
+
+    @abstractmethod
+    def learn(self):
         pass
 
     def __init__(self):

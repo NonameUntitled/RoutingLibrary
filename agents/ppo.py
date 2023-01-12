@@ -33,6 +33,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
+        self._memory = []
 
     @classmethod
     def create_from_config(cls, config):
@@ -47,21 +48,22 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             critic_loss_weight=config.get('critic_loss_weight', 1.0)
         )
 
-    def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def forward(self, inputs: Dict[str, Any]):
         ppo_input = inputs[self._prefix]
         next_state, policy = self._actor.forward(**ppo_input)
         curr_v_func = self._critic.forward(**ppo_input)  # (batch_size)
         q_estimate = self._critic.forward(**{**ppo_input, 'state': next_state})  # (batch_size)
-        # TODO [Vladimir Baikalov]: make same inerface for every agent's forward function
-        inputs[self._out_prefix] = {
+        self._memory.append({
             'state': ppo_input,
             'policy': policy,
             'curr_v_func': curr_v_func,
             'q_estimate': q_estimate
-        }
-        return inputs
+        })
+        inputs[self._out_prefix] = next_state
 
-    # Пока не понятно какой интерфейс этому прикручивать
+    def learn(self):
+        pass
+
     def loss(
             self,
             state,
