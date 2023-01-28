@@ -12,12 +12,12 @@ class BaseAgent(metaclass=MetaParent):
 
 class TorchAgent(BaseAgent, nn.Module):
     @abstractmethod
-    def forward(self, inputs: Dict[str, Any]):
-        pass
+    def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        raise NotImplementedError
 
     @abstractmethod
     def learn(self):
-        pass
+        raise NotImplementedError
 
     def __init__(self):
         super().__init__()

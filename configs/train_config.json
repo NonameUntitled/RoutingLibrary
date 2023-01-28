@@ -162,7 +162,6 @@
   },
   "agent_4": {
     "type": "ppo",
-    "prefix": "ppo_input",
     "actor": {
       "type": "tower_actor",
       "embedder": {
@@ -192,6 +191,9 @@
         ],
         "output_dim": 1
       }
+    },
+    "path_memory": {
+      "type": "shared_path_memory"
     }
   },
   "pretrain": {

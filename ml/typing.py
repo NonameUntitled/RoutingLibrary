@@ -14,4 +14,4 @@ class TensorWithMask:
 class TensorLike:
     @abstractmethod
     def to_tensor(self) -> torch.Tensor:
-        pass
+        raise NotImplementedError

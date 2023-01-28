@@ -6,7 +6,7 @@ from torch import Tensor
 from ml.typing import TensorWithMask
 
 
-def concat(tensors: List[TensorWithMask], dim):
+def concat(tensors: List[TensorWithMask], dim: int):
     embeddings = []
     masks = []
 
@@ -20,7 +20,7 @@ def concat(tensors: List[TensorWithMask], dim):
     )
 
 
-def softmax(inputs: TensorWithMask, dim) -> Tensor:
+def softmax(inputs: TensorWithMask, dim: int) -> Tensor:
     scores = inputs.tensor
     mask = inputs.mask
 
@@ -29,10 +29,10 @@ def softmax(inputs: TensorWithMask, dim) -> Tensor:
     return probabilities
 
 
-def euclidean_distance(left_tensor: TensorWithMask, right_tensor: Tensor, dim) -> TensorWithMask:
-    if len(left_tensor.tensor.shape) == len(right_tensor.shape) + 1:
+def euclidean_distance(left_tensor: TensorWithMask, right_tensor: TensorWithMask, dim: int) -> TensorWithMask:
+    if len(left_tensor.tensor.shape) == len(right_tensor.tensor.shape) + 1:
         right_tensor = right_tensor[None]
-    distances = torch.sqrt(torch.sum((left_tensor.tensor - right_tensor) ** 2, dim=dim+1))
+    distances = torch.sqrt(torch.sum((left_tensor.tensor - right_tensor.tensor) ** 2, dim=dim+1))
     distances[left_tensor.mask] = 1e18
     return TensorWithMask(distances, left_tensor.mask)
 
