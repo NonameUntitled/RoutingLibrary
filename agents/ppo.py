@@ -64,7 +64,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             rewards,
             end_v_old
     ) -> Tensor:
-        _, policy = self._actor(state)
+        _, policy = self._actor(**state)
         policy_tensor = policy
         policy_old_tensor = policy_old
         prob_ratio = policy_tensor / policy_old_tensor
@@ -76,7 +76,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         weighted_clipped_prob = torch.clamp(prob_ratio, 1 - self.ratio_clip, 1 + self.ratio_clip) * advantage
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
-        critic_loss = (advantage + start_v_old_tensor - self._critic(state)) ** 2
+        critic_loss = (advantage + start_v_old_tensor - self._critic(**state)) ** 2
         total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss
 
         return total_loss
