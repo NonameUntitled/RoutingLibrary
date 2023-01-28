@@ -162,6 +162,7 @@
   },
   "agent_4": {
     "type": "ppo",
+    "out_prefix": "next_node",
     "actor": {
       "type": "tower_actor",
       "embedder": {

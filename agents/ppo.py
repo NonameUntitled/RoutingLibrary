@@ -38,7 +38,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     @classmethod
     def create_from_config(cls, config):
         return cls(
-            out_prefix=config.get('out_prefix', config['prefix']),
+            out_prefix=config['out_prefix'],
             actor=BaseEncoder.create_from_config(config['actor']),
             critic=BaseEncoder.create_from_config(config['critic']),
             discount_factor=config.get('discount_factor', 0.99),
@@ -49,28 +49,18 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         )
 
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        ppo_input = inputs[self._prefix]
-        next_state, policy = self._actor.forward(**ppo_input)
-        curr_v_func = self._critic.forward(**ppo_input)  # (batch_size)
-        q_estimate = self._critic.forward(**{**ppo_input, 'state': next_state})  # (batch_size)
-        self._memory.append({
-            'state': ppo_input,
-            'policy': policy,
-            'curr_v_func': curr_v_func,
-            'q_estimate': q_estimate
-        })
-        inputs[self._out_prefix] = next_state
+        next_node, policy = self._actor.forward(**inputs)
+        inputs[self._out_prefix] = next_node
         return inputs
 
     def learn(self):
-        pass
+        raise NotImplementedError
 
     def _loss(
             self,
             state,
             policy_old,
             start_v_old,
-            # Если есть трейсы разной длины видимо надо с маской что-то делать
             rewards,
             end_v_old
     ) -> Tensor:
