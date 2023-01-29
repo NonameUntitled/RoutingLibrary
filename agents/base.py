@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any, Dict
 
-from torch import nn
+from torch import nn, Tensor
 
 from utils import MetaParent
 
@@ -10,9 +10,13 @@ class BaseAgent(metaclass=MetaParent):
     pass
 
 
+class BaseInputAdapter(metaclass=MetaParent):
+    pass
+
+
 class TorchAgent(BaseAgent, nn.Module):
     @abstractmethod
-    def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def forward(self, inputs: Dict[str, Any]) -> Tensor:
         raise NotImplementedError
 
     @abstractmethod

@@ -12,7 +12,7 @@ class BaseActor(TorchEncoder, config_name='base_actor'):
     @abstractmethod
     def forward(
             self,
-            state: Tensor,
+            node: Tensor,
             neighbour: TensorWithMask,
             destination: Tensor,
             storage,
@@ -24,7 +24,7 @@ class BaseCritic(TorchEncoder, config_name='base_critic'):
     @abstractmethod
     def forward(
             self,
-            state: Tensor,
+            node: Tensor,
             destination: Tensor,
             storage,
             **kwargs
@@ -47,13 +47,13 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
     def forward(
             self,
-            state: Tensor,
+            node: Tensor,
             neighbour: TensorWithMask,
             destination: Tensor,
             storage,
             **kwargs
     ) -> Tuple[Tensor, Tensor]:
-        current_embs = self._embedder.forward(TensorWithMask(state), storage)
+        current_embs = self._embedder.forward(TensorWithMask(node), storage)
         neighbour_embs = self._embedder.forward(neighbour, storage)
         destination_embs = self._embedder.forward(TensorWithMask(destination), storage)
 
@@ -82,12 +82,12 @@ class TowerCritic(BaseCritic, config_name='tower_critic'):
 
     def forward(
             self,
-            state: Tensor,
+            node: Tensor,
             destination: Tensor,
             storage,
             **kwargs
     ) -> Tensor:
-        current_embs = self._embedder.forward(TensorWithMask(state), storage)
+        current_embs = self._embedder.forward(TensorWithMask(node), storage)
         destination_embs = self._embedder.forward(TensorWithMask(destination), storage)
         shifted_destination = TensorWithMask(destination_embs.tensor - current_embs.tensor, destination_embs.mask)
         return self._ff_net.forward(shifted_destination)

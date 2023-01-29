@@ -1,57 +1,124 @@
-from typing import Dict, Any
+from typing import Dict, Any, Collection
 
 import torch
 from torch import Tensor
 
 from agents import TorchAgent
+from agents.base import BaseInputAdapter
 from ml.encoders import BaseEncoder
-
 from ml.ppo_encoders import BaseActor, BaseCritic
-from utils.path import BasePathMemory
+from utils.bag_trajectory import BaseBagTrajectoryMemory
+
+
+class PpoInputAdapter(BaseInputAdapter, config_name='ppo_input_adapter'):
+    def __init__(
+            self,
+            bag_id,
+            node,
+            neighbour,
+            destination
+    ):
+        self._bag_id = bag_id
+        self._node = node
+        self._neighbour = neighbour
+        self._destination = destination
+
+    @classmethod
+    def create_from_config(cls, config):
+        return cls(
+            bag_id=config.get('bag_id', 'bag_id'),
+            node=config.get('node', 'node'),
+            neighbour=config.get('neighbour', 'neighbour'),
+            destination=config.get('destination', 'destination')
+        )
+
+    def get_actor_input(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            'bag_id': inputs[self._bag_id],
+            'node': inputs[self._node],
+            'neighbour': inputs[self._neighbour],
+            'destination': inputs[self._destination]
+        }
+
+    def get_critic_input(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            'bag_id': inputs[self._bag_id],
+            'node': inputs[self._node],
+            'destination': inputs[self._destination]
+        }
+
+    def inputs_to_list(self, inputs: Dict[str, Any]) -> Collection:
+        inputs_list = []
+        for bag_id, node, neighbour, destination in zip(
+                inputs[self._bag_id], inputs[self._node], inputs[self._neighbour], inputs[self._destination]
+        ):
+            inputs_list.append({
+                self._bag_id: bag_id,
+                self._node: node,
+                self._neighbour: neighbour,
+                self._destination: destination
+            })
+        return inputs_list
+
+    def get_bag_id(self, inputs: Dict[str, Any]) -> Tensor:
+        return inputs[self._bag_id]
+
+    def get_node(self, inputs: Dict[str, Any]) -> Tensor:
+        return inputs[self._node]
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
     def __init__(
             self,
-            out_prefix: str,
             actor: BaseActor,
             critic: BaseCritic,
             discount_factor: float,
             ratio_clip: float,
             actor_loss_weight: float,
             critic_loss_weight: float,
-            path_memory: BasePathMemory
+            bag_trajectory_memory: BaseBagTrajectoryMemory,
+            ppo_input_adapter: PpoInputAdapter
     ):
         assert 0 < discount_factor < 1, 'Incorrect `discount_factor` choice'
         assert 0 < ratio_clip < 1, 'Incorrect `ratio_clip` choice'
         super().__init__()
-        self._out_prefix = out_prefix
         self._actor = actor
         self._critic = critic
         self._discount_factor = discount_factor
         self._ratio_clip = ratio_clip
-
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
-        self._path_memory = path_memory
+        self._bag_trajectory_memory = bag_trajectory_memory
+        self._ppo_input_adapter = ppo_input_adapter
 
     @classmethod
     def create_from_config(cls, config):
         return cls(
-            out_prefix=config['out_prefix'],
             actor=BaseEncoder.create_from_config(config['actor']),
             critic=BaseEncoder.create_from_config(config['critic']),
             discount_factor=config.get('discount_factor', 0.99),
             ratio_clip=config.get('ratio_clip', 0.2),
             actor_loss_weight=config.get('actor_loss_weight', 1.0),
             critic_loss_weight=config.get('critic_loss_weight', 1.0),
-            path_memory=BasePathMemory.create_from_config(config['path_memory'])
+            bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory']),
+            ppo_input_adapter=BaseInputAdapter.create_from_config(config['input_adapter'])
         )
 
-    def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        next_node, policy = self._actor.forward(**inputs)
-        inputs[self._out_prefix] = next_node
-        return inputs
+    def forward(self, inputs: Dict[str, Any]) -> Tensor:
+        actor_input = self._ppo_input_adapter.get_actor_input(inputs)
+        critic_input = self._ppo_input_adapter.get_critic_input(inputs)
+        next_node, policy = self._actor.forward(**actor_input)
+        v_func = self._critic.forward(**critic_input)
+        self._bag_trajectory_memory.add_to_trajectory(
+            self._ppo_input_adapter.get_bag_id(inputs),
+            self._ppo_input_adapter.get_node(inputs),
+            infos=list(map(lambda v, p: {
+                'v_func': v,
+                'policy': p,
+                'inputs': self._ppo_input_adapter.inputs_to_list(inputs)
+            }, zip(v_func, policy, )))
+        )
+        return next_node
 
     def learn(self):
         raise NotImplementedError
