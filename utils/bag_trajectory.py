@@ -23,14 +23,14 @@ class BaseBagTrajectoryMemory(metaclass=MetaParent):
 
 class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_path_memory'):
     _trajectory_by_bag_id = defaultdict(list)
-    _trajectory_by_node = defaultdict(dict)
+    _start_trajectories_ids_by_node = defaultdict(dict)  # TODO implement multiple indices support
 
     def add_to_trajectory(self, bag_ids: Collection, nodes: Collection, infos: Collection):
         for bag_id, node, info in zip(bag_ids, nodes, infos):
             self._add_to_trajectory(bag_id, node, info)
 
     def sample_trajectories_for_node(self, node, count):
-        data = list(self._trajectory_by_node[node].items())
+        data = list(self._start_trajectories_ids_by_node[node].items())
         return list(map(lambda idx: self._trajectory_by_bag_id[data[idx][0]][data[idx][1]:],
                         np.random.randint(len(data), size=count)))
 
@@ -39,7 +39,7 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
             'node': node,
             'info': info
         })
-        self._trajectory_by_node[node][bag_id] = len(self._trajectory_by_bag_id[bag_id]) - 1
+        self._start_trajectories_ids_by_node[node][bag_id] = len(self._trajectory_by_bag_id[bag_id]) - 1
 
     def add_reward_to_trajectory(self, bag_id, reward):
         self._trajectory_by_bag_id[bag_id][-1]['info']['reward'] = reward

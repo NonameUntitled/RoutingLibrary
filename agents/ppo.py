@@ -32,20 +32,8 @@ class PpoInputAdapter(BaseInputAdapter, config_name='ppo_input_adapter'):
             destination=config.get('destination', 'destination')
         )
 
-    def get_actor_input(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            'bag_id': inputs[self._bag_id],
-            'node': inputs[self._node],
-            'neighbour': inputs[self._neighbour],
-            'destination': inputs[self._destination]
-        }
-
-    def get_critic_input(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            'bag_id': inputs[self._bag_id],
-            'node': inputs[self._node],
-            'destination': inputs[self._destination]
-        }
+    def get_input(self, inputs: Dict[str, Any]):
+        return inputs[self._bag_id], inputs[self._node], inputs[self._neighbour], inputs[self._destination]
 
     def inputs_to_list(self, inputs: Dict[str, Any]) -> Collection:
         inputs_list = []
@@ -59,12 +47,6 @@ class PpoInputAdapter(BaseInputAdapter, config_name='ppo_input_adapter'):
                 self._destination: destination
             })
         return inputs_list
-
-    def get_bag_id(self, inputs: Dict[str, Any]) -> Tensor:
-        return inputs[self._bag_id]
-
-    def get_node(self, inputs: Dict[str, Any]) -> Tensor:
-        return inputs[self._node]
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
@@ -105,18 +87,26 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         )
 
     def forward(self, inputs: Dict[str, Any]) -> Tensor:
-        actor_input = self._ppo_input_adapter.get_actor_input(inputs)
-        critic_input = self._ppo_input_adapter.get_critic_input(inputs)
-        next_node, policy = self._actor.forward(**actor_input)
-        v_func = self._critic.forward(**critic_input)
+        bag_id, node, neighbour, destination = self._ppo_input_adapter.get_input(inputs)
+        next_node, policy = self._actor.forward(
+            node=node,
+            neighbour=neighbour,
+            destination=destination,
+            storage=
+        )
+        v_func = self._critic.forward(
+            node=node,
+            destination=destination,
+            storage=
+        )
         self._bag_trajectory_memory.add_to_trajectory(
-            self._ppo_input_adapter.get_bag_id(inputs),
-            self._ppo_input_adapter.get_node(inputs),
-            infos=list(map(lambda v, p: {
+            bag_ids=bag_id,
+            nodes=node,
+            infos=list(map(lambda v, p, inp: {
                 'v_func': v,
                 'policy': p,
-                'inputs': self._ppo_input_adapter.inputs_to_list(inputs)
-            }, zip(v_func, policy, )))
+                'inputs': inp
+            }, zip(v_func, policy, self._ppo_input_adapter.inputs_to_list(inputs))))
         )
         return next_node
 

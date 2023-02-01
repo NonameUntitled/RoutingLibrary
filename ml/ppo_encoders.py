@@ -15,8 +15,8 @@ class BaseActor(TorchEncoder, config_name='base_actor'):
             node: Tensor,
             neighbour: TensorWithMask,
             destination: Tensor,
-            storage,
-            **kwargs) -> Tuple[Tensor, Tensor]:
+            storage
+    ) -> Tuple[Tensor, Tensor]:
         pass
 
 
@@ -26,8 +26,7 @@ class BaseCritic(TorchEncoder, config_name='base_critic'):
             self,
             node: Tensor,
             destination: Tensor,
-            storage,
-            **kwargs
+            storage
     ) -> Tensor:
         pass
 
@@ -50,8 +49,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             node: Tensor,
             neighbour: TensorWithMask,
             destination: Tensor,
-            storage,
-            **kwargs
+            storage
     ) -> Tuple[Tensor, Tensor]:
         current_embs = self._embedder.forward(TensorWithMask(node), storage)
         neighbour_embs = self._embedder.forward(neighbour, storage)
@@ -84,8 +82,7 @@ class TowerCritic(BaseCritic, config_name='tower_critic'):
             self,
             node: Tensor,
             destination: Tensor,
-            storage,
-            **kwargs
+            storage
     ) -> Tensor:
         current_embs = self._embedder.forward(TensorWithMask(node), storage)
         destination_embs = self._embedder.forward(TensorWithMask(destination), storage)
