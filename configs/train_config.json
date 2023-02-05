@@ -162,6 +162,7 @@
   },
   "agent_4": {
     "type": "ppo",
+    "node_idx": 0,
     "input_adapter": {
       "type": "ppo_input_adapter"
     },

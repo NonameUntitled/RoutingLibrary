@@ -1,5 +1,3 @@
-from abc import abstractmethod
-
 import torch
 
 
@@ -10,8 +8,5 @@ class TensorWithMask:
             mask = torch.ones(tensor.shape, dtype=torch.bool)
         self.mask = mask
 
-
-class TensorLike:
-    @abstractmethod
-    def to_tensor(self) -> torch.Tensor:
-        raise NotImplementedError
+    def __iter__(self):
+        return zip(self.tensor, self.mask)

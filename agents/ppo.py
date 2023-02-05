@@ -1,4 +1,4 @@
-from typing import Dict, Any, Collection
+from typing import Dict, Any
 
 import torch
 from torch import Tensor
@@ -41,10 +41,6 @@ class PpoInputAdapter(BaseInputAdapter, config_name='ppo_input_adapter'):
                inputs[self._neighbour], \
                inputs[self._destination], \
                inputs[self._storage]
-
-    def inputs_to_list(self, inputs: Dict[str, Any]) -> Collection:
-        keys = (self._bag_id, self._node_idx, self._neighbour, self._destination, self._storage)
-        return [{k: v for k, v in zip(keys, values)} for values in zip(inputs[key] for key in keys)]
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
@@ -109,38 +105,58 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         self._bag_trajectory_memory.add_to_trajectory(
             bag_ids=bag_id,
             node_idxs=node_idx,
-            infos=list(map(lambda v, p, inp: {
-                'v_func': v,
-                'policy': p,
-                'inputs': inp
-            }, zip(v_func, policy, self._ppo_input_adapter.inputs_to_list(inputs))))
+            extra_infos=zip(v_func, policy, bag_id, node_idx, neighbour, destination, storage)
         )
         return next_node_idx
 
     def learn(self):
-        raise NotImplementedError
+        for trajectory in self._bag_trajectory_memory.sample_trajectories_for_node_idx(
+                self._node_idx,
+                self._trajectory_sample_size
+        ):
+            loss = self._trajectory_loss(trajectory)
+            # TODO backward here? or return to env?
+
+    def _trajectory_loss(self, trajectory):
+        reward = [data['reward'] for data in trajectory]
+        start_v_func, policy, bag_id, node_idx, neighbour, destination, storage = trajectory[0]['extra_infos'][0]
+        end_v_func = trajectory[-1]['extra_infos'][0]
+        return self._loss(node_idx, neighbour, destination, storage, policy, start_v_func, reward, end_v_func)
 
     def _loss(
             self,
-            state,
+            node_idx,
+            neighbour,
+            destination,
+            storage,
             policy_old,
             start_v_old,
-            rewards,
+            reward,
             end_v_old
     ) -> Tensor:
-        _, policy = self._actor(**state)
+        _, policy = self._actor.forward(
+            node_idx=node_idx,
+            neighbour=neighbour,
+            destination=destination,
+            storage=storage
+        )
         policy_tensor = policy
         policy_old_tensor = policy_old
         prob_ratio = policy_tensor / policy_old_tensor
         start_v_old_tensor = start_v_old
 
-        advantage = self._compute_advantage_score(start_v_old, rewards, end_v_old)
+        advantage = self._compute_advantage_score(start_v_old, reward, end_v_old)
 
         weighted_prob = advantage * prob_ratio
         weighted_clipped_prob = torch.clamp(prob_ratio, 1 - self.ratio_clip, 1 + self.ratio_clip) * advantage
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
-        critic_loss = (advantage + start_v_old_tensor - self._critic(**state)) ** 2
+        v_func = self._critic.forward(
+            node_idx=node_idx,
+            destination=destination,
+            storage=storage
+        )
+        critic_loss = (advantage + start_v_old_tensor - v_func) ** 2
         total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss
 
         return total_loss
