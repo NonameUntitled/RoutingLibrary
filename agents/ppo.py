@@ -91,13 +91,13 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
     def forward(self, inputs: Dict[str, Any]) -> Tensor:
         bag_id, node_idx, neighbour, destination, storage = self._ppo_input_adapter.get_input(inputs)
-        next_node_idx, policy = self._actor.forward(
+        next_node_idx, policy = self._actor(
             node_idx=node_idx,
             neighbour=neighbour,
             destination=destination,
             storage=storage
         )
-        v_func = self._critic.forward(
+        v_func = self._critic(
             node_idx=node_idx,
             destination=destination,
             storage=storage
@@ -134,7 +134,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             reward,
             end_v_old
     ) -> Tensor:
-        _, policy = self._actor.forward(
+        _, policy = self._actor(
             node_idx=node_idx,
             neighbour=neighbour,
             destination=destination,
@@ -151,7 +151,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         weighted_clipped_prob = torch.clamp(prob_ratio, 1 - self.ratio_clip, 1 + self.ratio_clip) * advantage
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
-        v_func = self._critic.forward(
+        v_func = self._critic(
             node_idx=node_idx,
             destination=destination,
             storage=storage
