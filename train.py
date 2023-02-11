@@ -11,6 +11,8 @@ from utils import CHECKPOINT_DIR, DEVICE
 import os
 import torch
 import json
+from simulation.SimulationRunner import SimulationRunner
+from utils import parse_args
 
 from simulation import BaseSimulation
 
@@ -58,6 +60,12 @@ def main():
     # )
     #
     # environment.run(params['schedule'])
+    runner = SimulationRunner(run_params=params)
+    runner.run()
+
+    # BaseAgent.create_from_config(params['agent_1'])  # random
+    # BaseAgent.create_from_config(params['agent_2'])  # dqn
+    # BaseAgent.create_from_config(params['agent_3'])  # reinforce
 
 
 if __name__ == '__main__':
