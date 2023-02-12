@@ -29,6 +29,14 @@ def softmax(inputs: TensorWithMask, dim: int) -> Tensor:
     return probabilities
 
 
+def argmax(inputs: TensorWithMask, dim: int) -> Tensor:
+    scores = inputs.tensor
+    mask = inputs.mask
+
+    scores[~mask] = -torch.inf
+    return torch.argmax(scores, dim=dim)
+
+
 def euclidean_distance(left_tensor: TensorWithMask, right_tensor: TensorWithMask, dim: int) -> TensorWithMask:
     if len(left_tensor.tensor.shape) == len(right_tensor.tensor.shape) + 1:
         right_tensor = right_tensor[None]

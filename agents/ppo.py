@@ -70,7 +70,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         self._critic_loss_weight = critic_loss_weight
         self._bag_trajectory_memory = bag_trajectory_memory
         self._ppo_input_adapter = ppo_input_adapter
-        self._trajectory_sample_size = trajectory_sample_size,
+        self._trajectory_sample_size = trajectory_sample_size
         self._trajectory_length = trajectory_length
 
     @classmethod
@@ -119,7 +119,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
     def _trajectory_loss(self, trajectory):
         reward = [data['reward'] for data in trajectory]
-        start_v_func, policy, bag_id, node_idx, neighbour, destination, storage = trajectory[0]['extra_infos'][0]
+        start_v_func, policy, bag_id, node_idx, neighbour, destination, storage = trajectory[0]['extra_infos']
         end_v_func = trajectory[-1]['extra_infos'][0]
         return self._loss(node_idx, neighbour, destination, storage, policy, start_v_func, reward, end_v_func)
 
