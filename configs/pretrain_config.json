@@ -1,0 +1,61 @@
+{
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {"upstream_conv": 0}
+    },
+    "sinks": [0, 1],
+    "diverters": {
+      "0": {"conveyor": 0, "pos": 20, "upstream_conv": 1},
+      "1": {"conveyor": 1, "pos": 10, "upstream_conv": 2}
+    },
+    "conveyors": {
+      "0": {
+        "length": 40,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 20,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      }
+    }
+  },
+  "agent": {
+
+  },
+  "loss": {
+    "type": "mse",
+    "predictions_prefix": "predicted_q_values",
+    "ground_truth_prefix": "real_q_values",
+    "output_prefix": "mse_loss"
+  },
+  "optimizer": {
+
+  },
+  "callback": {
+    "type": "composite",
+    "callbacks": [
+      {
+        "type": "loss",
+        "on_step": 1,
+        "loss_prefix": "mse_loss"
+      }
+    ]
+
+  },
+  "model_name": "test_model"
+}
