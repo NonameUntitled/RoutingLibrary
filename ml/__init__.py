@@ -1,8 +1,9 @@
-from functools import partial
-
 import torch
 import torch.nn as nn
-import torch.optim as optim
+
+from .losses import BaseLoss
+from .optimizers import BaseOptimizer
+from .callbacks import BaseCallback
 
 
 def get_activation(name: str):  # TODO [Vladimir Baikalov]: implement via Meta-Classes (maybe)
@@ -16,23 +17,6 @@ def get_activation(name: str):  # TODO [Vladimir Baikalov]: implement via Meta-C
         return nn.Sigmoid()
     else:
         raise ValueError(f'Invalid activation function: {name}')
-
-
-def get_optimizer(name: str, params=None):  # TODO [Vladimir Baikalov]: implement via Meta-Classes  (and enrich scheme)
-    params = params or {}
-
-    if isinstance(name, optim.Optimizer):
-        return name
-    if name == 'rmsprop':
-        return partial(optim.RMSprop, **dict(params, lr=0.001))
-    elif name == 'adam':
-        return partial(optim.Adam, **params)
-    elif name == 'adadelta':
-        return partial(optim.Adadelta, **params)
-    elif name == 'adagrad':
-        return partial(optim.Adagrad, **dict(params, lr=0.001))
-    else:
-        raise ValueError(f'Invalid optimizer: {name}')
 
 
 def add_dim(x: torch.Tensor, dim_size: int, add_first: bool) -> torch.Tensor:
