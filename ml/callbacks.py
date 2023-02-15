@@ -6,13 +6,38 @@ logger = create_logger(name=__name__)
 
 class BaseCallback(metaclass=MetaParent):
 
-    def __init__(self, model, dataloader, optimizer):
+    def __init__(self, model, optimizer):
         self._model = model
-        self._dataloader = dataloader
         self._optimizer = optimizer
 
     def __call__(self, inputs, step_num):
         raise NotImplementedError
+
+
+class CompositeCallback(BaseCallback, config_name='composite'):
+    def __init__(
+            self,
+            model,
+            optimizer,
+            callbacks
+    ):
+        super().__init__(model, optimizer)
+        self._callbacks = callbacks
+
+    @classmethod
+    def create_from_config(cls, config, **kwargs):
+        return cls(
+            model=kwargs['model'],
+            optimizer=kwargs['optimizer'],
+            callbacks=[
+                BaseCallback.create_from_config(cfg, **kwargs)
+                for cfg in config['callbacks']
+            ]
+        )
+
+    def __call__(self, inputs, step_num):
+        for callback in self._callbacks:
+            callback(inputs, step_num)
 
 
 class LossCallback(BaseCallback, config_name='loss'):
@@ -20,13 +45,12 @@ class LossCallback(BaseCallback, config_name='loss'):
     def __init__(
             self,
             model,
-            dataloader,
             optimizer,
             on_step,
             regime_prefix,
             loss_prefix
     ):
-        super().__init__(model, dataloader, optimizer)
+        super().__init__(model, optimizer)
         self._on_step = on_step
         self._regime_prefix = regime_prefix
         self._loss_prefix = loss_prefix
@@ -35,7 +59,6 @@ class LossCallback(BaseCallback, config_name='loss'):
     def create_from_config(cls, config, **kwargs):
         return cls(
             model=kwargs['model'],
-            dataloader=kwargs['dataloader'],
             optimizer=kwargs['optimizer'],
             on_step=config['on_step'],
             regime_prefix=config['regime_prefix'],
@@ -44,9 +67,9 @@ class LossCallback(BaseCallback, config_name='loss'):
 
     def __call__(self, inputs, step_num):
         if step_num % self._on_step == 0:
-            utils.tensorboards.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
                 '{}/{}'.format(self._regime_prefix, self._loss_prefix),
                 inputs[self._loss_prefix],
                 step_num
             )
-            utils.tensorboards.GLOBAL_TENSORBOARD_WRITER.flush()
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()

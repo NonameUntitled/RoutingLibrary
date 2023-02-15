@@ -2,7 +2,6 @@ import argparse
 import json
 import logging
 import numpy as np
-import os
 import random
 import torch
 
@@ -11,8 +10,6 @@ from .tensorboard_writers import TensorboardTimer, TensorboardWriter
 
 CHECKPOINT_DIR = '../checkpoints'
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-GLOBAL_TENSORBOARD_WRITER = None
-LOGS_DIR = '../tensorboard_logs'
 
 
 def create_logger(
@@ -24,10 +21,6 @@ def create_logger(
     logging.basicConfig(level=level, format=format, datefmt=datefmt)
     logger = logging.getLogger(name)
     return logger
-
-
-def create_tensorboard(experiment_name):
-    return TensorboardWriter(log_dir=os.path.join(LOGS_DIR, experiment_name))
 
 
 def fix_random_seed(seed):
@@ -42,6 +35,7 @@ def maybe_to_list(values):
         values = [values]
     return values
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--params', required=True)
@@ -49,3 +43,25 @@ def parse_args():
     with open(args.params) as f:
         params = json.load(f)
     return params
+
+
+def shared(original_class):
+    cls_create_from_config = original_class.create_from_config
+
+    original_class._SHARED_INSTANCE = None
+
+    def create_from_config(config):
+        use_shared = config.get('shared', False)
+        if use_shared:
+            if original_class._SHARED_INSTANCE is None:
+                # Create a new one
+                original_class._SHARED_INSTANCE = cls_create_from_config(config)
+            else:
+                # Use a shares one
+                pass
+            return original_class._SHARED_INSTANCE
+        else:
+            return cls_create_from_config(config)
+
+    original_class.create_from_config = create_from_config
+    return original_class
