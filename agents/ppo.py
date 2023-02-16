@@ -99,8 +99,6 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             # TODO[Vladimir Baikalov]: Think about how to generalize
             # Shape: [batch_size] if exists, None otherwise
             bag_ids = inputs.get(self._bag_idx_prefix, None)
-            # Static entity if exists, None otherwise
-            storage = inputs.get(self._storage_prefix, None)
 
             self._bag_trajectory_memory.add_to_trajectory(
                 bag_ids=bag_ids,
@@ -108,11 +106,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
                 extra_infos=zip(
                     current_state_value_function,
                     neighbors_logits,
-                    bag_ids,
                     current_node_idx,
                     neighbour_node_ids,
-                    destination_node_idx,
-                    storage
+                    destination_node_idx
                 )
             )
 
@@ -132,16 +128,15 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
     def _trajectory_loss(self, trajectory):
         reward = [data['reward'] for data in trajectory]
-        start_v_func, policy, bag_id, node_idx, neighbour, destination, storage = trajectory[0]['extra_infos']
+        start_v_func, policy, node_idx, neighbour, destination, storage = trajectory[0]['extra_infos']
         end_v_func = trajectory[-1]['extra_infos'][0]
-        return self._loss(node_idx, neighbour, destination, storage, policy, start_v_func, reward, end_v_func)
+        return self._loss(node_idx, neighbour, destination, policy, start_v_func, reward, end_v_func)
 
     def _loss(
             self,
             node_idx,
             neighbour,
             destination,
-            storage,
             policy_old,
             start_v_old,
             reward,
@@ -150,8 +145,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         _, policy = self._actor(
             node_idx=node_idx,
             neighbour=neighbour,
-            destination=destination,
-            storage=storage
+            destination=destination
         )
         policy_tensor = policy
         policy_old_tensor = policy_old
@@ -166,8 +160,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
         v_func = self._critic(
             node_idx=node_idx,
-            destination=destination,
-            storage=storage
+            destination=destination
         )
         critic_loss = (advantage + start_v_old_tensor - v_func) ** 2
         total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss
