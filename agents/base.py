@@ -10,11 +10,8 @@ class BaseAgent(metaclass=MetaParent):
     pass
 
 
-class BaseInputAdapter(metaclass=MetaParent):
-    pass
-
-
 class TorchAgent(BaseAgent, nn.Module):
+
     @abstractmethod
     def forward(self, inputs: Dict[str, Any]) -> Tensor:
         raise NotImplementedError

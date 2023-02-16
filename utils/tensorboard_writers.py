@@ -2,11 +2,15 @@ import logging
 import math
 import time
 
+import os
 from typing import Dict
 from collections import defaultdict
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
+
+LOGS_DIR = './tensorboard_logs'
+GLOBAL_TENSORBOARD_WRITER = None
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +52,7 @@ class RunningAverage:
 
 class TensorboardWriter(SummaryWriter):
     def __init__(self, log_dir, default_window=100):
-        super().__init__(log_dir=log_dir)
+        super().__init__(log_dir=os.path.join(LOGS_DIR, log_dir))
         self._default_window = default_window
         self._running_average = RunningAverage()
         self._current_step = 0
