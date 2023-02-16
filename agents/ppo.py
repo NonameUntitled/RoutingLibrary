@@ -5,6 +5,7 @@ from torch import Tensor
 
 from agents import TorchAgent
 from ml.encoders import BaseEncoder
+from ml.losses import TorchLoss
 from ml.ppo_encoders import BaseActor, BaseCritic
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
@@ -18,6 +19,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             neighbours_node_ids_prefix: str,
             actor: BaseActor,
             critic: BaseCritic,
+            actor_loss: TorchLoss,
+            critic_loss: TorchLoss,
             actor_loss_weight: float = 1.0,
             critic_loss_weight: float = 1.0,
             discount_factor: float = 0.99,
@@ -38,6 +41,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         self._actor = actor
         self._critic = critic
 
+        self._actor_loss = actor_loss
+        self._critic_loss = critic_loss
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
         self._discount_factor = discount_factor
@@ -56,6 +61,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             neighbours_node_ids_prefix=config['neighbours_node_ids_prefix'],
             actor=BaseEncoder.create_from_config(config['actor']),
             critic=BaseEncoder.create_from_config(config['critic']),
+            actor_loss=TorchLoss.create_from_config(config['actor_loss']),
+            critic_loss=TorchLoss.create_from_config(config['critic_loss']),
             actor_loss_weight=config.get('actor_loss_weight', 1.0),
             critic_loss_weight=config.get('critic_loss_weight', 1.0),
             discount_factor=config.get('discount_factor', 0.99),
