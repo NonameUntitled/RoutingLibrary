@@ -67,3 +67,7 @@ class BasicOptimizer(BaseOptimizer, config_name='basic'):
         if self._scheduler is not None:
             state_dict.update({'scheduler': self._scheduler.state_dict()})
         return state_dict
+
+    def load_state_dict(self, state_dict):
+        self._optimizer.load_state_dict(state_dict['optimizer'])
+        self._scheduler.load_state_dict(state_dict['scheduler'])

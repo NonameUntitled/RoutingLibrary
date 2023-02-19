@@ -92,8 +92,6 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             # TODO[Vladimir Baikalov]: Think about how to generalize
             # Shape: [batch_size] if exists, None otherwise
             bag_ids = inputs.get(self._bag_idx_prefix, None)
-            # Static entity if exists, None otherwise
-            storage = inputs.get(self._storage_prefix, None)
 
             self._bag_trajectory_memory.add_to_trajectory(
                 bag_ids=bag_ids,
@@ -104,8 +102,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
                     bag_ids,
                     current_node_idx,
                     neighbour_node_ids,
-                    destination_node_idx,
-                    storage
+                    destination_node_idx
                 )
             )
 

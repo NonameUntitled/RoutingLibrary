@@ -1,6 +1,39 @@
 import torch
 
 
+def collate_fn(batch, schema):
+    type_mapping = {
+        'float': torch.float32,
+        'long': torch.int64
+    }
+    processed_batch = {}
+
+    for key, field_cfg in schema.items():
+        field_type = type_mapping[field_cfg['type']]
+        is_ragged = field_cfg['is_ragged']
+
+        if is_ragged:
+            all_values = []
+            lengths = []
+            for sample in batch:
+                sample_values = sample[key]
+                assert isinstance(sample_values, list)
+                all_values.extend(sample_values)
+                lengths.append(len(sample_values))
+
+            processed_batch[key] = TensorWithMask(
+                values=torch.tensor(all_values, dtype=field_type),
+                lengths=torch.tensor(lengths, dtype=torch.int64)
+            )
+        else:
+            processed_batch[key] = torch.tensor(
+                [sample[key] for sample in batch],
+                dtype=field_type
+            )
+
+    return processed_batch
+
+
 def get_activation_function(name: str, **kwargs):
     if name == 'relu':
         return torch.nn.ReLU()
@@ -25,6 +58,7 @@ def get_activation_function(name: str, **kwargs):
 
 
 class TensorWithMask:
+
     def __init__(self, values: torch.Tensor, lengths: torch.Tensor):
         self._values = values
         self._lengths = lengths
@@ -35,7 +69,6 @@ class TensorWithMask:
 
     @property
     def padded_values(self):
-        # TODO[Vladimir Baikalov]: Use caching here
         batch_size = self._lengths.shape[0]
         max_sequence_length = self._lengths.max().item()
 
@@ -55,7 +88,6 @@ class TensorWithMask:
 
     @property
     def mask(self):
-        # TODO[Vladimir Baikalov]: Use caching here
         batch_size = self._lengths.shape[0]
         max_sequence_length = self._lengths.max().item()
 

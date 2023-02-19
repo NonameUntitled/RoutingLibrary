@@ -8,7 +8,7 @@ import torch
 from .registry import MetaParent
 from .tensorboard_writers import TensorboardTimer, TensorboardWriter
 
-CHECKPOINT_DIR = '../checkpoints'
+CHECKPOINT_DIR = './checkpoints'
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
