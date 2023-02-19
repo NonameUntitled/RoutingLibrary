@@ -3,8 +3,10 @@ from typing import Union
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
+import scipy.sparse.linalg as linalg
+import torch
 
-from utils import MetaParent
+from utils import shared, MetaParent
 
 
 class BaseEmbedding(metaclass=MetaParent):
@@ -12,13 +14,23 @@ class BaseEmbedding(metaclass=MetaParent):
     Abstract class for graph node embeddings.
     """
 
-    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight: str):
-        raise NotImplementedError()
+    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight: str = 'length'):
+        raise NotImplementedError
 
-    def transform(self, nodes):
-        raise NotImplementedError()
+    def __call__(self, nodes_ids):
+        raise NotImplementedError
 
 
+class TorchEmbedding(BaseEmbedding, torch.nn.Module):
+
+    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight: str = 'length'):
+        raise NotImplementedError
+
+    def __call__(self, nodes_ids):
+        raise NotImplementedError
+
+
+@shared
 class HOPEEmbedding(BaseEmbedding, config_name='hope'):
 
     def __init__(
@@ -43,9 +55,10 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
         self._beta = beta
         self._W = None
 
-    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight='weight'):
+    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight='length'):
         if isinstance(graph, nx.DiGraph):
-            graph = nx.relabel_nodes(graph, agent_idx)  # TODO [Vladimir Baikalov]: Recognize how it works
+            # TODO [Vladimir Baikalov]: Recognize how it works (line below)
+            graph = nx.relabel_nodes(graph, lambda x: x.id)
             A = nx.to_numpy_matrix(graph, nodelist=sorted(graph.nodes), weight=weight)
             n = graph.number_of_nodes()
         else:
@@ -72,11 +85,12 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
         X2 = np.dot(vt.T, np.diag(np.sqrt(s)))
         self._W = np.concatenate((X1, X2), axis=1)
 
-    def transform(self, idx):
+    def __call__(self, idx):
         assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
         return self._W[idx]
 
 
+@shared
 class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
 
     def __init__(
@@ -97,12 +111,16 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
         self._temp = temp
         self._W = None
 
-    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight='weight'):
+    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight='length'):
         if isinstance(graph, np.ndarray):
             graph = nx.from_numpy_array(graph, create_using=nx.DiGraph)
-            weight = 'weight'
+            weight = 'length'
 
-        graph = nx.relabel_nodes(graph.to_undirected(), agent_idx)  # TODO [Vladimir Baikalov]: Recognize how it works
+        # TODO [Vladimir Baikalov]: Recognize how it works (line below)
+        graph = nx.relabel_nodes(
+            graph.to_undirected(),
+            lambda x: x.id
+        )
 
         if weight is not None:
             if self._renormalize_weights:
@@ -121,6 +139,65 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
             else:
                 raise ValueError(f'Invalid weight transform: {self._weight_transform}')
 
-    def transform(self, idx):
+        A = nx.to_scipy_sparse_matrix(graph, nodelist=sorted(graph.nodes),
+                                      weight=weight, format='csr', dtype=np.float32)
+
+        n, m = A.shape
+        diags = A.sum(axis=1)
+        D = sp.spdiags(diags.flatten(), [0], m, n, format='csr')
+        L = D - A
+
+        print(n, m, len(graph.nodes))
+
+        # (Changed by Igor):
+        # Added v0 parameter, the "starting vector for iteration".
+        # Otherwise, the operation behaves nondeterministically, and as a result
+        # different nodes may learn different embeddings. I am not speaking about
+        # minor floating point errors, the problem was worse.
+
+        # values, vectors = sp.linalg.eigsh(L, k=self.dim + 1, M=D, which='SM')
+        values, vectors = sp.linalg.eigsh(L, k=self._embedding_dim + 1, M=D, which='SM', v0=np.ones(A.shape[0]))
+
+        # End (Changed by Igor)
+
+        self._X = vectors[:, 1:]
+
+        if weight is not None and self.renormalize_weights:
+            self._X *= avg_w
+        # print(self._X.flatten()[:3])
+
+    def __call__(self, idx):
         assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
         return self._W[idx]
+
+
+@shared
+class LearnableEmbedding(TorchEmbedding, config_name='learnable'):
+
+    def __init__(
+            self,
+            embedding_dim: int,
+            vocabulary_size: int
+    ):
+        super().__init__()
+        self._embedding_dim = embedding_dim
+        self._vocabulary_size = vocabulary_size
+
+        self._embeddings = torch.nn.Embedding(
+            num_embeddings=self._vocabulary_size,
+            embedding_dim=self._embedding_dim
+        )
+
+    @classmethod
+    def create_from_config(cls, config):
+        return cls(
+            embedding_dim=config['embedding_dim'],
+            vocabulary_size=config['vocabulary_size']
+        )
+
+    def __call__(self, nodes_ids):
+        return self._embeddings(nodes_ids)
+
+    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight: str = 'length'):
+        # We don't need to fit anything since it is learnable embeddings
+        pass

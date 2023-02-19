@@ -1,0 +1,147 @@
+{
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      }
+    },
+    "sinks": [
+      0,
+      1
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 0,
+        "pos": 20,
+        "upstream_conv": 1
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 10,
+        "upstream_conv": 2
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 40,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 20,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      }
+    }
+  },
+  "agent": {
+    "type": "ppo",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbours_node_ids_prefix": "neighbors_node_ids",
+    "actor": {
+      "type": "tower_actor",
+      "embedder": {
+        "shared": true,
+        "type": "learnable"
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 256,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 256
+      }
+    },
+    "critic": {
+      "type": "tower_critic",
+      "embedder": {
+        "shared": true,
+        "type": "learnable"
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 256,
+        "hidden_dims": [
+          64,
+          64
+        ],
+        "output_dim": 1
+      }
+    }
+  },
+  "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_current_state_v_value",
+        "ground_truth_prefix": "path_lengths",
+        "output_prefix": "mse_loss"
+      },
+      {
+        "type": "cross_entropy",
+        "labels_prefix": "next_node_idx",
+        "predictions_prefix": "predicted_next_node_logits",
+        "output_prefix": "cross_entropy_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "optimizer": {
+    "type": "basic",
+    "optimizer": {
+      "type": "adamw",
+      "lr": 3e-4,
+      "eps": 1e-8
+    },
+    "clip_grad_threshold": 5.0
+  },
+  "callback": {
+    "type": "composite",
+    "callbacks": [
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "mse_loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "cross_entropy_loss"
+      }
+    ]
+  },
+  "model_name": "ppo_pretrain_model",
+  "num_samples": 50000,
+  "num_epochs": 5,
+  "shared_embedder": {
+    "shared": true,
+    "type": "learnable",
+    "embedding_dim": 256,
+    "vocabulary_size": 40
+  }
+}

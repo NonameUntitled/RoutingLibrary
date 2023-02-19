@@ -1,10 +1,8 @@
 from typing import List
 
-import torch
 import torch.nn as nn
 from torch import Tensor
 
-from ml.typing import TensorWithMask
 from utils import MetaParent
 
 
@@ -26,25 +24,6 @@ class TorchEncoder(BaseEncoder, nn.Module):
             b=2 * initializer_range
         )
         nn.init.zeros_(layer.bias)
-
-
-class SharedEmbeddingEncoder(TorchEncoder, config_name='shared_embedding_encoder'):
-    def forward(self, inputs: TensorWithMask, storage) -> TensorWithMask:
-        nodes = inputs.tensor  # (batch_size, nodes_cnt)
-        nodes_mask = inputs.mask  # (batch_size, nodes_cnt)s
-
-        all_nodes = nodes[nodes_mask]  # (all_nodes_in_batch)
-
-        batch_size = nodes.shape[0]
-        nodes_cnt = nodes.shape[1]
-        embedding_dim = storage.embedding_dim
-
-        nodes_embeddings = torch.zeros(
-            batch_size, nodes_cnt, embedding_dim,
-            dtype=torch.float, device=nodes.device
-        )  # (batch_size, nodes_cnt, emb_dim)
-        nodes_embeddings[nodes_mask] = storage(all_nodes)  # (batch_size, nodes_cnt, emb_dim)
-        return TensorWithMask(nodes_embeddings, nodes_mask)
 
 
 class TowerBlock(TorchEncoder, nn.Module):
@@ -105,9 +84,7 @@ class TowerEncoder(TorchEncoder, config_name='tower'):
             self._output_projector = nn.Linear(hidden_dims[-1], output_dim)
             TorchEncoder._init_weights(self._output_projector, initializer_range)
 
-    def forward(self, inputs: TensorWithMask) -> Tensor:
-        embeddings = inputs.tensor
-
+    def forward(self, embeddings: Tensor) -> Tensor:
         embeddings = self._input_projector(embeddings)
         embeddings = self._layers(embeddings)
         embeddings = self._output_projector(embeddings)

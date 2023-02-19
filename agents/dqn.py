@@ -2,6 +2,7 @@ from agents import TorchAgent
 from ml.encoders import BaseEncoder
 
 
+# TODO[Vladimir Baikalov]: Implement
 class DQNAgent(TorchAgent, config_name='dqn'):
 
     def __init__(self, parts):
