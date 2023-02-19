@@ -3,40 +3,24 @@ from typing import Tuple
 
 import torch
 from torch import Tensor
-from torch.distributions import Categorical
 
+from ml import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
 from ml.utils import TensorWithMask
 
 
-class BaseQNetwork(TorchEncoder, config_name='base_actor'):
+class BaseQNetwork(TorchEncoder, config_name='base_q_network'):
     @abstractmethod
     def forward(
             self,
             current_node_idx: Tensor,
             neighbor_node_ids: TensorWithMask,
-            destination_node_idx: Tensor,
-            research_prob: float
+            destination_node_idx: Tensor
     ) -> Tuple[Tensor, Tensor]:
-        pass
+        raise NotImplementedError
 
 
-def _with_random_research(
-        argmax_next_neighbour: Tensor,
-        neighbour: TensorWithMask,
-        prob: float
-):
-    mask = torch.bernoulli(torch.full(argmax_next_neighbour.shape, prob)).int()
-    reverse_mask = torch.ones(argmax_next_neighbour.shape).int() - mask
-
-    uniform_weights = neighbour.mask
-    uniform_distr = Categorical(probs=uniform_weights / uniform_weights.sum(dim=1))
-    random_next_neighbour = neighbour.padded_values[torch.unsqueeze(uniform_distr.sample(), dim=1)]
-
-    return argmax_next_neighbour * mask + random_next_neighbour * reverse_mask
-
-
-class TowerQNetwork(BaseQNetwork, config_name='tower_actor'):
+class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
     def __init__(self, embedder: TorchEncoder, ff_net: TorchEncoder):
         super().__init__()
         self._ff_net = ff_net
@@ -46,15 +30,14 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_actor'):
     def create_from_config(cls, config):
         return cls(
             ff_net=TowerEncoder.create_from_config(config['ff_net']),
-            embedder=TorchEncoder.create_from_config(config['embedder']),
+            embedder=BaseEmbedding.create_from_config(config['embedder'])
         )
 
     def forward(
             self,
             current_node_idx: Tensor,
             neighbor_node_ids: TensorWithMask,
-            destination_node_idx: Tensor,
-            research_prob: float
+            destination_node_idx: Tensor
     ) -> Tuple[Tensor, Tensor]:
         # 0) Create embeddings from indices
         # Shape: [batch_size, embedding_dim]
@@ -88,12 +71,5 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_actor'):
 
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution more smooth
         # TODO[Vladimir Baikalov]: Put constant in the variable
-        neighbors_q[~neighbor_node_embeddings.mask] = -torch.inf
-
-        next_neighbour_ids = neighbor_node_ids.flatten_values[torch.argmax(neighbors_q, dim=1)]
-        next_neighbour = _with_random_research(
-            next_neighbour_ids,
-            neighbor_node_ids,
-            research_prob
-        )
-        return next_neighbour, neighbors_q  # TODO move next search to agent?
+        neighbors_q[~neighbor_node_embeddings.mask] = -1e18
+        return neighbors_q
