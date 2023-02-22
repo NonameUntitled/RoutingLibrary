@@ -1,20 +1,26 @@
 from simpy import Environment, Timeout, Event
 from typing import *
 
-from simulation.ConveyorsEnvironment import ConveyorsEnvironment
+from simulation import BaseSimulation
+from simulation.conveyor.ConveyorsEnvironment import ConveyorsEnvironment
 from simulation.messages import Bag, BagAppearanceEvent
+from topology import BaseTopology
 
 
-class SimulationRunner:
+class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
     """
     Class which constructs and runs scenarios in conveyor network
     simulation environment.
     """
 
-    def __init__(self, run_params):
-        self.config = {}
+    def __init__(self, config, topology, agent):
+        self.config = config
         self.env = Environment()
-        self.world = ConveyorsEnvironment(run_params=run_params, env=self.env)
+        self.world = ConveyorsEnvironment(config=config, env=self.env, topology=topology, agent=agent)
+
+    @classmethod
+    def create_from_config(cls, config, topology=None, agent=None):
+        return cls(config, topology, agent)
 
     def runProcess(self) -> Generator[Timeout | Event, None, None]:
         """

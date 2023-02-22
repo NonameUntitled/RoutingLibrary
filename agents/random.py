@@ -30,3 +30,14 @@ class RandomAgent(TorchAgent, config_name='random'):
 
         inputs[self._output_prefix] = next_neighbors  # (batch_size)
         return inputs
+
+    @classmethod
+    def create_from_config(cls, config):
+        return cls(
+            neighbors_prefix=config['neighbors_prefix'],
+            output_prefix=config['output_prefix']
+        )
+
+    def learn(self):
+        pass
+

@@ -1,157 +1,53 @@
 {
   "experiment_name": "basic_experiment",
   "type": "conveyor",
-  "diverter": {
-    "type": "addsdfsd",
-    "here_we_need_some_variabes": 23,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true
-  },
-  "conveyor": {
-    "configuration": {
-      "sinks": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
-      "sources": [
-        {
-          "upstream_conv": 0
-        },
-        {
-          "upstream_conv": 5
-        }
-      ],
-      "conveyors": [
-        {
-          "length": 40,
-          "upstream": {
-            "type": "sink",
-            "idx": 0
-          }
-        },
-        {
-          "length": 10,
-          "upstream": {
-            "type": "sink",
-            "idx": 1
-          }
-        },
-        {
-          "length": 5,
-          "upstream": {
-            "type": "conveyor",
-            "idx": 3,
-            "pos": 10
-          }
-        },
-        {
-          "length": 20,
-          "upstream": {
-            "type": "sink",
-            "idx": 2
-          }
-        },
-        {
-          "length": 30,
-          "upstream": {
-            "type": "conveyor",
-            "idx": 0,
-            "pos": 10
-          }
-        },
-        {
-          "length": 40,
-          "upstream": {
-            "type": "sink",
-            "idx": 3
-          }
-        },
-        {
-          "length": 10,
-          "upstream": {
-            "type": "sink",
-            "idx": 4
-          }
-        },
-        {
-          "length": 25,
-          "upstream": {
-            "type": "conveyor",
-            "idx": 5,
-            "pos": 10
-          }
-        },
-        {
-          "length": 20,
-          "upstream": {
-            "type": "conveyor",
-            "idx": 0,
-            "pos": 5
-          }
-        },
-        {
-          "length": 60,
-          "upstream": {
-            "type": "conveyor",
-            "idx": 5,
-            "pos": 5
-          }
-        }
-      ],
-      "diverters": [
-        {
-          "conveyor": 0,
-          "pos": 20,
-          "upstream_conv": 9
-        },
-        {
-          "conveyor": 0,
-          "pos": 25,
-          "upstream_conv": 3
-        },
-        {
-          "conveyor": 0,
-          "pos": 30,
-          "upstream_conv": 1
-        },
-        {
-          "conveyor": 1,
-          "pos": 5,
-          "upstream_conv": 2
-        },
-        {
-          "conveyor": 3,
-          "pos": 15,
-          "upstream_conv": 4
-        },
-        {
-          "conveyor": 5,
-          "pos": 20,
-          "upstream_conv": 8
-        },
-        {
-          "conveyor": 5,
-          "pos": 30,
-          "upstream_conv": 6
-        },
-        {
-          "conveyor": 6,
-          "pos": 5,
-          "upstream_conv": 7
-        }
-      ]
-    }
-  },
   "topology": {
-    "type": "from_file",
-    "filepath": "./tolopology"
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      }
+    },
+    "sinks": [
+      0,
+      1
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 0,
+        "pos": 20,
+        "upstream_conv": 1
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 10,
+        "upstream_conv": 2
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 40,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 20,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      }
+    }
   },
   "topology_2": {
     "type": "monte_carlo",

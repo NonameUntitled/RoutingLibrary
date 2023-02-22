@@ -6,6 +6,7 @@ import networkx as nx
 import numpy as np
 import random
 
+Section = namedtuple("Section", "type id position")
 
 class BaseTopology(metaclass=MetaParent):
 
@@ -51,8 +52,6 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
         """
         Creates a conveyor network graph from conveyor system layout.
         """
-        Section = namedtuple("Section", "type id position")
-
         # TODO[Vladimir Baikalov]: Add shared IDs for sources, sinks, diverters and junctions
 
         conveyors_sections = {int(conv_id): [] for conv_id in conveyors_cfg.keys()}
