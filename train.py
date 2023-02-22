@@ -12,6 +12,8 @@ import os
 import torch
 import json
 from simulation.SimulationRunner import SimulationRunner
+# from simulation.SimulationRunner import SimulationRunner
+from topology import BaseTopology
 from utils import parse_args
 
 from simulation import BaseSimulation
@@ -60,8 +62,8 @@ def main():
     # )
     #
     # environment.run(params['schedule'])
-    runner = SimulationRunner(run_params=params)
-    runner.run()
+    simulation = BaseSimulation.create_from_config(params, topology=topology, agent=agent)
+    simulation.run()
 
     # BaseAgent.create_from_config(params['agent_1'])  # random
     # BaseAgent.create_from_config(params['agent_2'])  # dqn

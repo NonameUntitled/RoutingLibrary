@@ -1,11 +1,13 @@
 import random
 
 from simpy import Environment, Event, Interrupt
+from collections import namedtuple, defaultdict
 
 from simulation.messages import WorldEvent, BagAppearanceEvent, UnsupportedEventType, AgentId
 from simulation.model import ConveyorModel, all_unresolved_events, all_next_events
 from simulation.utils import conveyor_adj_nodes, node_conv_pos, conveyor_idx, agent_type, agent_idx, \
     make_conveyor_topology_graph
+from topology.base import Section
 
 
 class ConveyorsEnvironment:
@@ -13,20 +15,20 @@ class ConveyorsEnvironment:
     Environment which models the conveyor system and the movement of bags.
     """
 
-    def __init__(self, run_params, env: Environment):
-        self.run_params = run_params
+    def __init__(self, config, env: Environment, topology, agent):
+        self.run_params = config['topology']
         self.env = env
         self.conveyors_move_proc = None
         self.current_bags = {}
-        self.topology_graph = make_conveyor_topology_graph(run_params["conveyor"]["configuration"])
+        self.topology_graph = topology
 
         # dyn_env = DynamicEnv(time=lambda: self.env.now)
-        conv_ids = [i for i in range(len(run_params["conveyor"]["configuration"]["conveyors"]))]
+        conv_ids = [int(k) for k in self.run_params["conveyors"].keys()]
         self.conveyor_models = {}
         for conv_id in conv_ids:
             checkpoints = conveyor_adj_nodes(self.topology_graph, conv_id,
                                              only_own=True, data='conveyor_pos')
-            length = run_params["conveyor"]["configuration"]["conveyors"][conv_id]['length']
+            length = self.run_params["conveyors"][str(conv_id)]['length']
             model = ConveyorModel(self.env, length, checkpoints, model_id=('world_conv', conv_id))
             self.conveyor_models[conv_id] = model
 
@@ -42,7 +44,7 @@ class ConveyorsEnvironment:
         Method which governs how events influence the environment.
         """
         if isinstance(event, BagAppearanceEvent):
-            src = ('source', event.src_id)
+            src = Section(type='source', id=event.src_id, position=0)
             bag = event.bag
             self.current_bags[bag.id] = set()
             conv_idx = conveyor_idx(self.topology_graph, src)
@@ -58,7 +60,7 @@ class ConveyorsEnvironment:
         assert agent_type(dv_id) == 'diverter', "Only diverter can kick"
 
         dv_idx = agent_idx(dv_id)
-        dv_cfg = self.run_params["conveyor"]["configuration"]['diverters'][dv_idx]
+        dv_cfg = self.run_params['diverters'][str(dv_idx)]
         conv_idx = dv_cfg['conveyor']
         up_conv = dv_cfg['upstream_conv']
         pos = dv_cfg['pos']

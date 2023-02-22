@@ -2,18 +2,20 @@ import networkx as nx
 
 from typing import Tuple, TypeVar, Union, List, Callable, Iterable
 
+from topology.base import Section
+
 AgentId = Tuple[str, int]
 
 
 def agent_type(aid):
-    if type(aid) == tuple:
-        return aid[0]
+    if type(aid) == Section:
+        return aid.type
     return aid
 
 
 def agent_idx(aid):
-    if type(aid) == tuple:
-        return aid[1]
+    if type(aid) == Section:
+        return aid.id
     return aid
 
 
@@ -80,35 +82,38 @@ def make_conveyor_topology_graph(config) -> nx.DiGraph:
 
 
 def conveyor_idx(topology, node):
+    graph = topology.graph
     atype = agent_type(node)
     if atype == 'conveyor':
         return agent_idx(node)
     elif atype == 'sink':
         return -1
     else:
-        return topology.nodes[node]['conveyor']
+        return graph.nodes[node]['conveyor']
 
 
 def node_conv_pos(topology, conv_idx, node):
-    es = conveyor_edges(topology, conv_idx)
+    graph = topology.graph
+    es = conveyor_edges(graph, conv_idx)
     p_pos = 0
     for u, v in es:
-        if u == node:
+        if u.type == node.type and u.id == node.id:
             return p_pos
-        p_pos = topology[u][v]['end_pos']
-        if v == node:
+        p_pos = graph[u][v]['end_pos']
+        if v.type == node.type and v.id == node.id:
             return p_pos
     return None
 
 
-def conveyor_edges(topology, conv_idx):
-    edges = [(u, v) for u, v, cid in topology.edges(data='conveyor')
+def conveyor_edges(graph, conv_idx):
+    edges = [(u, v) for u, v, cid in graph.edges(data='conveyor')
              if cid == conv_idx]
-    return sorted(edges, key=lambda e: topology[e[0]][e[1]]['end_pos'])
+    return sorted(edges, key=lambda e: graph[e[0]][e[1]]['end_pos'])
 
 
 def conveyor_adj_nodes(topology, conv_idx, only_own=False, data=False):
-    conv_edges = conveyor_edges(topology, conv_idx)
+    graph = topology.graph
+    conv_edges = conveyor_edges(graph, conv_idx)
 
     nodes = [conv_edges[0][0]]
     for _, v in conv_edges:
@@ -120,7 +125,7 @@ def conveyor_adj_nodes(topology, conv_idx, only_own=False, data=False):
         nodes.pop()
 
     if data:
-        nodes = [(n, (topology.nodes[n][data] if type(data) != bool else topology.nodes[n]))
+        nodes = [(n, (graph.nodes[n][data] if type(data) != bool else graph.nodes[n]))
                  for n in nodes]
     return nodes
 

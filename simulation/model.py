@@ -3,6 +3,7 @@ from typing import *
 from simpy import Environment
 
 from simulation.utils import binary_search, differs_from, AgentId, def_list, merge_sorted
+from topology.base import Section
 
 POS_ROUND_DIGITS = 3
 SOFT_COLLIDE_SHIFT = 0.2
@@ -229,7 +230,7 @@ class ConveyorModel:
 
         cps = def_list(cps, self.checkpoint_positions.keys())
         c_points = [(cp, pos) for (cp, pos) in self.checkpoints if cp in cps]
-        c_points.append((('conv_end', self.model_id[1]), self.length))
+        c_points.append((Section('conv_end', self.model_id[1], self.length), self.length))
 
         def _skip_cond(obj_id, cp_idx, pos):
             cp, cp_pos = c_points[cp_idx]
