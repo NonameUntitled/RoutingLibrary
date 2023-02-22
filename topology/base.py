@@ -157,7 +157,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
         adjacency_matrix = nx.convert_matrix.to_numpy_array(
             graph,
             nodelist=graph_nodes,
-            weight='length',
+            weight=self.edge_weight_field,
             dtype=np.float32
         )
 
@@ -173,7 +173,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                     assert nx.path_weight(
                         graph,
                         [from_node, to_node],
-                        weight='length'
+                        weight=self.edge_weight_field
                     ) == adjacency_matrix[from_idx][to_idx]
 
         best_transitions = defaultdict(dict)  # start_node, finish_node -> best_node_to_go_into
@@ -183,8 +183,8 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
         for start_node in graph_nodes:
             for finish_node in graph_nodes:
                 if start_node != finish_node and nx.has_path(graph, start_node, finish_node):
-                    path = nx.dijkstra_path(graph, start_node, finish_node, weight='length')
-                    length = nx.path_weight(graph, path, weight='length')
+                    path = nx.dijkstra_path(graph, start_node, finish_node, weight=self.edge_weight_field)
+                    length = nx.path_weight(graph, path, weight=self.edge_weight_field)
                     best_transitions[start_node][finish_node] = path[1] if len(path) > 1 else start_node
                     path_lengths[start_node][finish_node] = length
 
@@ -230,10 +230,10 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                     graph,
                     filtered_out_neighbor,
                     destination_node,
-                    weight='length'
+                    weight=self.edge_weight_field
                 )
                 # In the line below we append negative value because we want to minimize actual path
-                path_lengths.append(nx.path_weight(graph, path, weight='length'))
+                path_lengths.append(nx.path_weight(graph, path, weight=self.edge_weight_field))
             sample['path_lengths'] = path_lengths
 
             # ppo-specific
@@ -241,7 +241,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 graph,
                 current_node,
                 destination_node,
-                weight='length'
+                weight=self.edge_weight_field
             )  # List of nodes in the path from `current_node` to `destination_node`
 
             best_transition_node = path[1]
@@ -253,7 +253,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 assert False, "There is no such neighbor!"
 
             # Here we want to store negative path because in future we would like to minimize it
-            sample['path_length'] = -nx.path_weight(graph, path, weight='length')
+            sample['path_length'] = -nx.path_weight(graph, path, weight=self.edge_weight_field)
 
             dataset.append(sample)
 

@@ -3,7 +3,7 @@ from ml import BaseCallback
 from ml import BaseEmbedding
 from ml import BaseLoss
 from ml import BaseOptimizer
-from ml.utils import TensorWithMask
+from ml.utils import collate_fn, TensorWithMask
 
 from topology import BaseTopology
 
@@ -21,40 +21,6 @@ from torch.utils.data import DataLoader
 
 logger = create_logger(name=__name__)
 seed_val = 42
-
-
-def pretrain_collate_fn(batch, schema):
-    type_mapping = {
-        'float': torch.float32,
-        'long': torch.int64
-    }
-    processed_batch = {}
-
-    for key, field_cfg in schema.items():
-        field_type = type_mapping[field_cfg['type']]
-        is_ragged = field_cfg['is_ragged']
-
-        if is_ragged:
-            # Check that every value is list and gather `.values` and `.lengths`
-            all_values = []
-            lengths = []
-            for sample in batch:
-                sample_values = sample[key]
-                assert isinstance(sample_values, list)
-                all_values.extend(sample_values)
-                lengths.append(len(sample_values))
-
-            processed_batch[key] = TensorWithMask(
-                values=torch.tensor(all_values, dtype=field_type),
-                lengths=torch.tensor(lengths, dtype=torch.int64)
-            )
-        else:
-            processed_batch[key] = torch.tensor(
-                [sample[key] for sample in batch],
-                dtype=field_type
-            )
-
-    return processed_batch
 
 
 def pretrain(dataloader, model, loss_function, optimizer, callback, num_epochs):
@@ -95,14 +61,15 @@ def main():
     logger.debug('Pre-train config: \n{}'.format(json.dumps(params, indent=2)))
 
     # Utils initialization
-    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER = \
-        utils.tensorboard_writers.TensorboardWriter(params['model_name'])
+    if 'experiment_name' in params:
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER = \
+            utils.tensorboard_writers.TensorboardWriter(params['experiment_name'])
 
     # Environment-related part initialization
     topology = BaseTopology.create_from_config(params['topology'])
-    # TODO[Vladimir Baikalov]: It looks bad it is better to have sort of reference
     # But it is possible only in yaml not in json
     # Another idea is to create separated field outside
+    # TODO[Vladimir Baikalov]: It looks bad it is better to have sort of reference
     embeddings = BaseEmbedding.create_from_config(config=params['shared_embedder'])
     embeddings.fit(topology.graph)  # For some embedders this one is required, for some it can be skipped
 
@@ -117,14 +84,14 @@ def main():
         batch_size=1024,
         shuffle=True,
         drop_last=True,
-        collate_fn=partial(pretrain_collate_fn, schema=topology_data_schema)
+        collate_fn=partial(collate_fn, schema=topology_data_schema)
     )
     # TODO[Vladimir Baikalov]: Use validation dataloader for metric monitoring
     validation_dataloader = DataLoader(
         dataset=validation_dataset,
         batch_size=1024,
         drop_last=False,
-        collate_fn=partial(pretrain_collate_fn, schema=topology_data_schema)
+        collate_fn=partial(collate_fn, schema=topology_data_schema)
     )
 
     agent = BaseAgent.create_from_config(params['agent']).to(DEVICE)
@@ -137,9 +104,9 @@ def main():
         validation_dataloader=validation_dataloader
     )
 
-    # TODO[Vladimir Baikalov]: make sanity check of it
+    # TODO[Vladimir Baikalov]: make sanity check of it on bigger topology
     # TODO[Vladimir Baikalov]: handle SIGKILL/SIGTERM/Ctrl + C
-    final_model = pretrain(
+    final_model_state_dict = pretrain(
         dataloader=train_dataloader,
         model=agent,
         loss_function=loss,
@@ -148,9 +115,13 @@ def main():
         num_epochs=params['num_epochs']
     )
 
-    # TODO[Vladimir Baikalov]: Implement model save
     # TODO[Vladimir Baikalov]: Instead of `model_name` implement to derive name from pipeline
-    save_path = os.path.join(CHECKPOINT_DIR, params['model_name'])
+    save_path = os.path.join(CHECKPOINT_DIR, '{}.pth'.format(params['model_name']))
+    torch.save(
+        {'model': final_model_state_dict, 'optimizer': optimizer.state_dict()},
+        save_path
+    )
+    logger.debug('Saved model checkpoint as : {}'.format(save_path))
 
 
 if __name__ == '__main__':

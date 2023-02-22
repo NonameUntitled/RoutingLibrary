@@ -67,9 +67,10 @@ class LossCallback(BaseCallback, config_name='loss'):
 
     def __call__(self, inputs, step_num):
         if step_num % self._on_step == 0:
-            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                '{}/{}'.format(self._regime_prefix, self._loss_prefix),
-                inputs[self._loss_prefix],
-                step_num
-            )
-            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+            if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                    '{}/{}'.format(self._regime_prefix, self._loss_prefix),
+                    inputs[self._loss_prefix],
+                    step_num
+                )
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()

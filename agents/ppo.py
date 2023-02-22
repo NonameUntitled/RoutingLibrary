@@ -99,6 +99,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
                 extra_infos=zip(
                     current_state_value_function.detach(),
                     neighbors_logits.detach(),
+                    bag_ids,
                     current_node_idx,
                     neighbor_node_ids,
                     destination_node_idx
