@@ -2,8 +2,8 @@ from typing import *
 
 from simpy import Environment
 
-from simulation.utils import binary_search, differs_from, AgentId, def_list, merge_sorted
-from topology.base import Section
+from simulation.utils import binary_search, differs_from, merge_sorted
+from topology.utils import Section
 
 POS_ROUND_DIGITS = 3
 SOFT_COLLIDE_SHIFT = 0.2
@@ -71,64 +71,52 @@ class ConveyorModel:
       (or the end of the conveyor), and also return those checkpoint and object
     """
 
-    def __init__(self, env: Environment, length: float,
-                 checkpoints: List[Tuple[Any, float]],
-                 model_id: AgentId = ('world', 0)):
+    def __init__(self, env: Environment, length: float, checkpoints: list[dict[str, int | Section]], model_id: int):
         assert length > 0, "Conveyor length <= 0!"
 
-        checkpoints = sorted(checkpoints, key=lambda p: p[1])
+        checkpoints = sorted(checkpoints, key=lambda p: p['position'])
         if len(checkpoints) > 0:
-            assert checkpoints[0][1] >= 0, "Checkpoints with position < 0!"
-            assert checkpoints[-1][1] < length, "Checkpoint with position >= conveyor length!"
+            assert checkpoints[0]['position'] >= 0, "Checkpoints with position < 0!"
+            assert checkpoints[-1]['position'] < length, "Checkpoint with position >= conveyor length!"
             for i in range(len(checkpoints) - 1):
-                assert checkpoints[i][1] < checkpoints[i + 1][1], \
+                assert checkpoints[i]['position'] < checkpoints[i + 1]['position'], \
                     "Checkpoints with equal positions!"
 
         # constants
-        self.env = env
-        self.model_id = model_id
-        self.checkpoints = checkpoints
-        self.checkpoint_positions = {cp: pos for (cp, pos) in checkpoints}
-        self.length = length
+        self._env = env
+        self._model_id = model_id
+        self._checkpoints = checkpoints
+        self._checkpoint_positions = {cp['node']: cp['position'] for cp in checkpoints}
+        self._length = length
 
         # variables
-        self.speed = 1
-        self.objects = {}
-        self.object_positions = []
+        self._speed = 1
+        self._objects = {}
+        self._object_positions = []
 
         self._state = 'pristine'
         self._resume_time = 0
         self._resolved_events = set()
 
-    def _stateTransfer(self, action):
+    def _stateTransfer(self, action: str) -> None:
         try:
             self._state = _model_automata[self._state][action]
         except KeyError:
-            print('RAISED')
             raise AutomataException(
-                '{}: Invalid action `{}` in state `{}`;\n  speed - {}m/s\n  cps - {};\n  objs - {}'
-                .format(self.model_id, action, self._state, self.speed,
-                        self.checkpoints, self.object_positions))
+                f'{self._model_id}: Invalid action `{action}` in state `{self._state}`;\n  speed - {self._speed}m/s\n  cps - {self._checkpoints};\n  objs - {self._object_positions}')
 
-    def checkpointPos(self, cp: Any) -> Optional[float]:
-        if cp[0] == 'conv_end':
-            return self.length
-        return self.checkpoint_positions.get(cp, None)
-
-    def nextCheckpoint(self, pos: float) -> Tuple[Any, float]:
-        return search_pos(self.checkpoints, pos, preference='next')
 
     def nearestObject(self, pos: float, after=None, speed=None, not_exact=False,
                       preference='nearest') -> Optional[Tuple[Any, float]]:
-        if len(self.object_positions) == 0:
+        if len(self._object_positions) == 0:
             return None
 
         if after is not None:
             if speed is None:
-                speed = self.speed
-            objs = shift(self.object_positions, after * speed)
+                speed = self._speed
+            objs = shift(self._object_positions, after * speed)
         else:
-            objs = self.object_positions
+            objs = self._object_positions
 
         res = search_pos(objs, pos, preference=preference, return_index=True)
         if res is not None:
@@ -143,105 +131,98 @@ class ConveyorModel:
                 if idx < 0 or idx > len(objs):
                     return None
                 oid, o_pos = objs[idx]
-            return self.objects[oid], o_pos
+            return self._objects[oid], o_pos
         return None
 
     def putObject(self, obj_id: int, obj: Any, pos: float, soft_collide=True, return_nearest=False):
-        assert obj_id not in self.objects, "Clashing object ID!"
+        assert obj_id not in self._objects, "Clashing object ID!"
         pos = round(pos, POS_ROUND_DIGITS)
 
         nearest = None
-        if len(self.objects) > 0:
-            (n_obj_id, n_pos), n_idx = search_pos(self.object_positions, pos, return_index=True)
+        if len(self._objects) > 0:
+            (n_obj_id, n_pos), n_idx = search_pos(self._object_positions, pos, return_index=True)
             if n_pos == pos:
                 if soft_collide:
-                    print('{}: TRUE COLLISION: #{} and #{} on {}'.format(self.model_id, obj_id, n_obj_id, pos))
+                    print('{}: TRUE COLLISION: #{} and #{} on {}'.format(self._model_id, obj_id, n_obj_id, pos))
                     i = n_idx
                     p_pos = pos
-                    while i < len(self.object_positions) and self.object_positions[i][1] >= p_pos:
+                    while i < len(self._object_positions) and self._object_positions[i][1] >= p_pos:
                         p_pos = round(p_pos + SOFT_COLLIDE_SHIFT, POS_ROUND_DIGITS)
-                        self.object_positions[i] = (self.object_positions[i][0], p_pos)
+                        self._object_positions[i] = (self._object_positions[i][0], p_pos)
                         i += 1
                 else:
-                    raise CollisionException((obj, self.objects[n_obj_id], pos, self.model_id))
+                    raise CollisionException((obj, self._objects[n_obj_id], pos, self._model_id))
             elif n_pos < pos:
                 n_idx += 1
             nearest = (n_obj_id, n_pos)
         else:
             n_idx = 0
 
-        self.objects[obj_id] = obj
-        self.object_positions.insert(n_idx, (obj_id, pos))
+        self._objects[obj_id] = obj
+        self._object_positions.insert(n_idx, (obj_id, pos))
         self._stateTransfer('change')
 
         if return_nearest:
             return nearest
 
-    def objPos(self, obj_id: int):
-        for (oid, pos) in self.object_positions:
-            if oid == obj_id:
-                return pos
-        return None
-
     def removeObject(self, obj_id: int):
         pos_idx = None
-        for (i, (oid, pos)) in enumerate(self.object_positions):
+        for (i, (oid, pos)) in enumerate(self._object_positions):
             if oid == obj_id:
                 pos_idx = i
                 break
 
-        self.object_positions.pop(pos_idx)
-        obj = self.objects.pop(obj_id)
+        self._object_positions.pop(pos_idx)
+        obj = self._objects.pop(obj_id)
         self._stateTransfer('change')
         return obj
 
     def shift(self, d):
-        self.object_positions = shift(self.object_positions, d)
+        self._object_positions = shift(self._object_positions, d)
 
     def skipTime(self, time: float, clean_ends=True):
         if time == 0:
             return 0
 
         self._stateTransfer('change')
-        d = time * self.speed
-        if len(self.objects) == 0:
+        d = time * self._speed
+        if len(self._objects) == 0:
             return d
 
         self.shift(d)
 
         if clean_ends:
-            while len(self.object_positions) > 0 and self.object_positions[0][1] < 0:
-                obj_id, _ = self.object_positions.pop(0)
-                self.objects.pop(obj_id)
-            while len(self.object_positions) > 0 and self.object_positions[-1][1] > self.length:
-                obj_id, pos = self.object_positions.pop()
-                self.objects.pop(obj_id)
+            while len(self._object_positions) > 0 and self._object_positions[0][1] < 0:
+                obj_id, _ = self._object_positions.pop(0)
+                self._objects.pop(obj_id)
+            while len(self._object_positions) > 0 and self._object_positions[-1][1] > self._length:
+                obj_id, pos = self._object_positions.pop()
+                self._objects.pop(obj_id)
 
         return d
 
-    def nextEvents(self, obj=None, cps=None, skip_immediate=True,
-                   skip_resolved=True) -> List[Tuple[Any, Any, float]]:
-        if self.speed == 0:
+    def nextEvents(self, skip_immediate=True) -> List[Tuple[Any, Any, float]]:
+        if self._speed == 0:
             return []
 
-        obj = def_list(obj, self.objects.keys())
-        obj_positions = [(oid, pos) for (oid, pos) in self.object_positions
+        obj = self._objects.keys()
+        obj_positions = [(oid, pos) for (oid, pos) in self._object_positions
                          if oid in obj]
 
-        cps = def_list(cps, self.checkpoint_positions.keys())
-        c_points = [(cp, pos) for (cp, pos) in self.checkpoints if cp in cps]
-        c_points.append((Section('conv_end', self.model_id[1], self.length), self.length))
+        cps = self._checkpoint_positions.keys()
+        c_points = [cp for cp in self._checkpoints if cp['node'] in cps]
+        c_points.append({'node': Section('conv_end', self._model_id, self._length), 'position': self._length})
 
         def _skip_cond(obj_id, cp_idx, pos):
-            cp, cp_pos = c_points[cp_idx]
-            if skip_resolved and (obj_id, cp) in self._resolved_events:
+            cp = c_points[cp_idx]
+            if (obj_id, cp['node']) in self._resolved_events:
                 return True
-            return cp_pos <= pos if skip_immediate else cp_pos < pos
+            return cp['position'] <= pos if skip_immediate else cp['position'] < pos
 
         cp_idx = 0
         events = []
         for (obj_id, pos) in obj_positions:
-            assert pos >= 0 and pos <= self.length, \
+            assert pos >= 0 and pos <= self._length, \
                 "`nextEvents` on conveyor with undefined object positions!"
 
             while cp_idx < len(c_points) and _skip_cond(obj_id, cp_idx, pos):
@@ -249,15 +230,12 @@ class ConveyorModel:
 
             if cp_idx < len(c_points):
                 cp = c_points[cp_idx]
-                obj = self.objects[obj_id]
-                diff = (cp[1] - pos) / self.speed
-                events.append((obj, cp[0], diff))
+                obj = self._objects[obj_id]
+                diff = (cp['position'] - pos) / self._speed
+                events.append((obj, cp['node'], diff))
 
         events.sort(key=lambda p: p[2])
         return events
-
-    def immediateEvents(self, obj=None, cps=None) -> List[Tuple[Any, Any, float]]:
-        return [ev for ev in self.nextEvents(obj=obj, cps=cps, skip_immediate=False) if ev[2] == 0]
 
     def pickUnresolvedEvent(self) -> Union[Tuple[Any, Any, float], None]:
         assert self.resolving(), "picking event for resolution while not resolving"
@@ -269,46 +247,46 @@ class ConveyorModel:
         if diff > 0:
             return None
 
-        self._resolved_events.add((obj.id, cp))
+        self._resolved_events.add((obj._id, cp))
         return obj, cp, diff
 
-    def resume(self):
+    def resume(self) -> None:
         self._stateTransfer('resume')
-        self._resume_time = self.env.now
+        self._resume_time = self._env.now
 
-    def pause(self):
+    def pause(self) -> None:
         self._stateTransfer('pause')
-        time_diff = self.env.now - self._resume_time
-        assert time_diff >= 0, "Pause before resume??"
+        time_diff = self._env.now - self._resume_time
+        assert time_diff >= 0, "Pause before resume"
         self.skipTime(time_diff)
 
     def startResolving(self):
         self._stateTransfer('start_resolving')
 
-    def endResolving(self):
+    def endResolving(self) -> None:
         self._resolved_events = set()
         self._stateTransfer('end_resolving')
 
-    def pristine(self):
+    def pristine(self) -> bool:
         return self._state == 'pristine'
 
-    def dirty(self):
+    def dirty(self) -> bool:
         return self._state == 'dirty'
 
-    def resolving(self):
+    def resolving(self) -> bool:
         return self._state == 'resolving'
 
-    def resolved(self):
+    def resolved(self) -> bool:
         return self._state == 'resolved'
 
-    def moving(self):
+    def moving(self) -> bool:
         return self._state == 'moving'
 
 
-def all_next_events(models: Dict[int, ConveyorModel], **kwargs):
+def all_next_events(models: Dict[int, ConveyorModel]):
     res = []
     for conv_idx, model in models.items():
-        evs = model.nextEvents(**kwargs)
+        evs = model.nextEvents()
         res = merge_sorted(res, [(conv_idx, ev) for ev in evs],
                            using=lambda p: p[1][2])
     return res
