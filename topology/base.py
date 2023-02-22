@@ -1,12 +1,10 @@
 from utils import MetaParent
-from topology.utils import only_reachable_from
+from topology.utils import only_reachable_from, Section
 
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 import networkx as nx
 import numpy as np
 import random
-
-Section = namedtuple("Section", "type id position")
 
 class BaseTopology(metaclass=MetaParent):
 
