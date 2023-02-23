@@ -63,7 +63,7 @@
   },
   "agent": {
     "type": "random",
-    "neighbors_prefix": "neighbors_nodes",
+    "neighbors_prefix": "neighbors_node_ids",
     "output_prefix": "next_nodes"
   },
   "agent_2": {

@@ -24,12 +24,18 @@ class BaseTopology(metaclass=MetaParent):
     def sinks(self):
         raise NotImplementedError
 
+    def get_sample(self, current_node, neighbors, destination):
+        raise NotImplementedError
+
 
 class OrientedTopology(BaseTopology, config_name='oriented'):
 
     def __init__(self, graph, sinks):
         self._graph = graph
         self._sinks = sinks
+        self._node_2_idx = {
+            node: idx for idx, node in enumerate(sorted(graph.nodes))
+        }
 
     @classmethod
     def create_from_config(cls, config):
@@ -158,11 +164,6 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
             dtype=np.float32
         )
 
-        # Create mapping from node to idx
-        node_2_idx = {
-            node: idx for idx, node in enumerate(graph_nodes)
-        }
-
         # Sanity check that paths are correct TODO[Vladimir Baikalov]: check correctness and then remove
         for from_idx, from_node in enumerate(graph_nodes):
             for to_idx, to_node in enumerate(graph_nodes):
@@ -208,15 +209,9 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
             if len(filtered_out_neighbors) == 0:
                 continue
 
+            print(f'Current: {current_node}, neighbors: {filtered_out_neighbors}, destination: {destination_node}')
             # Add basic information
-            sample = {
-                'current_node_idx': node_2_idx[current_node],
-                'neighbors_node_ids': [
-                    node_2_idx[filtered_out_neighbor]
-                    for filtered_out_neighbor in filtered_out_neighbors
-                ],
-                'destination_node_idx': node_2_idx[destination_node]
-            }
+            sample = self.get_sample(current_node, filtered_out_neighbors, destination_node)
 
             # Add algorithm-specific information
             # TODO[Vladimir Baikalov]: Generalize it
@@ -255,6 +250,16 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
             dataset.append(sample)
 
         return dataset
+
+    def get_sample(self, current: Section, neighbors: list[Section], destination: Section):
+        return {
+            'current_node_idx': self._node_2_idx[current],
+            'neighbors_node_ids': [
+                self._node_2_idx[neighbor]
+                for neighbor in neighbors
+            ],
+            'destination_node_idx': self._node_2_idx[destination]
+        }
 
     @property
     def schema(self):
