@@ -1,14 +1,17 @@
+import copy
 import random
 from typing import *
 
+import torch
 from simpy import Environment, Event, Interrupt
 
 from agents import TorchAgent
+from ml.utils import TensorWithMask
 from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
 from topology import BaseTopology
 from topology.utils import Section, conveyor_adj_nodes, conveyor_idx, node_type, node_id, node_conv_pos, \
-    conveyor_adj_nodes_with_data
+    conveyor_adj_nodes_with_data, conv_start_node, conv_next_node, get_node_by_id
 
 
 class ConveyorsEnvironment:
@@ -36,6 +39,12 @@ class ConveyorsEnvironment:
             conv_id: conveyor_adj_nodes(self._topology_graph.graph, conv_id)[-1]
             for conv_id in conv_ids
         }
+
+        diverters_ids = [int(k) for k in self._topology_config["diverters"].keys()]
+        self._diverter_agents = {}
+        for dv_id in diverters_ids:
+            self._diverter_agents[dv_id] = copy.deepcopy(agent)
+
 
         self._updateAll()
 
@@ -152,7 +161,33 @@ class ConveyorsEnvironment:
                 if left_to_sink:
                     left_to_sinks.add(bag._id)
             elif atype == 'diverter':
-                if (bool(random.getrandbits(1))):
+                dv_id = node_id(node)
+                dv_agent = self._diverter_agents[dv_id]
+
+                dv_cfg = self._topology_config['diverters'][str(dv_id)]
+                up_conv = dv_cfg['upstream_conv']
+                up_conv_node = conv_start_node(self._topology_graph.graph, up_conv)
+                next_node = conv_next_node(self._topology_graph.graph, conv_idx, node)
+                sink_node = next((s for s in self._topology_graph.sinks if s.id == bag._dst_id), None)
+                assert sink_node is not None, "Sink node should be found"
+                sample = self._topology_graph.get_sample(node, [up_conv_node, next_node], sink_node)
+
+                sample_tensor = {}
+                for key in sample.keys():
+                    if key == 'neighbors_node_ids':
+                        sample_tensor[key] = TensorWithMask(
+                            values=torch.tensor([sample[key]], dtype=torch.int64),
+                            lengths=torch.tensor([len(sample[key])], dtype=torch.int64)
+                        )
+                    else:
+                      sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64)
+
+
+                forward_node_id = dv_agent.forward(sample_tensor)
+                forward_node = get_node_by_id(self._topology_graph, forward_node_id)
+                assert forward_node is not None, "Forward node should be found"
+
+                if forward_node.type == 'diverter':
                     self._diverterKick(node)
             elif atype != 'junction':
                 raise Exception(f'Impossible conv node: {node}')

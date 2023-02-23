@@ -75,3 +75,19 @@ def node_conv_pos(graph: nx.DiGraph, conv_idx: int, node: Section) -> int | None
         if v.type == node.type and v.id == node.id:
             return p_pos
     return None
+
+def conv_start_node(graph: nx.DiGraph, conv_idx: int) -> Section:
+    es = conveyor_edges(graph, conv_idx)
+    return es[0][0]
+
+def conv_next_node(graph: nx.DiGraph, conv_idx: int, node: Section) -> Section:
+    es = conveyor_edges(graph, conv_idx)
+    for u, v in es:
+        if u.type == node.type and u.id == node.id:
+            return v
+
+def get_node_by_id(topology, node_id):
+    for node in topology._node_2_idx.keys():
+        if topology._node_2_idx[node] == node_id:
+            return node
+    return None
