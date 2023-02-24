@@ -1,8 +1,9 @@
+from bisect import bisect, bisect_right, bisect_left
 from typing import *
 
 from simpy import Environment
 
-from simulation.utils import binary_search, differs_from, merge_sorted
+from simulation.utils import merge_sorted
 from topology.utils import Section
 
 POS_ROUND_DIGITS = 3
@@ -28,11 +29,28 @@ class AutomataException(Exception):
 
 
 def search_pos(ls: List[Tuple[Any, float]], pos: float,
-               return_index: bool = False,
-               preference: str = 'nearest') -> Tuple[Any, float]:
-    assert len(ls) > 0, "what are you gonna find pal?!"
-    return binary_search(ls, differs_from(pos, using=lambda p: p[1]),
-                         return_index=return_index, preference=preference)
+               preference: str = 'nearest') -> Optional[Tuple[Any, float]]:
+    assert len(ls) > 0, "Empty list!"
+    assert preference in ('nearest', 'next', 'prev'), "Invalid preference!"
+    positions = [p for (_, p) in ls]
+    if preference != 'prev' and pos <= positions[0]:
+        return ls[0], 0
+    if preference != 'next' and pos >= positions[-1]:
+        return ls[-1], len(ls) - 1
+    if preference == 'prev' and pos <= positions[0]:
+        return None
+    if preference == 'next' and pos >= positions[-1]:
+        return None
+
+    if preference == 'nearest':
+        id = bisect(positions, pos)
+        return ls[id], id
+    elif preference == 'next':
+        id = bisect_right(positions, pos)
+        return ls[id], id
+    elif preference == 'prev':
+        id = bisect_left(positions, pos)
+        return ls[id], id
 
 
 def shift(objs, d):
@@ -41,8 +59,8 @@ def shift(objs, d):
 
 # Automata for simplifying the modelling of objects movement
 _model_automata = {
-    'pristine': {'resume': 'moving', 'change': 'dirty'},
-    'moving': {'pause': 'pristine'},
+    'static': {'resume': 'moving', 'change': 'dirty'},
+    'moving': {'pause': 'static'},
     'dirty': {'change': 'dirty', 'start_resolving': 'resolving'},
     'resolving': {'change': 'resolving', 'end_resolving': 'resolved'},
     'resolved': {'resume': 'moving'}
@@ -64,7 +82,7 @@ class ConveyorModel:
     We want to have the following operations:
     - put an object to a conveyor (checking for collisions)
     - remove an object from a conveyor
-    - change the conveyor speed
+    - change the conveyor speed # TODO[Aleksandr Pakulev]: Implement
     - update the positions of objects as if time T has passed with a current
       conveyor speed (T might be negative, moving objects backwards)
     - calculate time T until earliest event of object reaching a checkpoint
@@ -94,7 +112,7 @@ class ConveyorModel:
         self._objects = {}
         self._object_positions = []
 
-        self._state = 'pristine'
+        self._state = 'static'
         self._resume_time = 0
         self._resolved_events = set()
 
@@ -118,7 +136,7 @@ class ConveyorModel:
         else:
             objs = self._object_positions
 
-        res = search_pos(objs, pos, preference=preference, return_index=True)
+        res = search_pos(objs, pos, preference=preference)
         if res is not None:
             (oid, o_pos), idx = res
             if not_exact and o_pos == pos:
@@ -140,10 +158,10 @@ class ConveyorModel:
 
         nearest = None
         if len(self._objects) > 0:
-            (n_obj_id, n_pos), n_idx = search_pos(self._object_positions, pos, return_index=True)
+            (n_obj_id, n_pos), n_idx = search_pos(self._object_positions, pos)
             if n_pos == pos:
                 if soft_collide:
-                    print('{}: TRUE COLLISION: #{} and #{} on {}'.format(self._model_id, obj_id, n_obj_id, pos))
+                    print(f'{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}')
                     i = n_idx
                     p_pos = pos
                     while i < len(self._object_positions) and self._object_positions[i][1] >= p_pos:
@@ -267,8 +285,8 @@ class ConveyorModel:
         self._resolved_events = set()
         self._stateTransfer('end_resolving')
 
-    def pristine(self) -> bool:
-        return self._state == 'pristine'
+    def static(self) -> bool:
+        return self._state == 'static'
 
     def dirty(self) -> bool:
         return self._state == 'dirty'

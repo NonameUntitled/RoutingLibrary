@@ -51,7 +51,7 @@ class WorldEvent:
         try:
             return super().__getattribute__('_contents')[name]
         except KeyError:
-            raise AttributeError(name)
+            raise AttributeError(f'No such attribute: {name}. Available: {list(self._contents.keys())[:-1]}')
 
     def getContents(self):
         return self._contents

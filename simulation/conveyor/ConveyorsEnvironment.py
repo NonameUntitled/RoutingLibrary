@@ -104,7 +104,7 @@ class ConveyorsEnvironment:
 
         if up_type == 'sink':
             self._current_bags.pop(bag._id)
-            print("Bag %d arrived to %s." % (bag._id, str(up_node)))
+            print(f'Bag {bag._id} arrived to {up_node}.')
             return True
 
         if up_type == 'junction':
