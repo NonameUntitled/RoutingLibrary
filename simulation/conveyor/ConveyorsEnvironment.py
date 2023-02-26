@@ -1,5 +1,6 @@
 import copy
 import random
+from logging import Logger
 from typing import *
 
 import torch
@@ -19,20 +20,22 @@ class ConveyorsEnvironment:
     Environment which models the conveyor system and the movement of bags.
     """
 
-    def __init__(self, config: Dict[str, Any], env: Environment, topology: BaseTopology, agent: TorchAgent):
-        self._topology_config = config['topology']
+    def __init__(self, config: Dict[str, Any], env: Environment, topology: BaseTopology, agent: TorchAgent,
+                 logger: Logger):
+        self._topology_config = config["topology"]
         self._env = env
         self._conveyors_move_proc = None
         self._current_bags = {}
         self._topology_graph = topology
+        self._logger = logger
 
         conv_ids = [int(k) for k in self._topology_config["conveyors"].keys()]
         self._conveyor_models = {}
         for conv_id in conv_ids:
             checkpoints = conveyor_adj_nodes_with_data(self._topology_graph.graph, conv_id,
-                                                       only_own=True, data='conveyor_pos')
-            length = self._topology_config["conveyors"][str(conv_id)]['length']
-            model = ConveyorModel(self._env, length, checkpoints, model_id=conv_id)
+                                                       only_own=True, data="conveyor_pos")
+            length = self._topology_config["conveyors"][str(conv_id)]["length"]
+            model = ConveyorModel(self._env, length, checkpoints, model_id=conv_id, logger=logger)
             self._conveyor_models[conv_id] = model
 
         self._conveyor_upstreams = {
@@ -45,7 +48,6 @@ class ConveyorsEnvironment:
         for dv_id in diverters_ids:
             self._diverter_agents[dv_id] = copy.deepcopy(agent)
 
-
         self._updateAll()
 
     def handleEvent(self, event: WorldEvent) -> Event:
@@ -53,7 +55,7 @@ class ConveyorsEnvironment:
         Method which governs how events influence the environment.
         """
         if isinstance(event, BagAppearanceEvent):
-            src = Section(type='source', id=event._src_id, position=0)
+            src = Section(type="source", id=event._src_id, position=0)
             bag = event._bag
             self._current_bags[bag._id] = set()
             conv_idx = conveyor_idx(self._topology_graph.graph, src)
@@ -66,20 +68,48 @@ class ConveyorsEnvironment:
         Checks if some bag is in front of a given diverter now,
         if so, moves this bag from current conveyor to upstream one.
         """
-        assert node_type(diverter) == 'diverter', "Only diverter can kick"
+        assert node_type(diverter) == "diverter", "Only diverter can kick"
 
         dv_idx = node_id(diverter)
-        dv_cfg = self._topology_config['diverters'][str(dv_idx)]
-        conv_idx = dv_cfg['conveyor']
-        up_conv = dv_cfg['upstream_conv']
-        pos = dv_cfg['pos']
+        dv_cfg = self._topology_config["diverters"][str(dv_idx)]
+        conv_idx = dv_cfg["conveyor"]
+        up_conv = dv_cfg["upstream_conv"]
+        pos = dv_cfg["pos"]
 
         conv_model = self._conveyor_models[conv_idx]
         n_bag, n_pos = conv_model.nearestObject(pos)
 
         self._removeBagFromConveyor(conv_idx, n_bag._id)
         self._putBagOnConveyor(up_conv, n_bag, diverter)
-        print(f'Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.')
+        self._logger.debug(f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
+
+    def _diverterPrediction(self, node: Section, bag: Bag, conv_idx: int):
+        dv_id = node_id(node)
+        dv_agent = self._diverter_agents[dv_id]
+
+        dv_cfg = self._topology_config["diverters"][str(dv_id)]
+        up_conv = dv_cfg["upstream_conv"]
+        up_conv_node = conv_start_node(self._topology_graph.graph, up_conv)
+        next_node = conv_next_node(self._topology_graph.graph, conv_idx, node)
+        sink_node = next((s for s in self._topology_graph.sinks if s.id == bag._dst_id), None)
+        assert sink_node is not None, "Sink node should be found"
+        sample = self._topology_graph.get_sample(node, [up_conv_node, next_node], sink_node)
+
+        sample_tensor = {}
+        for key in sample.keys():
+            if key == "neighbors_node_ids":
+                sample_tensor[key] = TensorWithMask(
+                    values=torch.tensor([sample[key]], dtype=torch.int64),
+                    lengths=torch.tensor([len(sample[key])], dtype=torch.int64)
+                )
+            else:
+                sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64)
+
+        output = dv_agent.forward(sample_tensor)
+        forward_node_id = output[dv_agent._output_prefix].item()
+        forward_node = get_node_by_id(self._topology_graph, forward_node_id)
+        assert forward_node is not None, "Forward node should be found"
+        return forward_node
 
     def _putBagOnConveyor(self, conv_idx: int, bag: Bag, node: Section):
         """
@@ -102,16 +132,16 @@ class ConveyorsEnvironment:
         up_node = self._conveyor_upstreams[conv_idx]
         up_type = node_type(up_node)
 
-        if up_type == 'sink':
+        if up_type == "sink":
             self._current_bags.pop(bag._id)
-            print(f'Bag {bag._id} arrived to {up_node}.')
+            self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
             return True
 
-        if up_type == 'junction':
+        if up_type == "junction":
             up_conv = conveyor_idx(self._topology_graph.graph, up_node)
             self._putBagOnConveyor(up_conv, bag, up_node)
         else:
-            raise Exception('Invalid conveyor upstream node type: ' + up_type)
+            raise Exception("Invalid conveyor upstream node type: " + up_type)
         return False
 
     def _removeBagFromConveyor(self, conv_idx: int, bag_id: int):
@@ -156,41 +186,17 @@ class ConveyorsEnvironment:
 
             atype = node_type(node)
 
-            if atype == 'conv_end':
+            if atype == "conv_end":
                 left_to_sink = self._leaveConveyorEnd(conv_idx, bag._id)
                 if left_to_sink:
                     left_to_sinks.add(bag._id)
-            elif atype == 'diverter':
-                dv_id = node_id(node)
-                dv_agent = self._diverter_agents[dv_id]
+            elif atype == "diverter":
+                forward_node = self._diverterPrediction(node, bag, conv_idx)
 
-                dv_cfg = self._topology_config['diverters'][str(dv_id)]
-                up_conv = dv_cfg['upstream_conv']
-                up_conv_node = conv_start_node(self._topology_graph.graph, up_conv)
-                next_node = conv_next_node(self._topology_graph.graph, conv_idx, node)
-                sink_node = next((s for s in self._topology_graph.sinks if s.id == bag._dst_id), None)
-                assert sink_node is not None, "Sink node should be found"
-                sample = self._topology_graph.get_sample(node, [up_conv_node, next_node], sink_node)
-
-                sample_tensor = {}
-                for key in sample.keys():
-                    if key == 'neighbors_node_ids':
-                        sample_tensor[key] = TensorWithMask(
-                            values=torch.tensor([sample[key]], dtype=torch.int64),
-                            lengths=torch.tensor([len(sample[key])], dtype=torch.int64)
-                        )
-                    else:
-                      sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64)
-
-
-                forward_node_id = dv_agent.forward(sample_tensor)
-                forward_node = get_node_by_id(self._topology_graph, forward_node_id)
-                assert forward_node is not None, "Forward node should be found"
-
-                if forward_node.type == 'diverter':
+                if forward_node.type == "diverter":
                     self._diverterKick(node)
-            elif atype != 'junction':
-                raise Exception(f'Impossible conv node: {node}')
+            elif atype != "junction":
+                raise Exception(f"Impossible conv node: {node}")
 
             if bag._id in self._current_bags and bag._id not in left_to_sinks:
                 self._current_bags[bag._id].add(node)

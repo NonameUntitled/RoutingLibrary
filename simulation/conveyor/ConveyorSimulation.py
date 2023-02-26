@@ -1,3 +1,5 @@
+from logging import Logger
+
 from simpy import Environment, Timeout, Event
 from typing import *
 
@@ -14,22 +16,27 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
     simulation environment.
     """
 
-    def __init__(self, config: Dict[str, Any], topology: BaseTopology, agent: TorchAgent):
+    def __init__(self, config: Dict[str, Any], topology: BaseTopology, agent: TorchAgent, logger: Logger):
         self._config = config
         self._env = Environment()
-        self._world = ConveyorsEnvironment(config=self._config, env=self._env, topology=topology, agent=agent)
+        self._world = ConveyorsEnvironment(config=self._config, env=self._env, topology=topology, agent=agent,
+                                           logger=logger)
 
     @classmethod
-    def create_from_config(cls, config: Dict[str, Any], topology: Optional[BaseTopology] = None, agent: Optional[TorchAgent] = None):
+    def create_from_config(cls, config: Dict[str, Any], topology: Optional[BaseTopology] = None,
+                           agent: Optional[TorchAgent] = None, logger: Logger = None):
         assert topology is not None, "Topology must be provided"
         assert agent is not None, "Agent must be provided"
-        return cls(config, topology, agent)
+        assert logger is not None, "Logger must be provided"
+        return cls(config, topology, agent, logger)
 
     def runProcess(self) -> Generator[Timeout | Event, None, None]:
         """
         Generator which generates a series of test scenario events in
         the world environment.
         """
+
+        # TODO[Aleksandr Pakulev]: Implement bugs scheduling from config
 
         bag_id = 1
 
