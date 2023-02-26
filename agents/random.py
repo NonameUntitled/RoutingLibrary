@@ -20,22 +20,17 @@ class RandomAgent(TorchAgent, config_name='random'):
     def forward(self, inputs: Dict) -> Dict:
         neighbors = inputs[self._neighbors_prefix]  # (batch_size, neighbors_cnt)
 
-        neighbors_mask = neighbors.mask  # (batch_size, neighbors_cnt)
-        neighbors_mask_sum = torch.sum(neighbors_mask, dim=-1)  # (batch_size)
+        neighbors_length = neighbors.lengths
 
-        low = np.zeros_like(neighbors_mask_sum.cpu().detach().numpy())
-        high = neighbors_mask_sum.cpu().detach().numpy()
+        low = torch.zeros_like(neighbors_length)
+        high = neighbors_length
+        next_neighbors = torch.randint(low=low.item(), high=high.item(), size=(1,))
 
-        next_neighbors = torch.from_numpy(np.random.randint(
-            low=low,
-            high=high
-        ))
+        next_neighbor = torch.gather(neighbors.flatten_values, 1, torch.unsqueeze(next_neighbors, 0))
 
-        next_neighbors = next_neighbors.to(next_neighbors.device)  # (batch_size)
+        inputs[self._output_prefix] = next_neighbor
 
-        next_neighbor = neighbors.flatten_values.numpy()[0][next_neighbors.item()]
-
-        return next_neighbor
+        return inputs
 
     @classmethod
     def create_from_config(cls, config):
