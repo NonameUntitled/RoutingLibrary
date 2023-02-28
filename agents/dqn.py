@@ -32,12 +32,12 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             current_node_idx_prefix: str,
             destination_node_idx_prefix: str,
             neighbors_node_ids_prefix: str,
-            node_idx: int,
             q_network: BaseQNetwork,
-            discount_factor: float,
-            research_prob: float,
-            bag_trajectory_memory: BaseBagTrajectoryMemory,
-            sample_size: int,
+            discount_factor: float = 0.99,
+            research_prob: float = 0.1,
+            bag_trajectory_memory: BaseBagTrajectoryMemory = None,
+            node_idx: int = None,
+            sample_size: int = 100,
     ):
         assert 0 < discount_factor < 1, 'Incorrect `discount_factor` choice'
         assert 0 < research_prob < 1, 'Incorrect `discount_factor` choice'
@@ -75,17 +75,20 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         # Shape: [batch_size]
         destination_node_idx = inputs[self._destination_node_idx_prefix]
         # TensorWithMask
+        # Shape: [batch_size, max_neighbors_num]
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
 
+        # Shape: [batch_size, max_neighbors_num]
         next_neighbor_q = self._q_network(
             current_node_idx=current_node_idx,
             neighbor_node_ids=neighbor_node_ids,
             destination_node_idx=destination_node_idx
         )
 
-        next_neighbor_ids = neighbor_node_ids.flatten_values[torch.argmax(next_neighbor_q, dim=1)]
-        next_neighbors_idx = _with_random_research(
-            next_neighbor_ids,
+        # Shape: [batch_size]
+        best_next_neighbor_idx = neighbor_node_ids.padded_values[torch.argmax(next_neighbor_q, dim=-1)]
+        next_neighbor_idx = _with_random_research(
+            best_next_neighbor_idx,
             neighbor_node_ids,
             self._research_prob
         )
@@ -101,11 +104,11 @@ class DQNAgent(TorchAgent, config_name='dqn'):
                     current_node_idx,
                     neighbor_node_ids,
                     destination_node_idx,
-                    next_neighbors_idx
+                    next_neighbor_idx
                 )
             )
         return {
-            'predicted_next_node_idx': next_neighbors_idx,
+            'predicted_next_node_idx': next_neighbor_idx,
             'predicted_next_node_q': next_neighbor_q,
         }
 

@@ -9,7 +9,7 @@ from ml.encoders import TorchEncoder, TowerEncoder
 from ml.utils import TensorWithMask
 
 
-class BaseQNetwork(TorchEncoder, config_name='base_q_network'):
+class BaseQNetwork(TorchEncoder):
     @abstractmethod
     def forward(
             self,
@@ -21,16 +21,23 @@ class BaseQNetwork(TorchEncoder, config_name='base_q_network'):
 
 
 class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
-    def __init__(self, embedder: TorchEncoder, ff_net: TorchEncoder):
+    def __init__(
+            self,
+            embedder: TorchEncoder,
+            ff_net: TorchEncoder,
+            use_embedding_shift: bool = True
+    ):
         super().__init__()
         self._ff_net = ff_net
         self._embedder = embedder
+        self._use_embedding_shift = use_embedding_shift
 
     @classmethod
     def create_from_config(cls, config):
         return cls(
             ff_net=TowerEncoder.create_from_config(config['ff_net']),
-            embedder=BaseEmbedding.create_from_config(config['embedder'])
+            embedder=BaseEmbedding.create_from_config(config['embedder']),
+            use_embedding_shift=config.get('use_embedding_shift', True)
         )
 
     def forward(
@@ -56,20 +63,36 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
         # Shape: [batch_size, max_neighbors_num, embedding_dim]
         padded_neighbors_node_embeddings = neighbor_node_embeddings.padded_values
 
-        # 1) Shift neighbors and destinations
-        # TODO[Vladimir Baikalov]: Make shifting optional
-        # TODO[Vladimir Baikalov]: Check that it doesn't lead to gradient issues
-        # Shape: [batch_size, embedding_dim]
-        shifted_destination_node_embedding = destination_node_embedding - current_node_embedding
-        # Shape: [batch_size, max_neighbors_num, embedding_dim]
-        shifted_padded_neighbors_node_embeddings = \
-            padded_neighbors_node_embeddings - torch.unsqueeze(current_node_embedding, dim=1)
+        # 1) Create representation for current state and next states
+        if self._use_embedding_shift:
+            # Shape: [batch_size, embedding_dim]
+            current_state_embedding = destination_node_embedding - current_node_embedding
+            # Shape: [batch_size, max_neighbors_num, embedding_dim]
+            next_state_embeddings = \
+                padded_neighbors_node_embeddings - torch.unsqueeze(current_node_embedding, dim=1)
+        else:
+            # Shape: [batch_size, 2 * embedding_dim]
+            current_state_embedding = torch.cat(
+                [destination_node_embedding, current_node_embedding],
+                dim=-1
+            )
+            # Shape: [batch_size, max_neighbors_num, embedding_dim]
+            next_state_embeddings = padded_neighbors_node_embeddings
+        # Shape: [batch_size, max_neighbors_num, 2 (1 for shifted) embedding_dim]
+        current_state_embedding_expanded = \
+            torch.repeat_interleave(
+                torch.unsqueeze(current_state_embedding, dim=-2),
+                next_state_embeddings.shape[-2],
+                dim=-2
+            )
+        # Shape: [batch_size, max_neighbors_num, 3 (2 for shifted) * embedding_dim]
+        all_state_embeddings = torch.cat(
+            [current_state_embedding_expanded, next_state_embeddings],
+            dim=-1
+        )
 
         # 2) Compute q func
-        # Shape: [batch_size, embedding_dim]
-        neighbors_q = self._ff_net.forward(shifted_destination_node_embedding)
-
-        # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution more smooth
-        # TODO[Vladimir Baikalov]: Put constant in the variable
-        neighbors_q[~neighbor_node_embeddings.mask] = -1e18
+        # Shape: [batch_size, max_neighbors_num]
+        neighbors_q = self._ff_net.forward(all_state_embeddings)
+        neighbors_q[~neighbor_node_embeddings.mask] = -torch.inf
         return neighbors_q

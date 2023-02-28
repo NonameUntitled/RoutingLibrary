@@ -10,7 +10,7 @@ from ml.encoders import TorchEncoder, TowerEncoder
 from ml.utils import TensorWithMask
 
 
-class BaseActor(TorchEncoder, config_name='base_actor'):
+class BaseActor(TorchEncoder):
 
     @abstractmethod
     def forward(
