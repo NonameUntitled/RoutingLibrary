@@ -92,7 +92,7 @@ class ConveyorModel:
       (or the end of the conveyor), and also return those checkpoint and object
     """
 
-    def __init__(self, env: Environment, length: float, checkpoints: list[dict[str, int | Section]], model_id: int,
+    def __init__(self, world_env: Environment, length: float, checkpoints: list[dict[str, int | Section]], model_id: int,
                  logger: Logger):
         assert length > 0, "Conveyor length <= 0!"
 
@@ -109,7 +109,7 @@ class ConveyorModel:
                     f"{checkpoints[i + 1]['position']} for conveyor {model_id}"
 
         # constants
-        self._env = env
+        self._world_env = world_env
         self._logger = logger
         self._model_id = model_id
         self._checkpoints = checkpoints
@@ -281,11 +281,11 @@ class ConveyorModel:
 
     def resume(self) -> None:
         self._stateTransfer("resume")
-        self._resume_time = self._env.now
+        self._resume_time = self._world_env.now
 
     def pause(self) -> None:
         self._stateTransfer("pause")
-        time_diff = self._env.now - self._resume_time
+        time_diff = self._world_env.now - self._resume_time
         assert time_diff >= 0, "Pause before resume"
         self.skipTime(time_diff)
 

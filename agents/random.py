@@ -20,15 +20,21 @@ class RandomAgent(TorchAgent, config_name='random'):
     def forward(self, inputs: Dict) -> Dict:
         neighbors = inputs[self._neighbors_prefix]  # (batch_size, neighbors_cnt)
 
-        neighbors_length = neighbors.lengths
+        neighbors_length = neighbors.lengths  # (batch_size)
 
-        low = torch.zeros_like(neighbors_length)
-        high = neighbors_length
-        next_neighbors = torch.randint(low=low.item(), high=high.item(), size=(1,))
+        low = torch.zeros_like(neighbors_length)  # (batch_size)
+        high = neighbors_length  # (batch_size)
+        next_neighbors = torch.round(torch.rand(neighbors_length.shape) * (neighbors_length - torch.ones(1))).long()  # (batch_size)
 
-        next_neighbor = torch.gather(neighbors.flatten_values, 1, torch.unsqueeze(next_neighbors, 0))
+        next_neighbors = torch.squeeze(
+            torch.gather(
+                input=neighbors.flatten_values,  # (batch_size, num_neighbors)
+                dim=1,
+                index=torch.unsqueeze(next_neighbors, dim=1)  # (batch_size, 1)
+            )  # (batch_size, 1)
+        )  # (batch_size)
 
-        inputs[self._output_prefix] = next_neighbor
+        inputs[self._output_prefix] = next_neighbors
 
         return inputs
 
@@ -41,4 +47,3 @@ class RandomAgent(TorchAgent, config_name='random'):
 
     def learn(self):
         pass
-

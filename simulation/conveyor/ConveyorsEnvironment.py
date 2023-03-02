@@ -20,10 +20,10 @@ class ConveyorsEnvironment:
     Environment which models the conveyor system and the movement of bags.
     """
 
-    def __init__(self, config: Dict[str, Any], env: Environment, topology: BaseTopology, agent: TorchAgent,
+    def __init__(self, config: Dict[str, Any], world_env: Environment, topology: BaseTopology, agent: TorchAgent,
                  logger: Logger):
         self._topology_config = config["topology"]
-        self._env = env
+        self._world_env = world_env
         self._conveyors_move_proc = None
         self._current_bags = {}
         self._topology_graph = topology
@@ -35,7 +35,7 @@ class ConveyorsEnvironment:
             checkpoints = conveyor_adj_nodes_with_data(self._topology_graph.graph, conv_id,
                                                        only_own=True, data="conveyor_pos")
             length = self._topology_config["conveyors"][str(conv_id)]["length"]
-            model = ConveyorModel(self._env, length, checkpoints, model_id=conv_id, logger=logger)
+            model = ConveyorModel(self._world_env, length, checkpoints, model_id=conv_id, logger=logger)
             self._conveyor_models[conv_id] = model
 
         self._conveyor_upstreams = {
@@ -168,7 +168,7 @@ class ConveyorsEnvironment:
             callback()
             self._updateAll()
 
-        return Event(self._env).succeed()
+        return Event(self._world_env).succeed()
 
     def _updateAll(self):
         """
@@ -206,7 +206,7 @@ class ConveyorsEnvironment:
                 model.endResolving()
             model.resume()
 
-        self.conveyors_move_proc = self._env.process(self._move())
+        self.conveyors_move_proc = self._world_env.process(self._move())
 
     def _move(self):
         """
@@ -218,9 +218,9 @@ class ConveyorsEnvironment:
             if len(events) > 0:
                 conv_idx, (bag, node, delay) = events[0]
                 assert delay > 0, "Next event delay can't be 0"
-                yield self._env.timeout(delay)
+                yield self._world_env.timeout(delay)
             else:
-                yield Event(self._env)
+                yield Event(self._world_env)
 
             for model in self._conveyor_models.values():
                 model.pause()
