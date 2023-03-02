@@ -18,9 +18,10 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
     def __init__(self, config: Dict[str, Any], topology: BaseTopology, agent: TorchAgent, logger: Logger):
         self._config = config
-        self._env = Environment()
-        self._world = ConveyorsEnvironment(config=self._config, env=self._env, topology=topology, agent=agent,
-                                           logger=logger)
+        self._world_env = Environment()
+        self._simulation_env = ConveyorsEnvironment(config=self._config, world_env=self._world_env, topology=topology,
+                                                    agent=agent,
+                                                    logger=logger)
 
     @classmethod
     def create_from_config(cls, config: Dict[str, Any], topology: Optional[BaseTopology] = None,
@@ -33,7 +34,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
     def runProcess(self) -> Generator[Timeout | Event, None, None]:
         """
         Generator which generates a series of test scenario events in
-        the world environment.
+        the simulation environment.
         """
 
         # TODO[Aleksandr Pakulev]: Implement bugs scheduling from config
@@ -41,16 +42,16 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         bag_id = 1
 
         for i in range(0, 10):
-            bag = Bag(bag_id, 'sink', 0, self._env.now, {})
-            yield self._world.handleEvent(BagAppearanceEvent(0, bag))
+            bag = Bag(bag_id, 'sink', 0, self._world_env.now, {})
+            yield self._simulation_env.handleEvent(BagAppearanceEvent(0, bag))
 
             bag_id += 1
 
-            yield self._env.timeout(20)
+            yield self._world_env.timeout(20)
 
     def run(self) -> None:
         """
         Runs the environment, optionally reporting the progress to a given queue.
         """
-        self._env.process(self.runProcess())
-        self._env.run()
+        self._world_env.process(self.runProcess())
+        self._world_env.run()
