@@ -24,7 +24,7 @@ class RandomAgent(TorchAgent, config_name='random'):
 
         low = torch.zeros_like(neighbors_length)  # (batch_size)
         high = neighbors_length  # (batch_size)
-        next_neighbors = torch.round(torch.rand(neighbors_length.shape) * (neighbors_length - torch.ones(1))).long()  # (batch_size)
+        next_neighbors = torch.round(torch.rand(neighbors_length.shape) * (neighbors_length - 1)).long()  # (batch_size)
 
         next_neighbors = torch.squeeze(
             torch.gather(
