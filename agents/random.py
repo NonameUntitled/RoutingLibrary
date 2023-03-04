@@ -20,13 +20,30 @@ class RandomAgent(TorchAgent, config_name='random'):
     def forward(self, inputs: Dict) -> Dict:
         neighbors = inputs[self._neighbors_prefix]  # (batch_size, neighbors_cnt)
 
-        neighbors_mask = inputs[f'{self._neighbors_prefix}.mask']  # (batch_size, neighbors_cnt)
-        neighbors_mask_sum = torch.sum(neighbors_mask, dim=-1)  # (batch_size)
+        neighbors_length = neighbors.lengths  # (batch_size)
 
-        next_neighbors = torch.from_numpy(np.random.randint(
-            low=np.zeros_like(neighbors_mask_sum.cpu().detach().numpy()),
-            high=neighbors_mask_sum.cpu().detach().numpy()
-        )).to(neighbors.device)  # (batch_size)
+        low = torch.zeros_like(neighbors_length)  # (batch_size)
+        high = neighbors_length  # (batch_size)
+        next_neighbors = torch.round(torch.rand(neighbors_length.shape) * (neighbors_length - 1)).long()  # (batch_size)
 
-        inputs[self._output_prefix] = next_neighbors  # (batch_size)
+        next_neighbors = torch.squeeze(
+            torch.gather(
+                input=neighbors.flatten_values,  # (batch_size, num_neighbors)
+                dim=1,
+                index=torch.unsqueeze(next_neighbors, dim=1)  # (batch_size, 1)
+            )  # (batch_size, 1)
+        )  # (batch_size)
+
+        inputs[self._output_prefix] = next_neighbors
+
         return inputs
+
+    @classmethod
+    def create_from_config(cls, config):
+        return cls(
+            neighbors_prefix=config['neighbors_prefix'],
+            output_prefix=config['output_prefix']
+        )
+
+    def learn(self):
+        pass

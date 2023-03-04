@@ -1,29 +1,53 @@
 {
   "experiment_name": "basic_experiment",
   "type": "conveyor",
-  "diverter": {
-    "type": "addsdfsd",
-    "here_we_need_some_variabes": 23,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true
-  },
-  "conveyor": {
-    "type": "addsdfsd",
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true,
-    "here_we_need_some_variabes": true
-  },
   "topology": {
-    "type": "from_file",
-    "filepath": "./tolopology"
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      }
+    },
+    "sinks": [
+      0,
+      1
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 0,
+        "pos": 20,
+        "upstream_conv": 1
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 10,
+        "upstream_conv": 2
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 40,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 20,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      }
+    }
   },
   "topology_2": {
     "type": "monte_carlo",
@@ -39,7 +63,7 @@
   },
   "agent": {
     "type": "random",
-    "neighbors_prefix": "neighbors_nodes",
+    "neighbors_prefix": "neighbors_node_ids",
     "output_prefix": "next_nodes"
   },
   "agent_2": {

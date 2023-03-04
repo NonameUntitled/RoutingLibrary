@@ -1,8 +1,5 @@
 from agents import BaseAgent
 from ml import BaseEmbedding
-from ml import BaseOptimizer
-
-from topology import BaseTopology
 
 import utils
 from utils import create_logger, fix_random_seed, parse_args
@@ -11,6 +8,8 @@ from utils import CHECKPOINT_DIR, DEVICE
 import os
 import torch
 import json
+from topology import BaseTopology
+from utils import parse_args
 
 from simulation import BaseSimulation
 
@@ -58,6 +57,12 @@ def main():
     # )
     #
     # environment.run(params['schedule'])
+    simulation = BaseSimulation.create_from_config(params, topology=topology, agent=agent, logger=logger)
+    simulation.run()
+
+    # BaseAgent.create_from_config(params['agent_1'])  # random
+    # BaseAgent.create_from_config(params['agent_2'])  # dqn
+    # BaseAgent.create_from_config(params['agent_3'])  # reinforce
 
 
 if __name__ == '__main__':
