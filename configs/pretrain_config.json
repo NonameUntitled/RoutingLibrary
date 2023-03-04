@@ -51,7 +51,7 @@
     "type": "ppo",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
-    "neighbours_node_ids_prefix": "neighbors_node_ids",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
     "actor": {
       "type": "tower_actor",
       "embedder": {

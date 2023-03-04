@@ -103,3 +103,6 @@ class TensorWithMask:
         self._values = self._values.to(device)
         self._lengths = self._lengths.to(device)
         return self
+
+    def __iter__(self):
+        return map(TensorWithMask, zip(self._values, self._lengths))
