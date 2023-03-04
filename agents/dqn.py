@@ -16,14 +16,16 @@ def _with_random_research(
         neighbor: TensorWithMask,
         prob: float
 ):
-    mask = torch.bernoulli(torch.full(argmax_next_neighbor.shape, prob)).int()
-    reverse_mask = torch.ones(argmax_next_neighbor.shape).int() - mask
-
-    uniform_weights = neighbor.mask
-    uniform_distr = Categorical(probs=uniform_weights / uniform_weights.sum(dim=1))
-    random_next_neighbor = neighbor.padded_values[torch.unsqueeze(uniform_distr.sample(), dim=1)]
-
-    return argmax_next_neighbor * mask + random_next_neighbor * reverse_mask
+    probs = torch.stack([
+        torch.full(argmax_next_neighbor.shape, prob),
+        torch.full(argmax_next_neighbor.shape, 1 - prob)
+    ], dim=-1)
+    choice_idx = Categorical(probs=probs).sample()
+    choices = torch.stack([
+        argmax_next_neighbor,
+        neighbor
+    ], dim=-1)
+    return torch.squeeze(torch.gather(choices, dim=-1, index=choice_idx))
 
 
 class DQNAgent(TorchAgent, config_name='dqn'):
