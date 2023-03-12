@@ -111,19 +111,25 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         # 4) Get probs from logits
         # Shape: [batch_size, max_neighbors_num]
         neighbors_probs = torch.nn.functional.softmax(neighbors_logits, dim=1)
-        neighbors_probs[~neighbor_node_embeddings.mask] = 0  # Make sure we won't sample from padding
+        neighbors_probs = neighbors_probs * neighbor_node_embeddings.mask  # Make sure we won't sample from padding
 
         # 4) Sample next neighbor idx
         categorical_distribution = Categorical(probs=neighbors_probs)
         # Shape: [batch_size, 1]
-        next_neighbors_ids = torch.unsqueeze(categorical_distribution.sample(), dim=1)
+        next_neighbors_idx = torch.unsqueeze(categorical_distribution.sample(), dim=1)
 
         # Shape: [batch_size]
         next_neighbors_ids = torch.squeeze(torch.gather(
             neighbor_node_ids.padded_values,
             dim=1,
-            index=next_neighbors_ids
-        ))
+            index=next_neighbors_idx
+        ), dim=1)
+
+        next_neighbors_prob = torch.squeeze(torch.gather(
+            neighbors_probs,
+            dim=1,
+            index=next_neighbors_idx
+        ), dim=1)
 
         return next_neighbors_ids, neighbors_logits
 
@@ -174,7 +180,8 @@ class TowerCritic(BaseCritic, config_name='tower_critic'):
         # 2) Compute value function for current state
         # Shape: [batch_size]
         current_state_value_function = torch.squeeze(
-            self._ff_net.forward(current_state_embedding)
+            self._ff_net.forward(current_state_embedding),
+            dim=1
         )
 
         return current_state_value_function

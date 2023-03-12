@@ -1,6 +1,9 @@
 {
   "experiment_name": "basic_experiment",
   "type": "conveyor",
+  "path_memory": {
+    "type": "shared_path_memory"
+  },
   "topology": {
     "type": "oriented",
     "sources": {
@@ -187,32 +190,36 @@
   "agent_4": {
     "type": "ppo",
     "node_idx": 0,
-    "input_adapter": {
-      "type": "ppo_input_adapter"
-    },
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes",
     "actor": {
       "type": "tower_actor",
       "embedder": {
-        "type": "shared_embedding_encoder"
+        "shared": true,
+        "type": "learnable"
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 20,
+        "input_dim": 256,
         "hidden_dims": [
-          64,
-          64
+          256,
+          256
         ],
-        "output_dim": 1
+        "output_dim": 256
       }
     },
     "critic": {
       "type": "tower_critic",
       "embedder": {
-        "type": "shared_embedding_encoder"
+        "shared": true,
+        "type": "learnable"
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 20,
+        "input_dim": 256,
         "hidden_dims": [
           64,
           64
@@ -222,6 +229,15 @@
     },
     "path_memory": {
       "type": "shared_path_memory"
+    },
+    "optimizer": {
+      "type": "basic",
+      "optimizer": {
+        "type": "adamw",
+        "lr": 3e-4,
+        "eps": 1e-8
+      },
+      "clip_grad_threshold": 5.0
     }
   },
   "pretrain": {
@@ -249,5 +265,11 @@
       "type": "random",
       "here_we_need_some_variabes": true
     }
+  },
+  "shared_embedder": {
+    "shared": true,
+    "type": "learnable",
+    "embedding_dim": 256,
+    "vocabulary_size": 40
   }
 }

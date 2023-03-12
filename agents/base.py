@@ -20,5 +20,9 @@ class TorchAgent(BaseAgent, nn.Module):
     def learn(self):
         raise NotImplementedError
 
+    @abstractmethod
+    def assign_id(self, agent_id: int):
+        raise NotImplementedError
+
     def __init__(self):
         super().__init__()

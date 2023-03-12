@@ -31,6 +31,10 @@ class Bag:
     def __lt__(self, other: Bag):
         return self._id < other._id
 
+    @property
+    def id(self):
+        return self._id
+
 
 class WorldEvent:
     """

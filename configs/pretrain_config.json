@@ -52,6 +52,7 @@
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "output_prefix": "next_nodes",
     "actor": {
       "type": "tower_actor",
       "embedder": {

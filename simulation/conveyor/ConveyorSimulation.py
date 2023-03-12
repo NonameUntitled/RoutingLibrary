@@ -31,7 +31,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         assert logger is not None, "Logger must be provided"
         return cls(config, topology, agent, logger)
 
-    def runProcess(self) -> Generator[Timeout | Event, None, None]:
+    def runProcess(self) -> Generator[Union[Timeout, Event], None, None]:
         """
         Generator which generates a series of test scenario events in
         the simulation environment.

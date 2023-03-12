@@ -105,4 +105,7 @@ class TensorWithMask:
         return self
 
     def __iter__(self):
-        return map(TensorWithMask, zip(self._values, self._lengths))
+        cum_length = 0
+        for idx in range(len(self._lengths)):
+            yield TensorWithMask(self._values[cum_length:cum_length+self._lengths[idx]], self._lengths[idx:idx+1])
+            cum_length += self._lengths[idx]

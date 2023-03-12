@@ -13,6 +13,7 @@ from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_
 from topology import BaseTopology
 from topology.utils import Section, conveyor_adj_nodes, conveyor_idx, node_type, node_id, node_conv_pos, \
     conveyor_adj_nodes_with_data, conv_start_node, conv_next_node, get_node_by_id
+from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
 class ConveyorsEnvironment:
@@ -47,6 +48,12 @@ class ConveyorsEnvironment:
         self._diverter_agents = {}
         for dv_id in diverters_ids:
             self._diverter_agents[dv_id] = copy.deepcopy(agent)
+            self._diverter_agents[dv_id].assign_id(dv_id)
+
+        self._path_memory = BaseBagTrajectoryMemory.create_from_config(config['path_memory']) \
+            if 'path_memory' in config else None
+        self._sink_counter = 0
+        self._sink_trigger_bag_count = config.get('sink_trigger_bag_count', 5)
 
         self._updateAll()
 
@@ -99,11 +106,13 @@ class ConveyorsEnvironment:
         for key in sample.keys():
             if key == "neighbors_node_ids":
                 sample_tensor[key] = TensorWithMask(
-                    values=torch.tensor([sample[key]], dtype=torch.int64),
+                    values=torch.tensor(sample[key], dtype=torch.int64),
                     lengths=torch.tensor([len(sample[key])], dtype=torch.int64)
                 )
             else:
                 sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64)
+
+        sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id])
 
         output = dv_agent.forward(sample_tensor)
         forward_node_id = output[dv_agent._output_prefix].item()
@@ -133,6 +142,13 @@ class ConveyorsEnvironment:
         up_type = node_type(up_node)
 
         if up_type == "sink":
+            if self._path_memory is not None:
+                self._path_memory.add_reward_to_trajectory(bag._id, 10)
+            self._sink_counter += 1
+            if self._sink_counter == self._sink_trigger_bag_count:
+                for dv_agent in self._diverter_agents.values():
+                    dv_agent.learn()
+                self._sink_counter = 0
             self._current_bags.pop(bag._id)
             self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
             return True
