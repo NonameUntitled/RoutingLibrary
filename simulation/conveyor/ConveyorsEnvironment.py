@@ -7,7 +7,9 @@ import torch
 from simpy import Environment, Event, Interrupt
 
 from agents import TorchAgent
+import utils
 from ml.utils import TensorWithMask
+from simulation.conveyor.energy import consumption_Zhang
 from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
 from topology import BaseTopology
@@ -48,6 +50,13 @@ class ConveyorsEnvironment:
         for dv_id in diverters_ids:
             self._diverter_agents[dv_id] = copy.deepcopy(agent)
 
+        # energy consumption
+        self._system_energy_consumption = 0
+        self._energy_consumption_last_update = self._world_env.now
+        self._conveyor_energy_consumption = {}
+        for conv_id in conv_ids:
+            self._conveyor_energy_consumption[conv_id] = 0
+
         self._updateAll()
 
     def handleEvent(self, event: WorldEvent) -> Event:
@@ -81,7 +90,8 @@ class ConveyorsEnvironment:
 
         self._removeBagFromConveyor(conv_idx, n_bag._id)
         self._putBagOnConveyor(up_conv, n_bag, diverter)
-        self._logger.debug(f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
+        self._logger.debug(
+            f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
 
     def _diverterPrediction(self, node: Section, bag: Bag, conv_idx: int):
         dv_id = node_id(node)
@@ -170,10 +180,38 @@ class ConveyorsEnvironment:
 
         return Event(self._world_env).succeed()
 
+    def _updateEnergyConsumption(self):
+        """
+        Update energy consumption
+        """
+        cur_time = self._world_env.now
+        time_diff = cur_time - self._energy_consumption_last_update
+        self._energy_consumption_last_update = cur_time
+        for _, model in self._conveyor_models.items():
+            new_energy_consumption = consumption_Zhang(model._length, 1, len(model._objects)) * time_diff
+            self._system_energy_consumption += new_energy_consumption
+            self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                f'{model._model_id} energy/time',
+                self._conveyor_energy_consumption[model._model_id],
+                self._energy_consumption_last_update
+            )
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+            "system energy/time",
+            self._system_energy_consumption,
+            self._energy_consumption_last_update
+        )
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+
+
     def _updateAll(self):
         """
         Check all current events and resolve them. After that continue moving
         """
+        self._updateEnergyConsumption()
+
         self.conveyors_move_proc = None
 
         left_to_sinks = set()
