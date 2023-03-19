@@ -1,4 +1,4 @@
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Optional
 
 import torch
 from torch import Tensor, nn
@@ -14,6 +14,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
     def assign_id(self, agent_id: int):
         self._id = agent_id
+
+    def get_id(self) -> int:
+        return self._id
 
     def __init__(
             self,
@@ -128,20 +131,21 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         })
         return inputs
 
-    def learn(self):
+    def learn(self) -> Optional[Tensor]:
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             self._id,
             self._trajectory_sample_size
         )
         if not learn_trajectories:
-            return
+            return None
         for trajectory in learn_trajectories:
             loss += self._trajectory_loss(trajectory)
         self._optimizer.step(loss)
+        return loss.detach()
 
     def _trajectory_loss(self, trajectory):
-        reward = [data['reward'] for data in trajectory]
+        reward = [data.get('reward', 0) for data in trajectory]
 
         v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination = trajectory[0]['extra_info']
         _, neighbor_logits = self._actor(
@@ -200,3 +204,4 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             advantage = self._discount_factor * advantage + reward
         advantage -= end_v_old_tensor
         return advantage
+
