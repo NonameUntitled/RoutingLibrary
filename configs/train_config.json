@@ -2,7 +2,8 @@
   "experiment_name": "basic_experiment",
   "type": "conveyor",
   "path_memory": {
-    "type": "shared_path_memory"
+    "type": "shared_path_memory",
+    "buffer_size": 2
   },
   "topology": {
     "type": "oriented",
@@ -228,7 +229,8 @@
       }
     },
     "path_memory": {
-      "type": "shared_path_memory"
+      "type": "shared_path_memory",
+      "buffer_size": 2
     },
     "optimizer": {
       "type": "basic",
