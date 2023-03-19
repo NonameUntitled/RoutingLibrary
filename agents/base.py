@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from torch import nn, Tensor
 
@@ -17,11 +17,15 @@ class TorchAgent(BaseAgent, nn.Module):
         raise NotImplementedError
 
     @abstractmethod
-    def learn(self):
+    def learn(self) -> Optional[Tensor]:
         raise NotImplementedError
 
     @abstractmethod
     def assign_id(self, agent_id: int):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_id(self) -> int:
         raise NotImplementedError
 
     def __init__(self):

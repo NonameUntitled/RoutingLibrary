@@ -1,15 +1,15 @@
 import copy
-import random
 from logging import Logger
 from typing import *
 
 import torch
 from simpy import Environment, Event, Interrupt
 
+import utils
 from agents import TorchAgent
 from ml.utils import TensorWithMask
-from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
+from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from topology import BaseTopology
 from topology.utils import Section, conveyor_adj_nodes, conveyor_idx, node_type, node_id, node_conv_pos, \
     conveyor_adj_nodes_with_data, conv_start_node, conv_next_node, get_node_by_id
@@ -24,6 +24,7 @@ class ConveyorsEnvironment:
     def __init__(self, config: Dict[str, Any], world_env: Environment, topology: BaseTopology, agent: TorchAgent,
                  logger: Logger):
         self._topology_config = config["topology"]
+        self._learn_trigger_bag_count = config["learn_trigger_bag_count"]
         self._world_env = world_env
         self._conveyors_move_proc = None
         self._current_bags = {}
@@ -53,7 +54,6 @@ class ConveyorsEnvironment:
         self._path_memory = BaseBagTrajectoryMemory.create_from_config(config['path_memory']) \
             if 'path_memory' in config else None
         self._sink_counter = 0
-        self._sink_trigger_bag_count = config.get('sink_trigger_bag_count', 5)
 
         self._updateAll()
 
@@ -88,7 +88,8 @@ class ConveyorsEnvironment:
 
         self._removeBagFromConveyor(conv_idx, n_bag._id)
         self._putBagOnConveyor(up_conv, n_bag, diverter)
-        self._logger.debug(f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
+        self._logger.debug(
+            f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
 
     def _diverterPrediction(self, node: Section, bag: Bag, conv_idx: int):
         dv_id = node_id(node)
@@ -143,11 +144,25 @@ class ConveyorsEnvironment:
 
         if up_type == "sink":
             if self._path_memory is not None:
-                self._path_memory.add_reward_to_trajectory(bag._id, 10)
+                reward = 10
+                if up_node.id == 0:
+                    reward = -100
+                self._path_memory.add_reward_to_trajectory(bag._id, reward)
             self._sink_counter += 1
-            if self._sink_counter == self._sink_trigger_bag_count:
+            if self._sink_counter == self._learn_trigger_bag_count:
+                if not hasattr(self, '_step_num'):
+                    self._step_num = 0
                 for dv_agent in self._diverter_agents.values():
-                    dv_agent.learn()
+                    loss = dv_agent.learn()
+                    if loss is not None:
+                        if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
+                            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                                '{}/{}'.format('train', f'agent_{dv_agent.get_id()}'),
+                                loss,
+                                self._step_num
+                            )
+                            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+                self._step_num += 1
                 self._sink_counter = 0
             self._current_bags.pop(bag._id)
             self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
