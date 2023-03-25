@@ -192,14 +192,14 @@ class ConveyorsEnvironment:
             self._system_energy_consumption += new_energy_consumption
             self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
             utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                f'{model._model_id} energy/time',
+                f'Conveyor {model._model_id} energy/time',
                 self._conveyor_energy_consumption[model._model_id],
                 self._energy_consumption_last_update
             )
             utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
 
         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-            "system energy/time",
+            "Conveyor system energy/time",
             self._system_energy_consumption,
             self._energy_consumption_last_update
         )
