@@ -145,6 +145,12 @@ class ConveyorsEnvironment:
         if up_type == "sink":
             self._current_bags.pop(bag._id)
             self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
+            current_time = self._world_env.now
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                f'Bag time/Bag arrived time',
+                current_time - bag._start_time,
+                current_time
+            )
             return True
 
         if up_type == "junction":
