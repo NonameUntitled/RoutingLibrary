@@ -6,6 +6,7 @@ from simpy import Environment
 
 from simulation.utils import merge_sorted
 from topology.utils import Section
+import utils
 
 POS_ROUND_DIGITS = 3
 SOFT_COLLIDE_SHIFT = 0.2
@@ -92,7 +93,8 @@ class ConveyorModel:
       (or the end of the conveyor), and also return those checkpoint and object
     """
 
-    def __init__(self, world_env: Environment, length: float, checkpoints: list[dict[str, int | Section]], model_id: int,
+    def __init__(self, world_env: Environment, length: float, checkpoints: list[dict[str, int | Section]],
+                 model_id: int,
                  logger: Logger):
         assert length > 0, "Conveyor length <= 0!"
 
@@ -174,6 +176,11 @@ class ConveyorModel:
             if n_pos == pos:
                 if soft_collide:
                     self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
+                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                        f'Collision at time',
+                        1,
+                        self._world_env.now
+                    )
                     i = n_idx
                     p_pos = pos
                     while i < len(self._object_positions) and self._object_positions[i]["position"] >= p_pos:
