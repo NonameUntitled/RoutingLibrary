@@ -50,7 +50,6 @@ class ConveyorsEnvironment:
         self._diverter_agents = {}
         for dv_id in diverters_ids:
             self._diverter_agents[dv_id] = copy.deepcopy(agent)
-            self._diverter_agents[dv_id].assign_id(dv_id)
 
         self._path_memory = BaseBagTrajectoryMemory.create_from_config(config['path_memory']) \
             if 'path_memory' in config else None
@@ -170,6 +169,7 @@ class ConveyorsEnvironment:
     def _learn(self):
         if not hasattr(self, '_learn_counter'):
             self._learn_counter = 0
+        print(self._debug())
         self._learn_counter += 1
         if self._learn_counter == self._learn_trigger_bag_count:
             if not hasattr(self, '_step_num'):
@@ -179,7 +179,7 @@ class ConveyorsEnvironment:
                 if loss is not None:
                     if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
                         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                            '{}/{}'.format('train', f'agent_{dv_agent.get_id()}'),
+                            '{}/{}'.format('train', f'agent_{dv_agent._node_id}'),
                             loss,
                             self._step_num
                         )
@@ -305,3 +305,15 @@ class ConveyorsEnvironment:
             self._updateAll()
         except Interrupt:
             pass
+
+    def _debug(self):
+        return {
+            _id: {
+                node_idx: agent._critic(
+                    current_node_idx=torch.LongTensor([[node_idx]]),
+                    destination_node_idx=torch.LongTensor([[0]])
+                ).item()
+                for node_idx in [0, 1]
+            } for _id, agent in self._diverter_agents.items()
+        }
+

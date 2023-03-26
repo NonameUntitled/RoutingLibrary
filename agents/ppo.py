@@ -11,13 +11,6 @@ from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
-
-    def assign_id(self, agent_id: int):
-        self._id = agent_id
-
-    def get_id(self) -> int:
-        return self._id
-
     def __init__(
             self,
             current_node_idx_prefix: str,
@@ -33,12 +26,14 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             ratio_clip: float = 0.2,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,  # Used only in training regime
             trajectory_length: int = 5,  # Used only in training regime
-            trajectory_sample_size: int = 30,  # Used only in training regime
+            trajectory_sample_size: int = 2,  # Used only in training regime
             optimizer_factory: Callable[[nn.Module], BaseOptimizer] = None,
     ):
         assert 0 < discount_factor < 1, 'Incorrect `discount_factor` choice'
         assert 0 < ratio_clip < 1, 'Incorrect `ratio_clip` choice'
         super().__init__()
+
+        self._node_id = -1
 
         self._current_node_idx_prefix = current_node_idx_prefix
         self._destination_node_idx_prefix = destination_node_idx_prefix
@@ -86,6 +81,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         # Shape: [batch_size]
         current_node_idx = inputs[self._current_node_idx_prefix]
+        if self._node_id < 0:
+            self._node_id = current_node_idx[0].item()
         batch_size = len(current_node_idx)
         # Shape: [batch_size]
         destination_node_idx = inputs[self._destination_node_idx_prefix]
@@ -112,7 +109,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
             self._bag_trajectory_memory.add_to_trajectory(
                 bag_ids=bag_ids,
-                node_idxs=torch.full([batch_size], self._id),
+                node_idxs=torch.full([batch_size], self._node_id),
                 extra_infos=zip(
                     torch.unsqueeze(current_state_value_function.detach(), dim=1),
                     torch.unsqueeze(current_node_idx, dim=1),
@@ -134,7 +131,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     def learn(self) -> Optional[Tensor]:
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
-            self._id,
+            self._node_id,
             self._trajectory_sample_size,
             self._trajectory_length
         )
@@ -189,7 +186,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
         critic_loss = (self._compute_advantage_score(v, reward, end_v_old)) ** 2
-        total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss * 5
+        total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss
 
         return total_loss
 
@@ -204,12 +201,3 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             advantage = self._discount_factor * advantage + reward
         advantage = self._discount_factor * advantage - v
         return advantage
-
-    def _debug(self):
-        return [
-            self._critic(
-                current_node_idx=LongTensor([[node_idx]]),
-                destination_node_idx=LongTensor([[0]])
-            ).item()
-            for node_idx in [0, 1]
-        ]

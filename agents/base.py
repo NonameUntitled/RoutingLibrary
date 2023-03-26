@@ -20,13 +20,5 @@ class TorchAgent(BaseAgent, nn.Module):
     def learn(self) -> Optional[Tensor]:
         raise NotImplementedError
 
-    @abstractmethod
-    def assign_id(self, agent_id: int):
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_id(self) -> int:
-        raise NotImplementedError
-
     def __init__(self):
         super().__init__()

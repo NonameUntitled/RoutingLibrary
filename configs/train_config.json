@@ -235,7 +235,7 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 3e-4,
+        "lr": 3e-3,
         "eps": 1e-8
       },
       "clip_grad_threshold": 5.0
