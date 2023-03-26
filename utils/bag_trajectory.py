@@ -26,7 +26,7 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
     _bag_id_buffer = defaultdict(deque)
     _node_idx_buffer = defaultdict(deque)
     _buffer = deque()
-    _buffer_size = 100
+    _buffer_size = 1000
 
     def __init__(self):
         self._cls = SharedBagTrajectoryMemory

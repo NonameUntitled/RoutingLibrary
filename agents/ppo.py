@@ -26,7 +26,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             ratio_clip: float = 0.2,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,  # Used only in training regime
             trajectory_length: int = 5,  # Used only in training regime
-            trajectory_sample_size: int = 2,  # Used only in training regime
+            trajectory_sample_size: int = 30,  # Used only in training regime
             optimizer_factory: Callable[[nn.Module], BaseOptimizer] = None,
     ):
         assert 0 < discount_factor < 1, 'Incorrect `discount_factor` choice'

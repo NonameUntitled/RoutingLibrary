@@ -308,12 +308,12 @@ class ConveyorsEnvironment:
 
     def _debug(self):
         return {
-            _id: {
-                node_idx: agent._critic(
-                    current_node_idx=torch.LongTensor([[node_idx]]),
-                    destination_node_idx=torch.LongTensor([[0]])
+            agent._node_id: {
+                agent_2._node_id: agent._critic(
+                    current_node_idx=torch.LongTensor([[agent_2._node_id]]),
+                    destination_node_idx=torch.LongTensor([[5]])
                 ).item()
-                for node_idx in [0, 1]
-            } for _id, agent in self._diverter_agents.items()
+                for agent_2 in filter(lambda a: a._node_id > 0,self._diverter_agents.values())
+            } for agent in self._diverter_agents.values()
         }
 
