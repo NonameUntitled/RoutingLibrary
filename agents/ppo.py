@@ -1,7 +1,7 @@
 from typing import Dict, Any, Callable, Optional
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor, nn, LongTensor
 
 from agents import TorchAgent
 from ml import BaseOptimizer
@@ -28,9 +28,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             actor: BaseActor,
             critic: BaseCritic,
             actor_loss_weight: float = 1.0,
-            critic_loss_weight: float = 1.0,
+            critic_loss_weight: float = 0.01,
             discount_factor: float = 0.99,
-            ratio_clip: float = 0.99,
+            ratio_clip: float = 0.2,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,  # Used only in training regime
             trajectory_length: int = 5,  # Used only in training regime
             trajectory_sample_size: int = 30,  # Used only in training regime
@@ -142,6 +142,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             return None
         for trajectory in learn_trajectories:
             loss += self._trajectory_loss(trajectory)
+        loss /= self._trajectory_sample_size
         self._optimizer.step(loss)
         return loss.detach().item()
 
@@ -149,59 +150,66 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         reward = [data['reward'] for data in trajectory]
 
         v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination = trajectory[0]['extra_info']
+        end_v_old, end_node_idx, _, _, _, end_destination = trajectory[-1]['extra_info']
         _, neighbor_logits = self._actor(
             current_node_idx=node_idx,
             neighbor_node_ids=neighbors,
             destination_node_idx=destination
         )
 
-        next_prob_old = self._get_prob(neighbors, next_neighbor, neighbor_logits_old)
-        next_prob = self._get_prob(neighbors, next_neighbor, neighbor_logits)
+        next_logprob_old = self._get_logprob(neighbors, next_neighbor, neighbor_logits_old)
+        next_logprob = self._get_logprob(neighbors, next_neighbor, neighbor_logits)
 
         v = self._critic(
             current_node_idx=node_idx,
             destination_node_idx=destination
         )
 
-        end_v_old = trajectory[-1]['extra_info'][0]
-        return self._loss(next_prob, next_prob_old, v, v_old, end_v_old, reward)
+        return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, reward)
 
-    def _get_prob(self, neighbor, next_neighbor, neighbor_logits):
-        neighbors_probs = torch.nn.functional.softmax(neighbor_logits, dim=1)
-        neighbors_probs = neighbors_probs * neighbor.mask
-        return neighbors_probs[neighbor.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
+    def _get_logprob(self, neighbor, next_neighbor, neighbor_logits):
+        neighbors_logprobs = torch.nn.functional.log_softmax(neighbor_logits, dim=1)
+        # neighbors_logprobs = neighbors_logprobs * neighbor.mask # TODO fix
+        return neighbors_logprobs[neighbor.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
 
     def _loss(
             self,
-            next_prob,
-            next_prob_old,
+            next_logprob,
+            next_logprob_old,
             v,
             v_old,
             end_v_old,
-            reward,
+            reward
     ) -> Tensor:
-        prob_ratio = next_prob / (next_prob_old + 1e-8)
+        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -10, 10))
 
         advantage = self._compute_advantage_score(v_old, reward, end_v_old)
-
-        weighted_prob = advantage * prob_ratio
+        weighted_prob = prob_ratio * advantage
         weighted_clipped_prob = torch.clamp(prob_ratio, 1 - self._ratio_clip, 1 + self._ratio_clip) * advantage
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
-        critic_loss = (advantage + v_old - v) ** 2
-        total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss
+        critic_loss = (self._compute_advantage_score(v, reward, end_v_old)) ** 2
+        total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss * 5
 
         return total_loss
 
     def _compute_advantage_score(
             self,
-            start_v_old,
+            v,
             rewards,
-            end_v_old
+            end_v
     ):
-        end_v_old_tensor = end_v_old
-        advantage = start_v_old
+        advantage = end_v
         for reward in rewards:
             advantage = self._discount_factor * advantage + reward
-        advantage -= end_v_old_tensor
+        advantage = self._discount_factor * advantage - v
         return advantage
+
+    def _debug(self):
+        return [
+            self._critic(
+                current_node_idx=LongTensor([[node_idx]]),
+                destination_node_idx=LongTensor([[0]])
+            ).item()
+            for node_idx in [0, 1]
+        ]

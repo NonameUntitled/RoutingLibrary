@@ -117,7 +117,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
     def learn(self):
         for trajectory in self._bag_trajectory_memory.sample_trajectories_for_node_idx(
                 self._node_idx,
-                self._trajectory_sample_size
+                self._trajectory_sample_size,
         ):
             target = trajectory[0]['reward']
             current_node_idx, neighbor_node_ids, destination_node_idx, next_neighbor = trajectory[0]['extra_infos']

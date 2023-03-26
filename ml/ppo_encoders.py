@@ -125,12 +125,6 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             index=next_neighbors_idx
         ), dim=1)
 
-        next_neighbors_prob = torch.squeeze(torch.gather(
-            neighbors_probs,
-            dim=1,
-            index=next_neighbors_idx
-        ), dim=1)
-
         return next_neighbors_ids, neighbors_logits
 
 

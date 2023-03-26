@@ -167,7 +167,7 @@ class ConveyorsEnvironment:
             raise Exception("Invalid conveyor upstream node type: " + up_type)
         return False
 
-    def _learn(self, bag_id):
+    def _learn(self):
         if not hasattr(self, '_learn_counter'):
             self._learn_counter = 0
         self._learn_counter += 1
@@ -195,7 +195,7 @@ class ConveyorsEnvironment:
         if self._path_memory is not None:
             self._path_memory.add_reward_to_trajectory(bag._id, bag._checkpoint_time - current_time)
         bag.check_point(current_time)
-        self._learn(bag._id)
+        self._learn()
 
         return bag
 
