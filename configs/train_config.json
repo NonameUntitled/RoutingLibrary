@@ -66,7 +66,7 @@
     "max_edge_length": 100,
     "length_distribution": "uniform"
   },
-  "agent": {
+  "agent_4": {
     "type": "random",
     "neighbors_prefix": "neighbors_node_ids",
     "output_prefix": "next_nodes"
@@ -189,7 +189,7 @@
       }
     ]
   },
-  "agent_4": {
+  "agent": {
     "type": "ppo",
     "node_idx": 0,
     "current_node_idx_prefix": "current_node_idx",
