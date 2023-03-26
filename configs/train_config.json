@@ -2,10 +2,9 @@
   "experiment_name": "ppo_train",
   "type": "conveyor",
   "path_memory": {
-    "type": "shared_path_memory",
-    "buffer_size": 2
+    "type": "shared_path_memory"
   },
-  "learn_trigger_bag_count": 1,
+  "learn_trigger_bag_count": 30,
   "topology": {
     "type": "oriented",
     "sources": {
@@ -197,7 +196,6 @@
     "neighbors_node_ids_prefix": "neighbors_node_ids",
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
-    "trajectory_sample_size": 3,
     "actor": {
       "type": "tower_actor",
       "embedder": {
@@ -231,8 +229,7 @@
       }
     },
     "path_memory": {
-      "type": "shared_path_memory",
-      "buffer_size": 2
+      "type": "shared_path_memory"
     },
     "optimizer": {
       "type": "basic",

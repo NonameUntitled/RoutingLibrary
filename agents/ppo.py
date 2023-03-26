@@ -32,8 +32,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             discount_factor: float = 0.99,
             ratio_clip: float = 0.99,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,  # Used only in training regime
-            trajectory_length: int = None,  # Unused
-            trajectory_sample_size: int = None,  # Used only in training regime
+            trajectory_length: int = 5,  # Used only in training regime
+            trajectory_sample_size: int = 30,  # Used only in training regime
             optimizer_factory: Callable[[nn.Module], BaseOptimizer] = None,
     ):
         assert 0 < discount_factor < 1, 'Incorrect `discount_factor` choice'
@@ -77,8 +77,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             ratio_clip=config.get('ratio_clip', 0.99),
             bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory'])
             if 'path_memory' in config else None,
-            trajectory_length=config.get('trajectory_length', 100),
-            trajectory_sample_size=config.get('trajectory_sample_size', 100),
+            trajectory_length=config.get('trajectory_length', 5),
+            trajectory_sample_size=config.get('trajectory_sample_size', 30),
             optimizer_factory=lambda m: BaseOptimizer.create_from_config(config['optimizer'], model=m)
             if 'optimizer' in config else None,
         )
@@ -135,7 +135,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             self._id,
-            self._trajectory_sample_size
+            self._trajectory_sample_size,
+            self._trajectory_length
         )
         if not learn_trajectories:
             return None
@@ -145,7 +146,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         return loss.detach().item()
 
     def _trajectory_loss(self, trajectory):
-        reward = [data.get('reward', 0) for data in trajectory]
+        reward = [data['reward'] for data in trajectory]
 
         v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination = trajectory[0]['extra_info']
         _, neighbor_logits = self._actor(
@@ -204,4 +205,3 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             advantage = self._discount_factor * advantage + reward
         advantage -= end_v_old_tensor
         return advantage
-

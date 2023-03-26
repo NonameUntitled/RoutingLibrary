@@ -9,8 +9,8 @@ import utils
 from agents import TorchAgent
 from ml.utils import TensorWithMask
 from simulation.conveyor.energy import consumption_Zhang
-from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
+from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from topology import BaseTopology
 from topology.utils import Section, conveyor_adj_nodes, conveyor_idx, node_type, node_id, node_conv_pos, \
     conveyor_adj_nodes_with_data, conv_start_node, conv_next_node, get_node_by_id
@@ -54,7 +54,6 @@ class ConveyorsEnvironment:
 
         self._path_memory = BaseBagTrajectoryMemory.create_from_config(config['path_memory']) \
             if 'path_memory' in config else None
-        self._sink_counter = 0
 
         # energy consumption
         self._system_energy_consumption = 0
@@ -149,29 +148,8 @@ class ConveyorsEnvironment:
         bag = self._removeBagFromConveyor(conv_idx, bag_id)
         up_node = self._conveyor_upstreams[conv_idx]
         up_type = node_type(up_node)
+
         if up_type == "sink":
-            if self._path_memory is not None:
-                self._path_memory.finish_trajectory(bag_id)
-                reward = 10
-                if up_node.id == 0:
-                    reward = -100
-                self._path_memory.add_reward_to_trajectory(bag._id, reward)
-            self._sink_counter += 1
-            if self._sink_counter == self._learn_trigger_bag_count:
-                if not hasattr(self, '_step_num'):
-                    self._step_num = 0
-                for dv_agent in self._diverter_agents.values():
-                    loss = dv_agent.learn()
-                    if loss is not None:
-                        if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
-                            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                                '{}/{}'.format('train', f'agent_{dv_agent.get_id()}'),
-                                loss,
-                                self._step_num
-                            )
-                            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
-                self._step_num += 1
-                self._sink_counter = 0
             self._current_bags.pop(bag._id)
             self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
             current_time = self._world_env.now
@@ -189,9 +167,36 @@ class ConveyorsEnvironment:
             raise Exception("Invalid conveyor upstream node type: " + up_type)
         return False
 
+    def _learn(self, bag_id):
+        if not hasattr(self, '_learn_counter'):
+            self._learn_counter = 0
+        self._learn_counter += 1
+        if self._learn_counter == self._learn_trigger_bag_count:
+            if not hasattr(self, '_step_num'):
+                self._step_num = 0
+            for dv_agent in self._diverter_agents.values():
+                loss = dv_agent.learn()
+                if loss is not None:
+                    if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
+                        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                            '{}/{}'.format('train', f'agent_{dv_agent.get_id()}'),
+                            loss,
+                            self._step_num
+                        )
+                        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+            self._step_num += 1
+            self._learn_counter = 0
+
     def _removeBagFromConveyor(self, conv_idx: int, bag_id: int):
         model = self._conveyor_models[conv_idx]
         bag = model.removeObject(bag_id)
+
+        current_time = self._world_env.now
+        if self._path_memory is not None:
+            self._path_memory.add_reward_to_trajectory(bag._id, bag._checkpoint_time - current_time)
+        bag.check_point(current_time)
+        self._learn(bag._id)
+
         return bag
 
     def _checkInterrupt(self, callback: Callable[[], None]) -> Event:
@@ -239,7 +244,6 @@ class ConveyorsEnvironment:
             self._energy_consumption_last_update
         )
         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
-
 
     def _updateAll(self):
         """
