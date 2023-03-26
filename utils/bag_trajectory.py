@@ -29,7 +29,8 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
     _buffer_size = 100
 
     def __init__(self, buffer_size: int = 100):
-        SharedBagTrajectoryMemory._buffer_size = buffer_size
+        self._cls = SharedBagTrajectoryMemory
+        self._cls._buffer_size = buffer_size
 
     @classmethod
     def create_from_config(cls, config):
@@ -45,8 +46,8 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
         node_idx = int(node_idx)
         all_node_trajectories = list(filter(
             lambda tr: tr[-1].get('reward') is not None,
-            (SharedBagTrajectoryMemory._trajectory_by_bag_id[bag_id][start_idx:]
-             for bag_id, start_idx in SharedBagTrajectoryMemory._start_trajectories_ids_by_node_idx[node_idx].items())
+            (self._cls._trajectory_by_bag_id[bag_id][start_idx:]
+             for bag_id, start_idx in self._cls._start_trajectories_ids_by_node_idx[node_idx].items())
         ))
         if len(all_node_trajectories) == 0:
             return []
@@ -58,22 +59,22 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
             'node_idx': node_idx,
             'extra_info': extra_info
         })
-        SharedBagTrajectoryMemory._start_trajectories_ids_by_node_idx[node_idx][bag_id] = \
-            len(SharedBagTrajectoryMemory._trajectory_by_bag_id[bag_id]) - 1
+        self._cls._start_trajectories_ids_by_node_idx[node_idx][bag_id] = \
+            len(self._cls._trajectory_by_bag_id[bag_id]) - 1
 
     def add_reward_to_trajectory(self, bag_id, reward):
         bag_id = int(bag_id)
         if bag_id not in SharedBagTrajectoryMemory._trajectory_by_bag_id:
             return
-        SharedBagTrajectoryMemory._trajectory_by_bag_id[bag_id][-1]['reward'] = reward
-        SharedBagTrajectoryMemory._to_delete_queue.appendleft(bag_id)
-        if len(SharedBagTrajectoryMemory._to_delete_queue) > SharedBagTrajectoryMemory._buffer_size:
-            bag_to_delete = SharedBagTrajectoryMemory._to_delete_queue.pop()
+        self._cls._trajectory_by_bag_id[bag_id][-1]['reward'] = reward
+        self._cls._to_delete_queue.appendleft(bag_id)
+        if len(self._cls._to_delete_queue) > self._cls._buffer_size:
+            bag_to_delete = self._cls._to_delete_queue.pop()
             self._delete_bag(bag_to_delete)
         return
 
     def _delete_bag(self, bag_id):
-        del SharedBagTrajectoryMemory._trajectory_by_bag_id[bag_id]
-        for start_trajectories_ids in SharedBagTrajectoryMemory._start_trajectories_ids_by_node_idx.values():
+        del self._cls._trajectory_by_bag_id[bag_id]
+        for start_trajectories_ids in self._cls._start_trajectories_ids_by_node_idx.values():
             if bag_id in start_trajectories_ids:
                 del start_trajectories_ids[bag_id]

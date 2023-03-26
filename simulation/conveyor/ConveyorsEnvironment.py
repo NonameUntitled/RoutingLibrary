@@ -149,7 +149,6 @@ class ConveyorsEnvironment:
         bag = self._removeBagFromConveyor(conv_idx, bag_id)
         up_node = self._conveyor_upstreams[conv_idx]
         up_type = node_type(up_node)
-
         if up_type == "sink":
             if self._path_memory is not None:
                 reward = 10

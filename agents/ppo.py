@@ -142,7 +142,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         for trajectory in learn_trajectories:
             loss += self._trajectory_loss(trajectory)
         self._optimizer.step(loss)
-        return loss.detach()
+        return loss.detach().item()
 
     def _trajectory_loss(self, trajectory):
         reward = [data.get('reward', 0) for data in trajectory]
