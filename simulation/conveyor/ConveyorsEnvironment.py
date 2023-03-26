@@ -151,6 +151,7 @@ class ConveyorsEnvironment:
         up_type = node_type(up_node)
         if up_type == "sink":
             if self._path_memory is not None:
+                self._path_memory.finish_trajectory(bag_id)
                 reward = 10
                 if up_node.id == 0:
                     reward = -100
