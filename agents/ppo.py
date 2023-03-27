@@ -1,7 +1,7 @@
 from typing import Dict, Any, Callable, Optional
 
 import torch
-from torch import Tensor, nn, LongTensor
+from torch import Tensor, nn
 
 from agents import TorchAgent
 from ml import BaseOptimizer
@@ -52,9 +52,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         self._bag_trajectory_memory = bag_trajectory_memory
         self._trajectory_length = trajectory_length
         self._trajectory_sample_size = trajectory_sample_size
-
         self._optimizer = optimizer_factory(self) if optimizer_factory is not None else None
-        self._id = None
 
     @classmethod
     def create_from_config(cls, config):

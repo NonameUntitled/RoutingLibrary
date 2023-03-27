@@ -65,132 +65,49 @@
     "max_edge_length": 100,
     "length_distribution": "uniform"
   },
-  "agent_4": {
+  "agent_1": {
     "type": "random",
     "neighbors_prefix": "neighbors_node_ids",
     "output_prefix": "next_nodes"
   },
   "agent_2": {
     "type": "dqn",
-    "parts": [
-      {
-        "type": "shared_embedding_encoder",
-        "prefix": "current_node",
-        "storage_prefix": "adj_matrix",
-        "output_prefix": "current_node_emb"
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes",
+    "q_network": {
+      "type": "tower_q_network",
+      "embedder": {
+        "shared": true,
+        "type": "learnable"
       },
-      {
-        "type": "shared_embedding_encoder",
-        "prefix": "neighbor_nodes",
-        "storage_prefix": "adj_matrix",
-        "output_prefix": "neighbor_nodes_emb"
-      },
-      {
-        "type": "shared_embedding_encoder",
-        "prefix": "destination_node",
-        "storage_prefix": "adj_matrix",
-        "output_prefix": "destination_node_emb"
-      },
-      {
-        "type": "concat",
-        "input_prefixes": [
-          "neighbor_nodes_emb",
-          "destination_node_emb",
-          "adj_matrix",
-          "current_node_emb"
-        ],
-        "dim": 1,
-        "output_prefix": "combined_state"
-      },
-      {
+      "ff_net": {
         "type": "tower",
-        "prefix": "combined_state",
+        "input_dim": 256,
         "hidden_dims": [
-          64,
-          64
+          256,
+          256
         ],
-        "output_dim": 100500,
-        "output_prefix": "node_scores"
-      },
-      {
-        "type": "softmax",
-        "prefix": "node_scores",
-        "dim": 1,
-        "output_prefix": "next_nodes"
+        "output_dim": 256
       }
-    ]
-  },
-  "agent_3": {
-    "type": "reinforce",
-    "parts": [
-      {
-        "type": "shared_embedding_encoder",
-        "prefix": "current_node",
-        "embeddings_prefix": "graph",
-        "output_prefix": "current_node"
+    },
+    "path_memory": {
+      "type": "shared_path_memory"
+    },
+    "optimizer": {
+      "type": "basic",
+      "optimizer": {
+        "type": "adamw",
+        "lr": 3e-4,
+        "eps": 1e-8
       },
-      {
-        "type": "shared_embedding_encoder",
-        "prefix": "neighbor_nodes",
-        "embeddings_prefix": "graph",
-        "output_prefix": "neighbor_nodes"
-      },
-      {
-        "type": "shared_embedding_encoder",
-        "prefix": "destination_node",
-        "embeddings_prefix": "graph",
-        "output_prefix": "destination_node"
-      },
-      {
-        "type": "subtraction",
-        "left_operand_prefix": "neighbor_nodes",
-        "right_operand_prefix": "current_node",
-        "output_prefix": "shifted_neighbors"
-      },
-      {
-        "type": "subtraction",
-        "left_operand_prefix": "destination_node",
-        "right_operand_prefix": "current_node",
-        "output_prefix": "shifted_destination"
-      },
-      {
-        "type": "concat",
-        "input_prefixes": [
-          "shifted_neighbors",
-          "shifted_destination"
-        ],
-        "dim": 1,
-        "output_prefix": "combined_state"
-      },
-      {
-        "type": "tower",
-        "input_prefix": "combined_state",
-        "input_dim": 20,
-        "hidden_dims": [
-          64,
-          64
-        ],
-        "output_dim": 10,
-        "output_prefix": "predicted_node_emb"
-      },
-      {
-        "type": "euclidean_distance",
-        "left_operand_prefix": "shifted_neighbors",
-        "right_operand_prefix": "predicted_node_emb",
-        "dim": 1,
-        "output_prefix": "neighbors_probabilities"
-      },
-      {
-        "type": "sample",
-        "input_prefix": "neighbor_nodes",
-        "proba_prefix": "neighbors_probabilities",
-        "output_prefix": "next_nodes"
-      }
-    ]
+      "clip_grad_threshold": 5.0
+    }
   },
   "agent": {
     "type": "ppo",
-    "node_idx": 0,
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",

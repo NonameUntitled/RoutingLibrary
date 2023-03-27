@@ -1,10 +1,11 @@
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 from torch.distributions import Categorical
 
 from agents import TorchAgent
+from ml import BaseOptimizer
 from ml.dqn_encoders import BaseQNetwork
 from ml.encoders import BaseEncoder
 from ml.utils import TensorWithMask
@@ -34,12 +35,15 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             current_node_idx_prefix: str,
             destination_node_idx_prefix: str,
             neighbors_node_ids_prefix: str,
+            output_prefix: str,
+            bag_ids_prefix: str,
             q_network: BaseQNetwork,
             discount_factor: float = 0.99,
             research_prob: float = 0.1,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,
             node_idx: int = None,
-            sample_size: int = 100,
+            trajectory_sample_size: int = 30,
+            optimizer_factory: Callable[[nn.Module], BaseOptimizer] = None
     ):
         assert 0 < discount_factor < 1, 'Incorrect `discount_factor` choice'
         assert 0 < research_prob < 1, 'Incorrect `discount_factor` choice'
@@ -48,13 +52,16 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         self._current_node_idx_prefix = current_node_idx_prefix
         self._destination_node_idx_prefix = destination_node_idx_prefix
         self._neighbors_node_ids_prefix = neighbors_node_ids_prefix
+        self._output_prefix = output_prefix
+        self._bag_ids_prefix = bag_ids_prefix
 
         self._node_idx = node_idx
         self._q_network = q_network
         self._discount_factor = discount_factor
         self._research_prob = research_prob
         self._bag_trajectory_memory = bag_trajectory_memory
-        self._sample_size = sample_size
+        self._trajectory_sample_size = trajectory_sample_size
+        self._optimizer = optimizer_factory(self) if optimizer_factory is not None else None
 
     @classmethod
     def create_from_config(cls, config):
@@ -62,13 +69,16 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             current_node_idx_prefix=config['current_node_idx_prefix'],
             destination_node_idx_prefix=config['destination_node_idx_prefix'],
             neighbors_node_ids_prefix=config['neighbors_node_ids_prefix'],
+            output_prefix=config['output_prefix'],
+            bag_ids_prefix=config.get('bag_ids_prefix', None),
             q_network=BaseEncoder.create_from_config(config['q_network']),
             discount_factor=config.get('discount_factor', 0.99),
             research_prob=config.get('research_prob', 0.1),
             bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory'])
             if 'path_memory' in config else None,
-            node_idx=config.get('node_idx', None),
-            sample_size=config.get('sample_size', 100)
+            trajectory_sample_size=config.get('trajectory_sample_size', 30),
+            optimizer_factory=lambda m: BaseOptimizer.create_from_config(config['optimizer'], model=m)
+            if 'optimizer' in config else None
         )
 
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
@@ -114,10 +124,12 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             'predicted_next_node_q': next_neighbor_q,
         }
 
-    def learn(self):
+    def learn(self) -> Tensor:
+        loss = 0
         for trajectory in self._bag_trajectory_memory.sample_trajectories_for_node_idx(
                 self._node_idx,
                 self._trajectory_sample_size,
+                1
         ):
             target = trajectory[0]['reward']
             current_node_idx, neighbor_node_ids, destination_node_idx, next_neighbor = trajectory[0]['extra_infos']
@@ -134,4 +146,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
                 neighbor_node_ids=neighbor_node_ids,
                 destination_node_idx=destination_node_idx
             )
-            loss = (target.detach() - neighbor_q[next_neighbor]) ** 2
+            loss += (target.detach() - neighbor_q[next_neighbor]) ** 2
+        loss /= self._trajectory_sample_size
+        self._optimizer.step(loss)
+        return loss.detach().item()
