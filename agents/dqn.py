@@ -1,4 +1,5 @@
-from typing import Dict, Any, Callable
+from copy import deepcopy
+from typing import Dict, Any, Callable, Optional
 
 import torch
 from torch import Tensor, nn
@@ -20,13 +21,24 @@ def _with_random_research(
     probs = torch.stack([
         torch.full(argmax_next_neighbor.shape, prob),
         torch.full(argmax_next_neighbor.shape, 1 - prob)
-    ], dim=-1)
+    ], dim=1)
     choice_idx = Categorical(probs=probs).sample()
+
+    neighbor_tensor = neighbor.padded_values
+    random_probs = torch.ones(neighbor_tensor.shape)
+    random_probs[~neighbor.mask] = -torch.inf
+    random_probs = torch.softmax(random_probs, dim=1)
+    random_neighbours = torch.squeeze(torch.gather(
+        neighbor_tensor,
+        dim=1,
+        index=torch.unsqueeze(Categorical(probs=random_probs).sample(), dim=1)
+    ), dim=1)
+
     choices = torch.stack([
         argmax_next_neighbor,
-        neighbor
-    ], dim=-1)
-    return torch.squeeze(torch.gather(choices, dim=-1, index=choice_idx))
+        random_neighbours
+    ], dim=1)
+    return torch.squeeze(torch.gather(choices, dim=1, index=torch.unsqueeze(choice_idx, dim=1)), dim=1)
 
 
 class DQNAgent(TorchAgent, config_name='dqn'):
@@ -49,6 +61,8 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         assert 0 < research_prob < 1, 'Incorrect `discount_factor` choice'
         super().__init__()
 
+        self._node_id = -1
+
         self._current_node_idx_prefix = current_node_idx_prefix
         self._destination_node_idx_prefix = destination_node_idx_prefix
         self._neighbors_node_ids_prefix = neighbors_node_ids_prefix
@@ -61,7 +75,12 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         self._research_prob = research_prob
         self._bag_trajectory_memory = bag_trajectory_memory
         self._trajectory_sample_size = trajectory_sample_size
+
         self._optimizer = optimizer_factory(self) if optimizer_factory is not None else None
+
+        self._weight_dump = 3,
+        self._weight_dump_counter = 0
+        self._old_q_network = deepcopy(self._q_network)
 
     @classmethod
     def create_from_config(cls, config):
@@ -84,6 +103,9 @@ class DQNAgent(TorchAgent, config_name='dqn'):
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         # Shape: [batch_size]
         current_node_idx = inputs[self._current_node_idx_prefix]
+        if self._node_id < 0:
+            self._node_id = current_node_idx[0].item()
+        batch_size = len(current_node_idx)
         # Shape: [batch_size]
         destination_node_idx = inputs[self._destination_node_idx_prefix]
         # TensorWithMask
@@ -98,55 +120,71 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         )
 
         # Shape: [batch_size]
-        best_next_neighbor_idx = neighbor_node_ids.padded_values[torch.argmax(next_neighbor_q, dim=-1)]
-        next_neighbor_idx = _with_random_research(
-            best_next_neighbor_idx,
+        best_next_neighbor_id = torch.squeeze(torch.gather(
+            neighbor_node_ids.padded_values,
+            dim=1,
+            index=torch.unsqueeze(torch.argmax(next_neighbor_q, dim=1), dim=1)
+        ), dim=1)
+        next_neighbor_ids = _with_random_research(
+            best_next_neighbor_id,
             neighbor_node_ids,
             self._research_prob
-        )
+        ).detach()
 
         if self._bag_trajectory_memory is not None:
             # TODO[Vladimir Baikalov]: Think about how to generalize
-            bag_ids = inputs.get(self._bag_idx_prefix, None)
+            bag_ids = inputs.get(self._bag_ids_prefix, None)
 
             self._bag_trajectory_memory.add_to_trajectory(
                 bag_ids=bag_ids,
-                node_idxs=current_node_idx,
+                node_idxs=torch.full([batch_size], self._node_id),
                 extra_infos=zip(
-                    current_node_idx,
+                    torch.unsqueeze(current_node_idx, dim=1),
                     neighbor_node_ids,
-                    destination_node_idx,
-                    next_neighbor_idx
+                    torch.unsqueeze(destination_node_idx, dim=1),
+                    torch.unsqueeze(next_neighbor_ids, dim=1)
                 )
             )
-        return {
-            'predicted_next_node_idx': next_neighbor_idx,
+        inputs[self._output_prefix] = next_neighbor_ids
+        inputs.update({
+            'predicted_next_node_idx': next_neighbor_ids,
             'predicted_next_node_q': next_neighbor_q,
-        }
+        })
+        return inputs
 
-    def learn(self) -> Tensor:
+    def learn(self) -> Optional[Tensor]:
         loss = 0
-        for trajectory in self._bag_trajectory_memory.sample_trajectories_for_node_idx(
-                self._node_idx,
-                self._trajectory_sample_size,
-                1
-        ):
+        learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
+            self._node_id,
+            self._trajectory_sample_size,
+            1
+        )
+        if not learn_trajectories:
+            return None
+        for trajectory in learn_trajectories:
             target = trajectory[0]['reward']
-            current_node_idx, neighbor_node_ids, destination_node_idx, next_neighbor = trajectory[0]['extra_infos']
-            if len(trajectory) > 0:
-                current_node_idx_, neighbor_node_ids_, destination_node_idx_, _ = trajectory[1]['extra_infos']
-                neighbor_q_ = self._q_network(
+            current_node_idx, neighbor_node_ids, destination_node_idx, next_neighbor = trajectory[0]['extra_info']
+            if len(trajectory) > 1:
+                current_node_idx_, neighbor_node_ids_, destination_node_idx_, _ = trajectory[1]['extra_info']
+                neighbor_q_ = self._old_q_network(
                     current_node_idx=current_node_idx_,
                     neighbor_node_ids=neighbor_node_ids_,
                     destination_node_idx=destination_node_idx_
                 )
-                target += self._discount_factor * neighbor_q_
+                target += self._discount_factor * torch.max(neighbor_q_, dim=1).values.detach()
             neighbor_q = self._q_network(
                 current_node_idx=current_node_idx,
                 neighbor_node_ids=neighbor_node_ids,
                 destination_node_idx=destination_node_idx
             )
-            loss += (target.detach() - neighbor_q[next_neighbor]) ** 2
+            loss += (target - neighbor_q[neighbor_node_ids.padded_values == next_neighbor]) ** 2
         loss /= self._trajectory_sample_size
         self._optimizer.step(loss)
+
+        self._weight_dump_counter += 1
+        if self._weight_dump_counter == self._weight_dump:
+            self._weight_dump_counter = 0
+            for curr_param, old_param in zip(self._q_network.parameters(), self._old_q_network.parameters()):
+                old_param.data.copy_(curr_param.data)
+
         return loss.detach().item()

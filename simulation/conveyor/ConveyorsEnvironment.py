@@ -169,7 +169,6 @@ class ConveyorsEnvironment:
     def _learn(self):
         if not hasattr(self, '_learn_counter'):
             self._learn_counter = 0
-        print(self._debug())
         self._learn_counter += 1
         if self._learn_counter == self._learn_trigger_bag_count:
             if not hasattr(self, '_step_num'):

@@ -93,7 +93,7 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
 
         # 2) Compute q func
         # Shape: [batch_size, max_neighbors_num]
-        neighbors_q = self._ff_net.forward(all_state_embeddings)
+        neighbors_q = torch.squeeze(self._ff_net.forward(all_state_embeddings), dim=2)
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         neighbors_q[~neighbor_node_embeddings.mask] = -torch.inf
         return neighbors_q
