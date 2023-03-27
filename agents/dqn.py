@@ -53,7 +53,6 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             discount_factor: float = 0.99,
             research_prob: float = 0.1,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,
-            node_idx: int = None,
             trajectory_sample_size: int = 30,
             optimizer_factory: Callable[[nn.Module], BaseOptimizer] = None
     ):
@@ -69,7 +68,6 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         self._output_prefix = output_prefix
         self._bag_ids_prefix = bag_ids_prefix
 
-        self._node_idx = node_idx
         self._q_network = q_network
         self._discount_factor = discount_factor
         self._research_prob = research_prob
