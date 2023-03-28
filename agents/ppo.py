@@ -8,6 +8,7 @@ from ml import BaseOptimizer
 from ml.encoders import BaseEncoder
 from ml.ppo_encoders import BaseActor, BaseCritic
 from utils.bag_trajectory import BaseBagTrajectoryMemory
+from utils.debug import Debug
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
@@ -124,9 +125,13 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             'predicted_next_node_logits': neighbors_logits,
             'predicted_current_state_v_value': current_state_value_function
         })
+        # print(current_node_idx, destination_node_idx, current_state_value_function.detach())
+        # print(neighbor_node_ids.padded_values, neighbors_logits.detach())
+        Debug().debug()
         return inputs
 
     def learn(self) -> Optional[Tensor]:
+        return None
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             self._node_id,

@@ -12,6 +12,7 @@ from topology import BaseTopology
 from utils import parse_args
 
 from simulation import BaseSimulation
+from utils.debug import Debug
 
 logger = create_logger(name=__name__)
 seed_val = 42
@@ -30,6 +31,7 @@ def main():
 
     # Environment-related parts initialization
     topology = BaseTopology.create_from_config(params['topology'])
+    Debug().init_topology(topology)
 
     # Ml-related part initialization
     if 'shared_embedder' in params:
@@ -39,7 +41,7 @@ def main():
             # TODO[Vladimir Baikalov]: Think about how to fit not shared embeddings
             embeddings.fit(topology.graph)
 
-    agent = BaseAgent.create_from_config(params['agent_2'])
+    agent = BaseAgent.create_from_config(params['agent'])
     # TODO[Vladimir Baikalov]: check loading
     if 'pretrain_model_name' in params:
         load_path = os.path.join(CHECKPOINT_DIR, '{}.pth'.format(params['pretrain_model_name']))

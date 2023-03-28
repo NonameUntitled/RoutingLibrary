@@ -19,6 +19,8 @@ from functools import partial
 
 from torch.utils.data import DataLoader
 
+from utils.debug import Debug
+
 logger = create_logger(name=__name__)
 seed_val = 42
 
@@ -67,6 +69,7 @@ def main():
 
     # Environment-related part initialization
     topology = BaseTopology.create_from_config(params['topology'])
+    Debug().init_topology(topology)
     # But it is possible only in yaml not in json
     # Another idea is to create separated field outside
     # TODO[Vladimir Baikalov]: It looks bad it is better to have sort of reference
