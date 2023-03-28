@@ -41,8 +41,8 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
         bag_id = 1
 
-        for i in range(0, 46):
-            bag = Bag(bag_id, 'sink', 1, self._world_env.now, {})
+        for i in range(0, 300):
+            bag = Bag(bag_id, 'sink', 0, self._world_env.now, {})
             yield self._simulation_env.handleEvent(BagAppearanceEvent(0, bag))
 
             bag_id += 1

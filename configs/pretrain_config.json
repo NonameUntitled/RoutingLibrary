@@ -125,7 +125,7 @@
       {
         "type": "mse",
         "predictions_prefix": "predicted_current_state_v_value",
-        "ground_truth_prefix": "path_lengths",
+        "ground_truth_prefix": "path_length",
         "output_prefix": "mse_loss"
       },
       {
@@ -171,7 +171,7 @@
   },
   "model_name": "ppo_pretrain_model",
   "num_samples": 50000,
-  "num_epochs": 5,
+  "num_epochs": 50,
   "shared_embedder": {
     "shared": true,
     "type": "learnable",
