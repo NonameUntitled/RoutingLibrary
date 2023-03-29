@@ -98,6 +98,7 @@ class ConveyorsEnvironment:
             f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
 
     def _diverterPrediction(self, node: Section, bag: Bag, conv_idx: int):
+        self._bag_checkpoint(bag)
         dv_id = node_id(node)
         dv_agent = self._diverter_agents[dv_id]
 
@@ -149,6 +150,7 @@ class ConveyorsEnvironment:
         up_type = node_type(up_node)
 
         if up_type == "sink":
+            self._bag_checkpoint(bag)
             self._current_bags.pop(bag._id)
             self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
             current_time = self._world_env.now
@@ -165,6 +167,13 @@ class ConveyorsEnvironment:
         else:
             raise Exception("Invalid conveyor upstream node type: " + up_type)
         return False
+
+    def _bag_checkpoint(self, bag: Bag):
+        current_time = self._world_env.now
+        if self._path_memory is not None:
+            self._path_memory.add_reward_to_trajectory(bag._id, bag._checkpoint_time - current_time)
+        bag.check_point(current_time)
+        self._learn()
 
     def _learn(self):
         if not hasattr(self, '_learn_counter'):
@@ -188,15 +197,7 @@ class ConveyorsEnvironment:
 
     def _removeBagFromConveyor(self, conv_idx: int, bag_id: int):
         model = self._conveyor_models[conv_idx]
-        bag = model.removeObject(bag_id)
-
-        current_time = self._world_env.now
-        if self._path_memory is not None:
-            self._path_memory.add_reward_to_trajectory(bag._id, bag._checkpoint_time - current_time)
-        bag.check_point(current_time)
-        self._learn()
-
-        return bag
+        return model.removeObject(bag_id)
 
     def _checkInterrupt(self, callback: Callable[[], None]) -> Event:
         """
@@ -312,7 +313,6 @@ class ConveyorsEnvironment:
                     current_node_idx=torch.LongTensor([[agent_2._node_id]]),
                     destination_node_idx=torch.LongTensor([[5]])
                 ).item()
-                for agent_2 in filter(lambda a: a._node_id > 0,self._diverter_agents.values())
+                for agent_2 in filter(lambda a: a._node_id > 0, self._diverter_agents.values())
             } for agent in self._diverter_agents.values()
         }
-

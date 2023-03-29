@@ -190,5 +190,5 @@
     "embedding_dim": 256,
     "vocabulary_size": 40
   },
-  "pretrain_model_name": "ppo_pretrain_model"
+  "pretrain_model_name_": "ppo_pretrain_model"
 }
