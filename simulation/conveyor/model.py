@@ -1,4 +1,4 @@
-from bisect import bisect, bisect_right, bisect_left
+from bisect import bisect_right, bisect_left
 from logging import Logger
 from typing import *
 
@@ -45,7 +45,7 @@ def search_pos(ls: List[Dict[str, Any]], pos: float,
         return None
 
     if preference == "nearest":
-        id = bisect(positions, pos)
+        id = bisect_left(positions, pos)
         return ls[id], id
     elif preference == "next":
         id = bisect_right(positions, pos)

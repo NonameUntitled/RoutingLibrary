@@ -45,7 +45,8 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
                 if last_step.get('next') is not None and last_step['next'].get('reward') is not None:
                     trajectory.append(last_step['next'])
 
-        all_trajectories = list(filter(lambda tr: tr[-1]['terminal'], all_trajectories))
+        # filter finished only
+        # all_trajectories = list(filter(lambda tr: tr[-1]['terminal'], all_trajectories))
 
         if len(all_trajectories) == 0:
             return []

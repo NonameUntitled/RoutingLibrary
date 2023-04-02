@@ -12,7 +12,6 @@ from topology import BaseTopology
 from utils import parse_args
 
 from simulation import BaseSimulation
-from utils.debug import Debug
 
 logger = create_logger(name=__name__)
 seed_val = 42
@@ -31,7 +30,6 @@ def main():
 
     # Environment-related parts initialization
     topology = BaseTopology.create_from_config(params['topology'])
-    Debug().init_topology(topology)
 
     # Ml-related part initialization
     if 'shared_embedder' in params:
