@@ -100,6 +100,11 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             destination_node_idx=destination_node_idx
         )
 
+        next_state_value_function = self._critic(
+            current_node_idx=next_neighbors_ids,
+            destination_node_idx=destination_node_idx
+        )
+
         if self._bag_trajectory_memory is not None:
             # TODO[Vladimir Baikalov]: Think about how to generalize
             # Shape: [batch_size] if exists, None otherwise
@@ -114,7 +119,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
                     neighbor_node_ids,
                     torch.unsqueeze(next_neighbors_ids.detach(), dim=1),
                     torch.unsqueeze(neighbors_logits.detach(), dim=1),
-                    torch.unsqueeze(destination_node_idx, dim=1)
+                    torch.unsqueeze(destination_node_idx, dim=1),
+                    torch.unsqueeze(next_state_value_function.detach(), dim=1),
                 )
             )
 
@@ -129,6 +135,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         return inputs
 
     def learn(self) -> Optional[Tensor]:
+        return None
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             self._node_id,
@@ -146,8 +153,10 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     def _trajectory_loss(self, trajectory):
         reward = [data['reward'] for data in trajectory]
 
-        v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination = trajectory[0]['extra_info']
-        end_v_old, end_node_idx, _, _, _, end_destination = trajectory[-1]['extra_info']
+        v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = trajectory[0]['extra_info']
+        _, _, _, _, _, _, end_v_old = trajectory[-1]['extra_info']
+        if trajectory[-1]['terminal']:
+            end_v_old = 0
         _, neighbor_logits = self._actor(
             current_node_idx=node_idx,
             neighbor_node_ids=neighbors,
@@ -164,10 +173,13 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, reward)
 
-    def _get_logprob(self, neighbor, next_neighbor, neighbor_logits):
-        neighbors_logprobs = torch.nn.functional.log_softmax(neighbor_logits, dim=1)
-        # neighbors_logprobs = neighbors_logprobs * neighbor.mask # TODO fix
-        return neighbors_logprobs[neighbor.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
+    def _get_logprob(self, neighbors, next_neighbor, neighbors_logits):
+        inf_tensor = torch.zeros(neighbors_logits.shape)
+        inf_tensor[~neighbors.mask] = -1e10
+        neighbors_logits = neighbors_logits + inf_tensor
+        neighbors_logprobs = torch.nn.functional.log_softmax(neighbors_logits, dim=1)
+        neighbors_logprobs = neighbors_logprobs + inf_tensor
+        return neighbors_logprobs[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
 
     def _loss(
             self,
@@ -178,7 +190,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             end_v_old,
             reward
     ) -> Tensor:
-        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -10, 10))
+        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -30, 30))
 
         advantage = self._compute_advantage_score(v_old, reward, end_v_old)
         weighted_prob = prob_ratio * advantage

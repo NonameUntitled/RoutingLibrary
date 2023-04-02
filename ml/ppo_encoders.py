@@ -100,13 +100,19 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
         # 3) Compute logits for existing next states (here I use dot product for scores receiving)
         # Shape: [batch_size, max_neighbors_num]
-        neighbors_logits = torch.einsum(
-            'bnd,bd->bn',
+        neighbors_logits = torch.nn.functional.cosine_similarity(
             next_state_embeddings,
-            ideal_transition_embedding
-        )
+            torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
+        ) * 10
+        # neighbors_logits = torch.einsum(
+        #     'bnd,bd->bn',
+        #     next_state_embeddings,
+        #     ideal_transition_embedding
+        # )
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
-        neighbors_logits[~neighbor_node_embeddings.mask] = -torch.inf
+        inf_tensor = torch.zeros(neighbors_logits.shape)
+        inf_tensor[~neighbor_node_embeddings.mask] = -1e10
+        neighbors_logits = neighbors_logits + inf_tensor
 
         # 4) Get probs from logits
         # Shape: [batch_size, max_neighbors_num]

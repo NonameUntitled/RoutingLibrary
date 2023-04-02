@@ -111,6 +111,7 @@
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "trajectory_sample_size": 10,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
     "actor": {
@@ -152,10 +153,9 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 3e-3,
+        "lr": 3e-4,
         "eps": 1e-8
-      },
-      "clip_grad_threshold": 5.0
+      }
     }
   },
   "pretrain": {
@@ -190,5 +190,5 @@
     "embedding_dim": 256,
     "vocabulary_size": 40
   },
-  "pretrain_model_name_": "ppo_pretrain_model"
+  "pretrain_model_name": "ppo_pretrain_model"
 }

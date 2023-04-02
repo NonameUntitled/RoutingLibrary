@@ -14,7 +14,7 @@ class BaseBagTrajectoryMemory(metaclass=MetaParent):
         raise NotImplementedError
 
     @abstractmethod
-    def add_reward_to_trajectory(self, bag_id, reward):
+    def add_reward_to_trajectory(self, bag_id, reward, terminal=False):
         raise NotImplementedError
 
     @abstractmethod
@@ -26,7 +26,7 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
     _bag_id_buffer = defaultdict(deque)
     _node_idx_buffer = defaultdict(deque)
     _buffer = deque()
-    _buffer_size = 100
+    _buffer_size = 10000
 
     def __init__(self):
         self._cls = SharedBagTrajectoryMemory
@@ -39,11 +39,14 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
         node_idx = int(node_idx)
 
         all_trajectories = [[step] for step in self._cls._node_idx_buffer[node_idx] if step.get('reward') is not None]
-        for _ in range(length):
+        for _ in range(length - 1):
             for trajectory in all_trajectories:
                 last_step = trajectory[-1]
                 if last_step.get('next') is not None and last_step['next'].get('reward') is not None:
                     trajectory.append(last_step['next'])
+
+        all_trajectories = list(filter(lambda tr: tr[-1]['terminal'], all_trajectories))
+
         if len(all_trajectories) == 0:
             return []
         return list(map(lambda idx: all_trajectories[idx],
@@ -66,10 +69,12 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
             self._cls._bag_id_buffer[step['bag_id']].popleft()
             self._cls._node_idx_buffer[step['node_idx']].popleft()
 
-    def add_reward_to_trajectory(self, bag_id, reward):
+    def add_reward_to_trajectory(self, bag_id, reward, terminal=False):
         bag_id = int(bag_id)
         if bag_id not in self._cls._bag_id_buffer:
             return
-        if 'reward' not in self._cls._bag_id_buffer[bag_id][-1]:
-            self._cls._bag_id_buffer[bag_id][-1]['reward'] = 0
-        self._cls._bag_id_buffer[bag_id][-1]['reward'] += reward
+        info = self._cls._bag_id_buffer[bag_id][-1]
+        info['terminal'] = terminal or info.get('terminal', False)
+        if 'reward' not in info:
+            info['reward'] = 0
+        info['reward'] += reward

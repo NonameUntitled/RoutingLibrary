@@ -150,6 +150,11 @@ class ConveyorsEnvironment:
         up_type = node_type(up_node)
 
         if up_type == "sink":
+            if self._path_memory is not None:
+                reward = -100
+                if bag._dst_id == up_node.id:
+                    reward = 100
+                self._path_memory.add_reward_to_trajectory(bag._id, reward, terminal=True)
             self._bag_checkpoint(bag)
             self._current_bags.pop(bag._id)
             self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
@@ -305,14 +310,3 @@ class ConveyorsEnvironment:
             self._updateAll()
         except Interrupt:
             pass
-
-    def _debug(self):
-        return {
-            agent._node_id: {
-                agent_2._node_id: agent._critic(
-                    current_node_idx=torch.LongTensor([[agent_2._node_id]]),
-                    destination_node_idx=torch.LongTensor([[5]])
-                ).item()
-                for agent_2 in filter(lambda a: a._node_id > 0, self._diverter_agents.values())
-            } for agent in self._diverter_agents.values()
-        }
