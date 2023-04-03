@@ -9,36 +9,7 @@ from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.dqn_encoders import BaseQNetwork
 from ml.encoders import BaseEncoder
-from ml.utils import TensorWithMask
 from utils.bag_trajectory import BaseBagTrajectoryMemory
-
-
-def _with_random_research(
-        argmax_next_neighbor: Tensor,
-        neighbor: TensorWithMask,
-        prob: float
-):
-    probs = torch.stack([
-        torch.full(argmax_next_neighbor.shape, prob),
-        torch.full(argmax_next_neighbor.shape, 1 - prob)
-    ], dim=1)
-    choice_idx = Categorical(probs=probs).sample()
-
-    neighbor_tensor = neighbor.padded_values
-    random_probs = torch.ones(neighbor_tensor.shape)
-    random_probs[~neighbor.mask] = -torch.inf
-    random_probs = torch.softmax(random_probs, dim=1)
-    random_neighbours = torch.squeeze(torch.gather(
-        neighbor_tensor,
-        dim=1,
-        index=torch.unsqueeze(Categorical(probs=random_probs).sample(), dim=1)
-    ), dim=1)
-
-    choices = torch.stack([
-        argmax_next_neighbor,
-        random_neighbours
-    ], dim=1)
-    return torch.squeeze(torch.gather(choices, dim=1, index=torch.unsqueeze(choice_idx, dim=1)), dim=1)
 
 
 class DQNAgent(TorchAgent, config_name='dqn'):
@@ -76,10 +47,6 @@ class DQNAgent(TorchAgent, config_name='dqn'):
 
         self._optimizer = optimizer_factory(self) if optimizer_factory is not None else None
 
-        self._weight_dump = 3,
-        self._weight_dump_counter = 0
-        self._old_q_network = deepcopy(self._q_network)
-
     @classmethod
     def create_from_config(cls, config):
         return cls(
@@ -110,24 +77,12 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         # Shape: [batch_size, max_neighbors_num]
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
 
-        # Shape: [batch_size, max_neighbors_num]
-        next_neighbor_q = self._q_network(
+        # Shape: [batch_size], [batch_size, max_neighbors_num]
+        next_neighbor_ids, neighbors_q = self._q_network(
             current_node_idx=current_node_idx,
             neighbor_node_ids=neighbor_node_ids,
             destination_node_idx=destination_node_idx
         )
-
-        # Shape: [batch_size]
-        best_next_neighbor_id = torch.squeeze(torch.gather(
-            neighbor_node_ids.padded_values,
-            dim=1,
-            index=torch.unsqueeze(torch.argmax(next_neighbor_q, dim=1), dim=1)
-        ), dim=1)
-        next_neighbor_ids = _with_random_research(
-            best_next_neighbor_id,
-            neighbor_node_ids,
-            self._research_prob
-        ).detach()
 
         if self._bag_trajectory_memory is not None:
             # TODO[Vladimir Baikalov]: Think about how to generalize
@@ -139,6 +94,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
                 extra_infos=zip(
                     torch.unsqueeze(current_node_idx, dim=1),
                     neighbor_node_ids,
+                    neighbors_q,
                     torch.unsqueeze(destination_node_idx, dim=1),
                     torch.unsqueeze(next_neighbor_ids, dim=1)
                 )
@@ -146,7 +102,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         inputs[self._output_prefix] = next_neighbor_ids
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
-            'predicted_next_node_q': next_neighbor_q,
+            'predicted_next_node_q': neighbors_q,
         })
         return inputs
 
@@ -161,16 +117,11 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             return None
         for trajectory in learn_trajectories:
             target = trajectory[0]['reward']
-            current_node_idx, neighbor_node_ids, destination_node_idx, next_neighbor = trajectory[0]['extra_info']
+            current_node_idx, neighbor_node_ids, _, destination_node_idx, next_neighbor = trajectory[0]['extra_info']
             if len(trajectory) > 1:
-                current_node_idx_, neighbor_node_ids_, destination_node_idx_, _ = trajectory[1]['extra_info']
-                neighbor_q_ = self._old_q_network(
-                    current_node_idx=current_node_idx_,
-                    neighbor_node_ids=neighbor_node_ids_,
-                    destination_node_idx=destination_node_idx_
-                )
-                target += self._discount_factor * torch.max(neighbor_q_, dim=1).values.detach()
-            neighbor_q = self._q_network(
+                _, neighbor_node_ids_, neighbor_q_, _, next_neighbor_ = trajectory[1]['extra_info']
+                target += self._discount_factor * neighbor_q_[neighbor_node_ids_.padded_values == next_neighbor_].detach()
+            _, neighbor_q = self._q_network(
                 current_node_idx=current_node_idx,
                 neighbor_node_ids=neighbor_node_ids,
                 destination_node_idx=destination_node_idx
@@ -178,11 +129,4 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             loss += (target - neighbor_q[neighbor_node_ids.padded_values == next_neighbor]) ** 2
         loss /= self._trajectory_sample_size
         self._optimizer.step(loss)
-
-        self._weight_dump_counter += 1
-        if self._weight_dump_counter == self._weight_dump:
-            self._weight_dump_counter = 0
-            for curr_param, old_param in zip(self._q_network.parameters(), self._old_q_network.parameters()):
-                old_param.data.copy_(curr_param.data)
-
         return loss.detach().item()

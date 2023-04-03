@@ -122,16 +122,16 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         # 4) Sample next neighbor idx
         categorical_distribution = Categorical(probs=neighbors_probs)
         # Shape: [batch_size, 1]
-        next_neighbors_idx = torch.unsqueeze(categorical_distribution.sample(), dim=1)
+        next_neighbor_idx = torch.unsqueeze(categorical_distribution.sample(), dim=1)
 
         # Shape: [batch_size]
-        next_neighbors_ids = torch.squeeze(torch.gather(
+        next_neighbor_ids = torch.squeeze(torch.gather(
             neighbor_node_ids.padded_values,
             dim=1,
-            index=next_neighbors_idx
+            index=next_neighbor_idx
         ), dim=1)
 
-        return next_neighbors_ids, neighbors_logits
+        return next_neighbor_ids, neighbors_logits
 
 
 class TowerCritic(BaseCritic, config_name='tower_critic'):
