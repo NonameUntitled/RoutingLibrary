@@ -1,5 +1,6 @@
 from logging import Logger
 
+import numpy as np
 from simpy import Environment, Timeout, Event
 from typing import *
 
@@ -19,6 +20,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
     def __init__(self, config: Dict[str, Any], topology: BaseTopology, agent: TorchAgent, logger: Logger):
         self._config = config
         self._world_env = Environment()
+        self._topology = topology
         self._simulation_env = ConveyorsEnvironment(config=self._config, world_env=self._world_env, topology=topology,
                                                     agent=agent,
                                                     logger=logger)
