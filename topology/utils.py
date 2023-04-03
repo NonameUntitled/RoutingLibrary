@@ -57,6 +57,7 @@ def node_id(nid: Section) -> int:
 
 def conveyor_idx(graph: nx.DiGraph, node: Section) -> int:
     ntype = node_type(node)
+    rwgwg = graph.nodes[node]
     if ntype == 'conveyor':
         return node_id(node)
     elif ntype == 'sink':

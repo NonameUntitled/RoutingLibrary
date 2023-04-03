@@ -24,15 +24,20 @@ class BaseTopology(metaclass=MetaParent):
     def sinks(self):
         raise NotImplementedError
 
+    @property
+    def sources(self):
+        raise NotImplementedError
+
     def get_sample(self, current_node, neighbors, destination):
         raise NotImplementedError
 
 
 class OrientedTopology(BaseTopology, config_name='oriented'):
 
-    def __init__(self, graph, sinks):
+    def __init__(self, graph, sinks, sources):
         self._graph = graph
         self._sinks = sinks
+        self._sources = sources
         self._node_2_idx = {
             node: idx for idx, node in enumerate(sorted(graph.nodes))
         }
@@ -60,12 +65,13 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
 
         conveyors_sections = {int(conv_id): [] for conv_id in conveyors_cfg.keys()}
         sinks = []
+        sources = []
 
         for source_node_id, source_node_cfg in sources_cfg.items():
             upstream_conveyor_id = source_node_cfg['upstream_conv']
-            conveyors_sections[upstream_conveyor_id].append(Section(
-                type='source', id=int(source_node_id), position=0
-            ))
+            source_node = Section(type='source', id=int(source_node_id), position=0)
+            conveyors_sections[upstream_conveyor_id].append(source_node)
+            sources.append(source_node)
 
         for diverter_node_id, diverter_cfg in diverters_cfg.items():
             conveyor_id = diverter_cfg['conveyor']
@@ -112,6 +118,17 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
 
         graph = nx.DiGraph()
 
+        conveyors_sections = {key: sorted(value, key=lambda s: s.position) for key, value in conveyors_sections.items()}
+
+        def cmp(c):
+            _, s = c
+            if s[-1].type == "sink":
+                return 0
+            else:
+                return 1
+
+        conveyors_sections = dict(sorted(conveyors_sections.items(), key=cmp))
+
         for conveyor_id, conveyor_section in conveyors_sections.items():
             conveyor_section = sorted(conveyor_section, key=lambda section: section.position)
             assert conveyor_section[0].position == 0, \
@@ -125,6 +142,9 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
 
                 fst_node_position = fst_node_cfg.position
                 snd_node_position = snd_node_cfg.position
+
+                if i == len(conveyor_section) - 1 and snd_node_cfg.type == 'junction':
+                    snd_node_cfg = [n for n in graph.nodes() if n.id == snd_node_cfg.id and n.type == 'junction'][0]
 
                 edge_length = snd_node_position - fst_node_position
 
@@ -149,7 +169,8 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
 
         return {
             'graph': graph,
-            'sinks': sinks
+            'sinks': sinks,
+            'sources': sources,
         }
 
     def gen_episodes(self, num_samples):
@@ -301,3 +322,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
     @property
     def sinks(self):
         return self._sinks
+
+    @property
+    def sources(self):
+        return self._sources

@@ -72,7 +72,7 @@ class ConveyorsEnvironment:
         else:
             raise UnsupportedEventType(event)
 
-    def _diverterKick(self, diverter: Section):
+    def _diverterKick(self, diverter: Section, bag):
         """
         Checks if some bag is in front of a given diverter now,
         if so, moves this bag from current conveyor to upstream one.
@@ -86,12 +86,13 @@ class ConveyorsEnvironment:
         pos = dv_cfg["pos"]
 
         conv_model = self._conveyor_models[conv_idx]
+        self._logger.debug(f"Bag {bag} an conveyor objects {conv_model._object_positions} and dicerter {diverter}.")
         n_bag, n_pos = conv_model.nearestObject(pos)
 
         self._removeBagFromConveyor(conv_idx, n_bag._id)
         self._putBagOnConveyor(up_conv, n_bag, diverter)
-        self._logger.debug(
-            f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
+        # self._logger.debug(
+        #     f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
 
     def _diverterPrediction(self, node: Section, bag: Bag, conv_idx: int):
         dv_id = node_id(node)
@@ -238,7 +239,7 @@ class ConveyorsEnvironment:
                 forward_node = self._diverterPrediction(node, bag, conv_idx)
 
                 if forward_node.type == "diverter":
-                    self._diverterKick(node)
+                    self._diverterKick(node, bag)
             elif atype != "junction":
                 raise Exception(f"Impossible conv node: {node}")
 
