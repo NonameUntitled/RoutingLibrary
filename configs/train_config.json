@@ -65,6 +65,117 @@
     "max_edge_length": 100,
     "length_distribution": "uniform"
   },
+  "topology_3": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      }
+    },
+    "sinks": [
+      0,
+      1,
+      2
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 1,
+        "pos": 10,
+        "upstream_conv": 2
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 20,
+        "upstream_conv": 4
+      },
+      "2": {
+        "conveyor": 1,
+        "pos": 30,
+        "upstream_conv": 7
+      },
+      "3": {
+        "conveyor": 1,
+        "pos": 40,
+        "upstream_conv": 3
+      },
+      "4": {
+        "conveyor": 1,
+        "pos": 50,
+        "upstream_conv": 5
+      },
+      "5": {
+        "conveyor": 0,
+        "pos": 30,
+        "upstream_conv": 6
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 150,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 60,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 200,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      },
+      "3": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 20
+        }
+      },
+      "4": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 80
+        }
+      },
+      "5": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 140
+        }
+      },
+      "6": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 7,
+          "pos": 100
+        }
+      },
+      "7": {
+        "length": 110,
+        "upstream": {
+          "type": "sink",
+          "id": 2
+        }
+      }
+    }
+  },
   "agent_1": {
     "type": "random",
     "neighbors_prefix": "neighbors_node_ids",
@@ -190,5 +301,5 @@
     "embedding_dim": 256,
     "vocabulary_size": 40
   },
-  "pretrain_model_name": "ppo_pretrain_model"
+  "pretrain_model_name_": "ppo_pretrain_model"
 }
