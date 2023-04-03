@@ -88,7 +88,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
 
         # Shape: [batch_size], [batch_size, max_neighbors_num]
-        next_neighbors_ids, neighbors_logits = self._actor(
+        next_neighbor_ids, neighbors_logits = self._actor(
             current_node_idx=current_node_idx,
             neighbor_node_ids=neighbor_node_ids,
             destination_node_idx=destination_node_idx
@@ -101,7 +101,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         )
 
         next_state_value_function = self._critic(
-            current_node_idx=next_neighbors_ids,
+            current_node_idx=next_neighbor_ids,
             destination_node_idx=destination_node_idx
         )
 
@@ -117,16 +117,16 @@ class PPOAgent(TorchAgent, config_name='ppo'):
                     torch.unsqueeze(current_state_value_function.detach(), dim=1),
                     torch.unsqueeze(current_node_idx, dim=1),
                     neighbor_node_ids,
-                    torch.unsqueeze(next_neighbors_ids.detach(), dim=1),
+                    torch.unsqueeze(next_neighbor_ids.detach(), dim=1),
                     torch.unsqueeze(neighbors_logits.detach(), dim=1),
                     torch.unsqueeze(destination_node_idx, dim=1),
                     torch.unsqueeze(next_state_value_function.detach(), dim=1),
                 )
             )
 
-        inputs[self._output_prefix] = next_neighbors_ids
+        inputs[self._output_prefix] = next_neighbor_ids
         inputs.update({
-            'predicted_next_node_idx': next_neighbors_ids,
+            'predicted_next_node_idx': next_neighbor_ids,
             'predicted_next_node_logits': neighbors_logits,
             'predicted_current_state_v_value': current_state_value_function
         })

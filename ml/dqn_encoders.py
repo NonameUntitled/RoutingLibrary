@@ -3,6 +3,7 @@ from typing import Tuple
 
 import torch
 from torch import Tensor
+from torch.distributions import Categorical
 
 from ml import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
@@ -45,7 +46,7 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
             current_node_idx: Tensor,
             neighbor_node_ids: TensorWithMask,
             destination_node_idx: Tensor
-    ) -> Tensor:
+    ) -> (Tensor, Tensor):
         # 0) Create embeddings from indices
         # Shape: [batch_size, embedding_dim]
         current_node_embedding = self._embedder(current_node_idx)
@@ -95,5 +96,25 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
         # Shape: [batch_size, max_neighbors_num]
         neighbors_q = torch.squeeze(self._ff_net.forward(all_state_embeddings), dim=-1)
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
-        neighbors_q[~neighbor_node_embeddings.mask] = -torch.inf
-        return neighbors_q
+        inf_tensor = torch.zeros(neighbors_q.shape)
+        inf_tensor[~neighbor_node_embeddings.mask] = -1e10
+        neighbors_q = neighbors_q + inf_tensor
+
+        # 3) Get probs from q-logits
+        # Shape: [batch_size, max_neighbors_num]
+        neighbors_probs = torch.nn.functional.softmax(neighbors_q, dim=1)
+        neighbors_probs = neighbors_probs * neighbor_node_embeddings.mask  # Make sure we won't sample from padding
+
+        # 4) Sample next neighbor idx
+        categorical_distribution = Categorical(probs=neighbors_probs)
+        # Shape: [batch_size, 1]
+        next_neighbor_idx = torch.unsqueeze(categorical_distribution.sample(), dim=1)
+
+        # Shape: [batch_size]
+        next_neighbor_ids = torch.squeeze(torch.gather(
+            neighbor_node_ids.padded_values,
+            dim=1,
+            index=next_neighbor_idx
+        ), dim=1)
+
+        return next_neighbor_ids, neighbors_q
