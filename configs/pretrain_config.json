@@ -1,5 +1,5 @@
 {
-  "topology": {
+  "topology_2": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -43,6 +43,117 @@
           "type": "conveyor",
           "id": 0,
           "pos": 10
+        }
+      }
+    }
+  },
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      }
+    },
+    "sinks": [
+      0,
+      1,
+      2
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 1,
+        "pos": 2,
+        "upstream_conv": 2
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 4,
+        "upstream_conv": 4
+      },
+      "2": {
+        "conveyor": 1,
+        "pos": 6,
+        "upstream_conv": 7
+      },
+      "3": {
+        "conveyor": 1,
+        "pos": 8,
+        "upstream_conv": 3
+      },
+      "4": {
+        "conveyor": 1,
+        "pos": 10,
+        "upstream_conv": 5
+      },
+      "5": {
+        "conveyor": 0,
+        "pos": 6,
+        "upstream_conv": 6
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 30,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 12,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 4,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 2
+        }
+      },
+      "3": {
+        "length": 2,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 4
+        }
+      },
+      "4": {
+        "length": 2,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 16
+        }
+      },
+      "5": {
+        "length": 2,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 28
+        }
+      },
+      "6": {
+        "length": 2,
+        "upstream": {
+          "type": "conveyor",
+          "id": 7,
+          "pos": 20
+        }
+      },
+      "7": {
+        "length": 22,
+        "upstream": {
+          "type": "sink",
+          "id": 2
         }
       }
     }
@@ -141,7 +252,7 @@
     "type": "basic",
     "optimizer": {
       "type": "adamw",
-      "lr": 3e-4,
+      "lr": 3e-3,
       "eps": 1e-8
     },
     "clip_grad_threshold": 5.0

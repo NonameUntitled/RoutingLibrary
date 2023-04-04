@@ -5,7 +5,7 @@
     "type": "shared_path_memory"
   },
   "learn_trigger_bag_count": 30,
-  "topology": {
+  "topology_3": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -65,7 +65,7 @@
     "max_edge_length": 100,
     "length_distribution": "uniform"
   },
-  "topology_3": {
+  "topology": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -83,92 +83,92 @@
     "diverters": {
       "0": {
         "conveyor": 1,
-        "pos": 10,
+        "pos": 2,
         "upstream_conv": 2
       },
       "1": {
         "conveyor": 1,
-        "pos": 20,
+        "pos": 4,
         "upstream_conv": 4
       },
       "2": {
         "conveyor": 1,
-        "pos": 30,
+        "pos": 6,
         "upstream_conv": 7
       },
       "3": {
         "conveyor": 1,
-        "pos": 40,
+        "pos": 8,
         "upstream_conv": 3
       },
       "4": {
         "conveyor": 1,
-        "pos": 50,
+        "pos": 10,
         "upstream_conv": 5
       },
       "5": {
         "conveyor": 0,
-        "pos": 30,
+        "pos": 6,
         "upstream_conv": 6
       }
     },
     "conveyors": {
       "0": {
-        "length": 150,
+        "length": 30,
         "upstream": {
           "type": "sink",
           "id": 0
         }
       },
       "1": {
-        "length": 60,
+        "length": 12,
         "upstream": {
           "type": "sink",
           "id": 1
         }
       },
       "2": {
-        "length": 200,
+        "length": 40,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 10
+          "pos": 2
         }
       },
       "3": {
-        "length": 10,
+        "length": 2,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 20
+          "pos": 4
         }
       },
       "4": {
-        "length": 10,
+        "length": 2,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 80
+          "pos": 16
         }
       },
       "5": {
-        "length": 10,
+        "length": 2,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 140
+          "pos": 28
         }
       },
       "6": {
-        "length": 10,
+        "length": 2,
         "upstream": {
           "type": "conveyor",
           "id": 7,
-          "pos": 100
+          "pos": 20
         }
       },
       "7": {
-        "length": 110,
+        "length": 22,
         "upstream": {
           "type": "sink",
           "id": 2
@@ -222,7 +222,8 @@
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
-    "trajectory_sample_size": 10,
+    "trajectory_sample_size": 30,
+    "trajectory_length": 30,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
     "actor": {
@@ -264,9 +265,10 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 3e-4,
+        "lr": 1e-3,
         "eps": 1e-8
-      }
+      },
+      "clip_grad_threshold": 50.0
     }
   },
   "pretrain": {

@@ -1,5 +1,6 @@
 from typing import Dict, Any, Callable, Optional
 
+import numpy as np
 import torch
 from torch import Tensor, nn
 
@@ -150,7 +151,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         return loss.detach().item()
 
     def _trajectory_loss(self, trajectory):
-        reward = [data['reward'] for data in trajectory]
+        reward = np.array([data['reward'] for data in trajectory])
 
         v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = trajectory[0]['extra_info']
         _, _, _, _, _, _, end_v_old = trajectory[-1]['extra_info']
