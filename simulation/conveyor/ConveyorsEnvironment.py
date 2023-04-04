@@ -154,7 +154,7 @@ class ConveyorsEnvironment:
             if self._path_memory is not None:
                 reward = -100
                 if bag._dst_id == up_node.id:
-                    reward = 0
+                    reward = 100
                 self._path_memory.add_reward_to_trajectory(bag._id, reward, terminal=True)
             self._bag_checkpoint(bag)
             self._current_bags.pop(bag._id)

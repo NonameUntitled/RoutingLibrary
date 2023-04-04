@@ -230,27 +230,29 @@
       "type": "tower_actor",
       "embedder": {
         "shared": true,
-        "type": "learnable"
+        "type": "hope",
+        "embedding_dim": 32
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 256,
+        "input_dim": 32,
         "hidden_dims": [
           256,
           256
         ],
-        "output_dim": 256
+        "output_dim": 32
       }
     },
     "critic": {
       "type": "tower_critic",
       "embedder": {
         "shared": true,
-        "type": "learnable"
+        "type": "hope",
+        "embedding_dim": 32
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 256,
+        "input_dim": 32,
         "hidden_dims": [
           64,
           64
@@ -299,9 +301,8 @@
   },
   "shared_embedder": {
     "shared": true,
-    "type": "learnable",
-    "embedding_dim": 256,
-    "vocabulary_size": 40
+    "type": "hope",
+    "embedding_dim": 32
   },
-  "pretrain_model_name": "ppo_pretrain_model"
+  "pretrain_model_name_": "ppo_pretrain_model"
 }

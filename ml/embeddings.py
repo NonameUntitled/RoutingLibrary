@@ -58,7 +58,7 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
     def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight='length'):
         if isinstance(graph, nx.DiGraph):
             # TODO [Vladimir Baikalov]: Recognize how it works (line below)
-            graph = nx.relabel_nodes(graph, lambda x: x.id)
+            # graph = nx.relabel_nodes(graph, lambda x: x.id)
             A = nx.to_numpy_matrix(graph, nodelist=sorted(graph.nodes), weight=weight)
             n = graph.number_of_nodes()
         else:
@@ -79,7 +79,7 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
             raise ValueError(f'Invalid proximity measure: {self._proximity}')
 
         S = np.dot(np.linalg.inv(M_g), M_l)
-        u, s, vt = sp.linalg.svds(S, k=self.dim // 2, v0=np.ones(A.shape[0]))
+        u, s, vt = sp.linalg.svds(S, k=self._embedding_dim // 2, v0=np.ones(A.shape[0]))
 
         X1 = np.dot(u, np.diag(np.sqrt(s)))
         X2 = np.dot(vt.T, np.diag(np.sqrt(s)))
@@ -87,7 +87,10 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
 
     def __call__(self, idx):
         assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
-        return self._W[idx]
+        v = self._W[idx]
+        if len(idx) == 1:
+            v = [v]
+        return torch.Tensor(v)
 
 
 @shared
@@ -117,10 +120,10 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
             weight = 'length'
 
         # TODO [Vladimir Baikalov]: Recognize how it works (line below)
-        graph = nx.relabel_nodes(
-            graph.to_undirected(),
-            lambda x: x.id
-        )
+        # graph = nx.relabel_nodes(
+        #     graph.to_undirected(),
+        #     lambda x: x.id
+        # )
 
         if weight is not None:
             if self._renormalize_weights:
@@ -162,13 +165,13 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
 
         self._X = vectors[:, 1:]
 
-        if weight is not None and self.renormalize_weights:
+        if weight is not None and self._renormalize_weights:
             self._X *= avg_w
         # print(self._X.flatten()[:3])
 
     def __call__(self, idx):
-        assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
-        return self._W[idx]
+        assert self._X is not None, 'Embedding matrix isn\'t fitted yet'
+        return self._X[idx]
 
 
 @shared

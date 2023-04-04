@@ -1,6 +1,5 @@
 from logging import Logger
 
-import numpy as np
 from simpy import Environment, Timeout, Event
 from typing import *
 
@@ -43,9 +42,9 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
         bag_id = 1
 
-        for i in range(0, 500000):
+        for i in range(0, 5000):
             bag = Bag(bag_id, 'sink', (bag_id % 10) % 3, self._world_env.now, {})
-            yield self._simulation_env.handleEvent(BagAppearanceEvent(1, bag))
+            yield self._simulation_env.handleEvent(BagAppearanceEvent(0, bag))
 
             bag_id += 1
 
