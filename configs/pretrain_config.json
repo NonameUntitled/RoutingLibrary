@@ -1,4 +1,5 @@
 {
+  "experiment_name": "ppo_pre_train",
   "topology_2": {
     "type": "oriented",
     "sources": {
@@ -281,8 +282,8 @@
     ]
   },
   "model_name": "ppo_pretrain_model",
-  "num_samples": 50000,
-  "num_epochs": 50,
+  "num_samples": 10000,
+  "num_epochs": 30,
   "shared_embedder": {
     "shared": true,
     "type": "learnable",

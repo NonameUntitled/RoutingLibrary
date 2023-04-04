@@ -3,6 +3,7 @@ from typing import Dict, Any, Callable, Optional
 import numpy as np
 import torch
 from torch import Tensor, nn
+from torch.distributions import Categorical
 
 from agents import TorchAgent
 from ml import BaseOptimizer
@@ -163,23 +164,25 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             destination_node_idx=destination
         )
 
-        next_logprob_old = self._get_logprob(neighbors, next_neighbor, neighbor_logits_old)
-        next_logprob = self._get_logprob(neighbors, next_neighbor, neighbor_logits)
+        logprob_old = self._get_logprob(neighbors, neighbor_logits_old)
+        logprob = self._get_logprob(neighbors, neighbor_logits)
+        entropy = Categorical(probs=torch.exp(logprob)).entropy()
+        next_logprob_old = logprob_old[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
+        next_logprob = logprob[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
 
         v = self._critic(
             current_node_idx=node_idx,
             destination_node_idx=destination
         )
 
-        return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, reward)
+        return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, reward, entropy)
 
-    def _get_logprob(self, neighbors, next_neighbor, neighbors_logits):
+    def _get_logprob(self, neighbors, neighbors_logits):
         inf_tensor = torch.zeros(neighbors_logits.shape)
         inf_tensor[~neighbors.mask] = -1e10
         neighbors_logits = neighbors_logits + inf_tensor
         neighbors_logprobs = torch.nn.functional.log_softmax(neighbors_logits, dim=1)
-        neighbors_logprobs = neighbors_logprobs + inf_tensor
-        return neighbors_logprobs[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
+        return neighbors_logprobs + inf_tensor
 
     def _loss(
             self,
@@ -188,7 +191,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             v,
             v_old,
             end_v_old,
-            reward
+            reward,
+            entropy
     ) -> Tensor:
         prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -30, 30))
 
@@ -198,7 +202,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
         critic_loss = (self._compute_advantage_score(v, reward, end_v_old)) ** 2
-        total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss
+        total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss - 0.01 * entropy
 
         return total_loss
 

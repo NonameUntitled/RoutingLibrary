@@ -75,18 +75,29 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
             conveyors_sections[upstream_conveyor_id].append(source_node)
             sources.append(source_node)
 
+        graph = nx.DiGraph()
+
         for diverter_node_id, diverter_cfg in diverters_cfg.items():
             conveyor_id = diverter_cfg['conveyor']
             conveyor_position = diverter_cfg['pos']
             upstream_conveyor_id = diverter_cfg['upstream_conv']
 
-            conveyors_sections[conveyor_id].append(Section(
+            fst_node_cfg = Section(
                 type='diverter', id=int(diverter_node_id), position=conveyor_position
-            ))
-
-            conveyors_sections[upstream_conveyor_id].append(Section(
+            )
+            snd_node_cfg = Section(
                 type='diverter', id=int(diverter_node_id), position=0
-            ))
+            )
+
+            conveyors_sections[conveyor_id].append(fst_node_cfg)
+
+            conveyors_sections[upstream_conveyor_id].append(snd_node_cfg)
+
+            graph.add_edge(
+                fst_node_cfg,
+                snd_node_cfg,
+                length=0
+            )
 
         junction_idx = 0
         for conveyor_id, conveyor_cfg in conveyors_cfg.items():
@@ -117,8 +128,6 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 junction_idx += 1
             else:
                 raise Exception('Invalid conveyor upstream type: ' + upstream_cfg['type'])
-
-        graph = nx.DiGraph()
 
         conveyors_sections = {key: sorted(value, key=lambda s: s.position) for key, value in conveyors_sections.items()}
 

@@ -26,7 +26,7 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
     _bag_id_buffer = defaultdict(deque)
     _node_idx_buffer = defaultdict(deque)
     _buffer = deque()
-    _buffer_size = 100
+    _buffer_size = 1000
 
     def __init__(self):
         self._cls = SharedBagTrajectoryMemory
@@ -46,7 +46,7 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
                     trajectory.append(last_step['next'])
 
         # filter finished only
-        all_trajectories = list(filter(lambda tr: tr[-1]['terminal'], all_trajectories))
+        # all_trajectories = list(filter(lambda tr: tr[-1]['terminal'], all_trajectories))
 
         if len(all_trajectories) == 0:
             return []
