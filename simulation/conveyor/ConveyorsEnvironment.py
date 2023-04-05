@@ -276,7 +276,7 @@ class ConveyorsEnvironment:
             elif atype == "diverter":
                 forward_node = self._diverterPrediction(node, bag, conv_idx)
 
-                if forward_node.type == "diverter":
+                if forward_node.type == "diverter" and forward_node.position == 0:
                     self._diverterKick(node, bag)
             elif atype != "junction":
                 raise Exception(f"Impossible conv node: {node}")

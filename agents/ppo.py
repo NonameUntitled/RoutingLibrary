@@ -9,7 +9,38 @@ from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.encoders import BaseEncoder
 from ml.ppo_encoders import BaseActor, BaseCritic
+from ml.utils import TensorWithMask
 from utils.bag_trajectory import BaseBagTrajectoryMemory
+
+
+def _with_random_research(
+        next_neighbor_ids: Tensor,
+        neighbor_node_ids: TensorWithMask,
+        prob: float
+):
+    probs = torch.stack([
+        torch.full(next_neighbor_ids.shape, prob),
+        torch.full(next_neighbor_ids.shape, 1 - prob)
+    ], dim=1)
+    choice_idx = Categorical(probs=probs).sample()
+
+    neighbor_tensor = neighbor_node_ids.padded_values
+    random_probs = torch.ones(neighbor_tensor.shape)
+    inf_tensor = torch.zeros(neighbor_tensor.shape)
+    inf_tensor[~neighbor_node_ids.mask] = -1e10
+    random_probs = random_probs + inf_tensor
+    random_probs = torch.softmax(random_probs, dim=1)
+    random_neighbours = torch.squeeze(torch.gather(
+        neighbor_tensor,
+        dim=1,
+        index=torch.unsqueeze(Categorical(probs=random_probs).sample(), dim=1)
+    ), dim=1)
+
+    choices = torch.stack([
+        next_neighbor_ids,
+        random_neighbours
+    ], dim=1)
+    return torch.squeeze(torch.gather(choices, dim=1, index=torch.unsqueeze(choice_idx, dim=1)), dim=1)
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
@@ -95,6 +126,14 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             neighbor_node_ids=neighbor_node_ids,
             destination_node_idx=destination_node_idx
         )
+
+        # Random Search
+        # Shape: [batch_size]
+        # next_neighbor_ids = _with_random_research(
+        #     next_neighbor_ids=next_neighbor_ids,
+        #     neighbor_node_ids=neighbor_node_ids,
+        #     prob=0.95
+        # )
 
         # Shape: [batch_size]
         current_state_value_function = self._critic(
