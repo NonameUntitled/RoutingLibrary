@@ -9,11 +9,13 @@ import utils
 from agents import TorchAgent
 from ml.utils import TensorWithMask
 from simulation.conveyor.energy import consumption_Zhang
+from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag, ConveyorBreakEvent, \
+    ConveyorRestoreEvent
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
 from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from topology import BaseTopology
 from topology.utils import Section, conveyor_adj_nodes, conveyor_idx, node_type, node_id, node_conv_pos, \
-    conveyor_adj_nodes_with_data, conv_start_node, conv_next_node, get_node_by_id
+    conveyor_adj_nodes_with_data, conv_start_node, conv_next_node, get_node_by_id, only_reachable_from, working_topology
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
@@ -25,6 +27,7 @@ class ConveyorsEnvironment:
     def __init__(self, config: Dict[str, Any], world_env: Environment, topology: BaseTopology, agent: TorchAgent,
                  logger: Logger):
         self._topology_config = config["topology"]
+        self._test_config = config["test"]
         self._learn_trigger_bag_count = config["learn_trigger_bag_count"]
         self._world_env = world_env
         self._conveyors_move_proc = None
@@ -41,6 +44,8 @@ class ConveyorsEnvironment:
             model = ConveyorModel(self._world_env, length, checkpoints, model_id=conv_id, logger=logger)
             self._conveyor_models[conv_id] = model
 
+        self._conveyor_broken = {conv_id: False for conv_id in conv_ids}
+
         self._conveyor_upstreams = {
             conv_id: conveyor_adj_nodes(self._topology_graph.graph, conv_id)[-1]
             for conv_id in conv_ids
@@ -50,6 +55,9 @@ class ConveyorsEnvironment:
         self._diverter_agents = {}
         for dv_id in diverters_ids:
             self._diverter_agents[dv_id] = copy.deepcopy(agent)
+
+        self._lost_bags = 0
+        self._arrived_bags = 0
 
         self._path_memory = BaseBagTrajectoryMemory.create_from_config(config['path_memory']) \
             if 'path_memory' in config else None
@@ -73,6 +81,10 @@ class ConveyorsEnvironment:
             self._current_bags[bag._id] = set()
             conv_idx = conveyor_idx(self._topology_graph.graph, src)
             return self._checkInterrupt(lambda: self._putBagOnConveyor(conv_idx, bag, src))
+        if isinstance(event, ConveyorBreakEvent):
+            return self._checkInterrupt(lambda: self._conveyorBreak(event._conveyor_id))
+        if isinstance(event, ConveyorRestoreEvent):
+            return self._checkInterrupt(lambda: self._conveyorRestore(event._conveyor_id))
         else:
             raise UnsupportedEventType(event)
 
@@ -95,8 +107,8 @@ class ConveyorsEnvironment:
 
         self._removeBagFromConveyor(conv_idx, n_bag._id)
         self._putBagOnConveyor(up_conv, n_bag, diverter)
-        # self._logger.debug(
-        #     f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
+        self._logger.debug(
+            f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
 
     def _diverterPrediction(self, node: Section, bag: Bag, conv_idx: int):
         self._bag_time_reward_update(bag)
@@ -109,7 +121,24 @@ class ConveyorsEnvironment:
         next_node = conv_next_node(self._topology_graph.graph, conv_idx, node)
         sink_node = next((s for s in self._topology_graph.sinks if s.id == bag._dst_id), None)
         assert sink_node is not None, "Sink node should be found"
-        sample = self._topology_graph.get_sample(node, [up_conv_node, next_node], sink_node)
+
+        current_topology_graph = working_topology(self._topology_graph.graph, self._conveyor_broken)
+        topology_independence = self._test_config["topology_independence"]
+        neighbor_nodes = only_reachable_from(current_topology_graph, sink_node,
+                                             [up_conv_node, next_node]) if topology_independence == "full" else [
+            up_conv_node, next_node]
+        if len(neighbor_nodes) == 0:
+            neighbor_nodes = [next_node]
+        sample = self._topology_graph.get_sample(node, neighbor_nodes, sink_node)
+
+        # import networkx as nx
+        #
+        # nodes = self._topology_graph.graph.nodes
+        #
+        # rger = []
+        #
+        # for nn in nodes:
+        #     rger.append(nx.has_path(self._topology_graph.graph, nn, sink_node))
 
         sample_tensor = {}
         for key in sample.keys():
@@ -135,6 +164,17 @@ class ConveyorsEnvironment:
         some other bag on a conveyor, throws a `CollisionException`
         """
 
+        if self._conveyor_broken[conv_idx]:
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                "Bag lost/time",
+                self._lost_bags + 1,
+                self._world_env.now
+            )
+            self._lost_bags += 1
+            self._logger.debug(f'Bag #{bag._id} came to the broken conveyor')
+            self._current_bags.pop(bag._id)
+            return
+
         pos = node_conv_pos(self._topology_graph.graph, conv_idx, node)
         assert pos is not None, "Position of the conveyor can't be None"
 
@@ -144,6 +184,26 @@ class ConveyorsEnvironment:
         bag.last_conveyor = conv_idx
         self._current_bags[bag._id] = set()
         self._current_bags[bag._id].add(node)
+
+    def _conveyorBreak(self, conv_idx: int):
+        """
+        Breaks a conveyor.
+        """
+        model = self._conveyor_models[conv_idx]
+        model.setSpeed(0)
+
+        self._conveyor_broken[conv_idx] = True
+        self._logger.debug(f'Conveyor #{conv_idx} breaks')
+
+    def _conveyorRestore(self, conv_idx: int):
+        """
+        Restores a conveyor.
+        """
+        model = self._conveyor_models[conv_idx]
+        model.setSpeed(1)
+
+        self._conveyor_broken[conv_idx] = False
+        self._logger.debug(f'Conveyor #{conv_idx} restores')
 
     def _leaveConveyorEnd(self, conv_idx: int, bag_id: int) -> bool:
         bag = self._removeBagFromConveyor(conv_idx, bag_id)
@@ -157,14 +217,29 @@ class ConveyorsEnvironment:
                     reward = 100
                 self._path_memory.add_reward_to_trajectory(bag._id, reward, 'time', terminal=True)
             self._bag_time_reward_update(bag)
+            if up_node.id != bag._dst_id:
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                    "Bag lost/time",
+                    self._lost_bags + 1,
+                    self._world_env.now
+                )
+                self._lost_bags += 1
+                self._logger.debug(f'Bag #{bag._id} came to {up_node.id} sink, but its destination was {bag._dst_id}')
+            else:
+                self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
+                current_time = self._world_env.now
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                    f'Bag time/Bag arrived time',
+                    current_time - bag._start_time,
+                    current_time
+                )
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                    "Bag arrived/time",
+                    self._arrived_bags + 1,
+                    current_time
+                )
+                self._arrived_bags += 1
             self._current_bags.pop(bag._id)
-            self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
-            current_time = self._world_env.now
-            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                f'Bag time/Bag arrived time',
-                current_time - bag._start_time,
-                current_time
-            )
             return True
 
         if up_type == "junction":
@@ -234,10 +309,11 @@ class ConveyorsEnvironment:
         time_diff = cur_time - self._energy_consumption_last_update
         self._energy_consumption_last_update = cur_time
         for _, model in self._conveyor_models.items():
-            new_energy_consumption = consumption_Zhang(model._length, 1, len(model._objects)) * time_diff
+            new_energy_consumption = consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
             if len(model._objects) > 0:
                 self._energy_reward_update(new_energy_consumption / len(model._objects),
                                            [obj._id for obj in model._objects.values()])
+
             self._system_energy_consumption += new_energy_consumption
             self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
             utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
@@ -270,6 +346,8 @@ class ConveyorsEnvironment:
         # Resolving all immediate events
         for (conv_idx, (bag, node, delay)) in all_unresolved_events(self._conveyor_models):
             assert delay == 0, "Event delay should be zero"
+            if self._conveyor_broken[conv_idx]:
+                continue
 
             if bag._id in left_to_sinks or node in self._current_bags[bag._id]:
                 continue

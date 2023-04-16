@@ -72,6 +72,17 @@ class BagAppearanceEvent(WorldEvent):
         super().__init__()
 
 
+class ConveyorBreakEvent(WorldEvent):
+    def __init__(self, conveyor_id: int):
+        self._conveyor_id = conveyor_id
+        super().__init__()
+
+class ConveyorRestoreEvent(WorldEvent):
+    def __init__(self, conveyor_id: int):
+        self._conveyor_id = conveyor_id
+        super().__init__()
+
+
 class UnsupportedEventType(Exception):
     """
     Exception which is thrown by event handlers on encounter of

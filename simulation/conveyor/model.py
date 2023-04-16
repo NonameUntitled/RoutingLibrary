@@ -136,6 +136,10 @@ class ConveyorModel:
                 f"{self._model_id}: Invalid action `{action}` in state `{self._state}`;\n  "
                 f"speed - {self._speed}m/s\n  cps - {self._checkpoints};\n  objs - {self._object_positions}")
 
+    def setSpeed(self, speed: float) -> None:
+        self._speed = speed
+
+
     def nearestObject(self, pos: float, after=None, speed=None, not_exact=False,
                       preference="nearest") -> Optional[Tuple[Any, float]]:
         if len(self._object_positions) == 0:
