@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import networkx as nx
 from collections import namedtuple
 
@@ -57,6 +59,7 @@ def node_id(nid: Section) -> int:
 
 def conveyor_idx(graph: nx.DiGraph, node: Section) -> int:
     ntype = node_type(node)
+    rwgwg = graph.nodes[node]
     if ntype == 'conveyor':
         return node_id(node)
     elif ntype == 'sink':
@@ -91,3 +94,11 @@ def get_node_by_id(topology, node_id):
         if topology._node_2_idx[node] == node_id:
             return node
     return None
+
+def working_topology(topology, broken_convs):
+    G = deepcopy(topology)
+    es = list(G.edges(data=True))
+    for u, v, ps in es:
+        if ps['length'] != 0 and broken_convs[ps['conveyor']]:
+            G.remove_edge(u, v)
+    return G

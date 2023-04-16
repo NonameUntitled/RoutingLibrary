@@ -3,6 +3,7 @@ import math
 import time
 
 import os
+from datetime import datetime
 from typing import Dict
 from collections import defaultdict
 
@@ -52,7 +53,8 @@ class RunningAverage:
 
 class TensorboardWriter(SummaryWriter):
     def __init__(self, log_dir, default_window=100):
-        super().__init__(log_dir=os.path.join(LOGS_DIR, log_dir))
+        date = datetime.now().isoformat()
+        super().__init__(log_dir=os.path.join(LOGS_DIR, log_dir, date))
         self._default_window = default_window
         self._running_average = RunningAverage()
         self._current_step = 0

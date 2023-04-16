@@ -6,22 +6,58 @@
     "sources": {
       "0": {
         "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 5
       }
     },
     "sinks": [
       0,
-      1
+      1,
+      2,
+      3,
+      4
     ],
     "diverters": {
       "0": {
         "conveyor": 0,
         "pos": 20,
-        "upstream_conv": 1
+        "upstream_conv": 9
       },
       "1": {
+        "conveyor": 0,
+        "pos": 25,
+        "upstream_conv": 3
+      },
+      "2": {
+        "conveyor": 0,
+        "pos": 30,
+        "upstream_conv": 1
+      },
+      "3": {
         "conveyor": 1,
-        "pos": 10,
+        "pos": 5,
         "upstream_conv": 2
+      },
+      "4": {
+        "conveyor": 3,
+        "pos": 15,
+        "upstream_conv": 4
+      },
+      "5": {
+        "conveyor": 5,
+        "pos": 20,
+        "upstream_conv": 8
+      },
+      "6": {
+        "conveyor": 5,
+        "pos": 30,
+        "upstream_conv": 6
+      },
+      "7": {
+        "conveyor": 6,
+        "pos": 5,
+        "upstream_conv": 7
       }
     },
     "conveyors": {
@@ -33,18 +69,71 @@
         }
       },
       "1": {
-        "length": 20,
+        "length": 10,
         "upstream": {
           "type": "sink",
           "id": 1
         }
       },
       "2": {
-        "length": 10,
+        "length": 5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 3,
+          "pos": 10
+        }
+      },
+      "3": {
+        "length": 20,
+        "upstream": {
+          "type": "sink",
+          "id": 2
+        }
+      },
+      "4": {
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 0,
           "pos": 10
+        }
+      },
+      "5": {
+        "length": 40,
+        "upstream": {
+          "type": "sink",
+          "id": 3
+        }
+      },
+      "6": {
+        "length": 10,
+        "upstream": {
+          "type": "sink",
+          "id": 4
+        }
+      },
+      "7": {
+        "length": 25,
+        "upstream": {
+          "type": "conveyor",
+          "id": 5,
+          "pos": 10
+        }
+      },
+      "8": {
+        "length": 20,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 5
+        }
+      },
+      "9": {
+        "length": 60,
+        "upstream": {
+          "type": "conveyor",
+          "id": 5,
+          "pos": 5
         }
       }
     }
@@ -249,5 +338,110 @@
       "type": "random",
       "here_we_need_some_variabes": true
     }
+  },
+  "test": {
+    "topology_independence": "full",
+    "data": [
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 9,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          1
+        ],
+        "sinks": [
+          3,
+          4
+        ]
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          0
+        ],
+        "sinks": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 9,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          1
+        ]
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          0
+        ]
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 8,
+        "pause": 100
+      }
+    ]
+  },
+  "test1": {
+    "topology_independence": "only_nodes"
+  },
+  "test2": {
+    "topology_independence": "only_collisions"
+  },
+  "test3": {
+    "topology_independence": "disabled"
   }
 }
