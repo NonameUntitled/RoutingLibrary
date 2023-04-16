@@ -8,7 +8,7 @@ from typing import *
 from agents import TorchAgent
 from simulation import BaseSimulation
 from simulation.conveyor.ConveyorsEnvironment import ConveyorsEnvironment
-from simulation.conveyor.utils import Bag, BagAppearanceEvent
+from simulation.conveyor.utils import Bag, BagAppearanceEvent, ConveyorBreakEvent, ConveyorRestoreEvent
 from topology import BaseTopology
 
 
@@ -42,7 +42,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
         # TODO[Aleksandr Pakulev]: Implement bugs scheduling from config
 
-        test_data = self._config['test']
+        test_data = self._config['test']['data']
 
         bag_id = 1
 
@@ -52,7 +52,8 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         for test in test_data:
             action = test['action']
             if action == 'put_bags':
-                delta = test['delta'] + round(np.random.normal(0, 0.5), 2)
+                # delta = test['delta'] + round(np.random.normal(0, 0.5), 2)
+                delta = test['delta']
 
                 cur_sources = test.get('sources', sources)
                 cur_sinks = test.get('sinks', sinks)
@@ -75,11 +76,9 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
                 if pause > 0:
                     yield self._world_env.timeout(pause)
                 if action == 'conv_break':
-                    print(f'Breaking conveyor {conv_idx} at {self._world_env.now}')
-                    # yield self._simulation_env.handleEvent(ConveyorBreakEvent(conv_idx))
+                    yield self._simulation_env.handleEvent(ConveyorBreakEvent(conv_idx))
                 else:
-                    print(f'Restoring conveyor {conv_idx} at {self._world_env.now}')
-                    # yield self._simulation_env.handleEvent(ConveyorRestoreEvent(conv_idx))
+                    yield self._simulation_env.handleEvent(ConveyorRestoreEvent(conv_idx))
 
     def run(self) -> None:
         """

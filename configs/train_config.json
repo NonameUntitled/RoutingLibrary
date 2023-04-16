@@ -339,60 +339,109 @@
       "here_we_need_some_variabes": true
     }
   },
-  "test": [
-    {
-      "action": "put_bags",
-      "bags_number": 200,
-      "delta": 20,
-      "sinks": [
-        0,
-        1
-      ]
-    },
-    {
-      "action": "put_bags",
-      "bags_number": 200,
-      "delta": 20
-    },
-    {
-      "action": "conv_break",
-      "conv_idx": 8,
-      "pause": 100
-    },
-    {
-      "action": "put_bags",
-      "bags_number": 200,
-      "delta": 20
-    },
-    {
-      "action": "conv_break",
-      "conv_idx": 4,
-      "pause": 100
-    },
-    {
-      "action": "put_bags",
-      "bags_number": 200,
-      "delta": 20
-    },
-    {
-      "action": "conv_restore",
-      "conv_idx": 4,
-      "pause": 100
-    },
-    {
-      "action": "put_bags",
-      "bags_number": 200,
-      "delta": 20
-    },
-    {
-      "action": "conv_restore",
-      "conv_idx": 8,
-      "pause": 100
-    },
-    {
-      "action": "put_bags",
-      "bags_number": 200,
-      "delta": 20
-    }
-  ]
+  "test": {
+    "topology_independence": "full",
+    "data": [
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 9,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          1
+        ],
+        "sinks": [
+          3,
+          4
+        ]
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          0
+        ],
+        "sinks": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 9,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          1
+        ]
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 8,
+        "pause": 100
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 20,
+        "delta": 20,
+        "sources": [
+          0
+        ]
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 8,
+        "pause": 100
+      }
+    ]
+  },
+  "test1": {
+    "topology_independence": "only_nodes"
+  },
+  "test2": {
+    "topology_independence": "only_collisions"
+  },
+  "test3": {
+    "topology_independence": "disabled"
+  }
 }
