@@ -48,7 +48,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
             bag_id += 1
 
-            yield self._world_env.timeout(2000)
+            yield self._world_env.timeout(20)
 
     def run(self) -> None:
         """

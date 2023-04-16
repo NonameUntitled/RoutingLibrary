@@ -11,7 +11,7 @@ class Bag:
         self._dst_type = dst_type
         self._dst_id = dst_id
         self._start_time = start_time
-        self._checkpoint_time = start_time
+        self._last_time_reward_time = start_time
         self._contents = contents
         self._node_path = []
         self._last_conveyor_id = -1
@@ -37,7 +37,7 @@ class Bag:
         return self._id
 
     def check_point(self, current_time):
-        self._checkpoint_time = current_time
+        self._last_time_reward_time = current_time
 
 
 class WorldEvent:

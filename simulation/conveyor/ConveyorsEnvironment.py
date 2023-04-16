@@ -99,7 +99,7 @@ class ConveyorsEnvironment:
         #     f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
 
     def _diverterPrediction(self, node: Section, bag: Bag, conv_idx: int):
-        self._bag_checkpoint(bag)
+        self._bag_time_reward_update(bag)
         dv_id = node_id(node)
         dv_agent = self._diverter_agents[dv_id]
 
@@ -155,8 +155,8 @@ class ConveyorsEnvironment:
                 reward = -100
                 if bag._dst_id == up_node.id:
                     reward = 100
-                self._path_memory.add_reward_to_trajectory(bag._id, reward, terminal=True)
-            self._bag_checkpoint(bag)
+                self._path_memory.add_reward_to_trajectory(bag._id, reward, 'time', terminal=True)
+            self._bag_time_reward_update(bag)
             self._current_bags.pop(bag._id)
             self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
             current_time = self._world_env.now
@@ -174,10 +174,10 @@ class ConveyorsEnvironment:
             raise Exception("Invalid conveyor upstream node type: " + up_type)
         return False
 
-    def _bag_checkpoint(self, bag: Bag):
+    def _bag_time_reward_update(self, bag: Bag):
         current_time = self._world_env.now
         if self._path_memory is not None:
-            self._path_memory.add_reward_to_trajectory(bag._id, bag._checkpoint_time - current_time)
+            self._path_memory.add_reward_to_trajectory(bag._id, bag._last_time_reward_time - current_time, 'time')
         bag.check_point(current_time)
         self._learn()
 
@@ -235,6 +235,9 @@ class ConveyorsEnvironment:
         self._energy_consumption_last_update = cur_time
         for _, model in self._conveyor_models.items():
             new_energy_consumption = consumption_Zhang(model._length, 1, len(model._objects)) * time_diff
+            if len(model._objects) > 0:
+                self._energy_reward_update(new_energy_consumption / len(model._objects),
+                                           [obj._id for obj in model._objects.values()])
             self._system_energy_consumption += new_energy_consumption
             self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
             utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
@@ -250,6 +253,10 @@ class ConveyorsEnvironment:
             self._energy_consumption_last_update
         )
         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+
+    def _energy_reward_update(self, energy_consumption_per_bag: float, bag_ids: List[int]):
+        for bag_id in bag_ids:
+            self._path_memory.add_reward_to_trajectory(bag_id, -energy_consumption_per_bag, 'energy')
 
     def _updateAll(self):
         """
