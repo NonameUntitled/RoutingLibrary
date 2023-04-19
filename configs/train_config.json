@@ -233,16 +233,16 @@
       "embedder": {
         "shared": true,
         "type": "hope",
-        "embedding_dim": 32
+        "embedding_dim": 16
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 32,
+        "input_dim": 16,
         "hidden_dims": [
           256,
           256
         ],
-        "output_dim": 32
+        "output_dim": 16
       }
     },
     "critic": {
@@ -250,11 +250,11 @@
       "embedder": {
         "shared": true,
         "type": "hope",
-        "embedding_dim": 32
+        "embedding_dim": 16
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 32,
+        "input_dim": 16,
         "hidden_dims": [
           64,
           64
@@ -409,7 +409,7 @@
   "shared_embedder": {
     "shared": true,
     "type": "hope",
-    "embedding_dim": 32
+    "embedding_dim": 16
   },
   "pretrain_model_name_": "ppo_pretrain_model"
 }
