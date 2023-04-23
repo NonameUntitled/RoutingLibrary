@@ -48,7 +48,7 @@
       }
     }
   },
-  "topology": {
+  "topology_big": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -155,6 +155,91 @@
         "upstream": {
           "type": "sink",
           "id": 2
+        }
+      }
+    }
+  },
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      }
+    },
+    "sinks": [
+      0,
+      1
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 0,
+        "pos": 20,
+        "upstream_conv": 2
+      },
+      "1": {
+        "conveyor": 0,
+        "pos": 90,
+        "upstream_conv": 4
+      },
+      "2": {
+        "conveyor": 1,
+        "pos": 20,
+        "upstream_conv": 3
+      },
+      "3": {
+        "conveyor": 1,
+        "pos": 90,
+        "upstream_conv": 5
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 100,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 100,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 10
+        }
+      },
+      "3": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      },
+      "4": {
+        "length": 200,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 80
+        }
+      },
+      "5": {
+        "length": 200,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 80
         }
       }
     }
@@ -285,7 +370,7 @@
   },
   "model_name": "ppo_pretrain_model",
   "num_samples": 10000,
-  "num_epochs": 30,
+  "num_epochs": 300,
   "shared_embedder": {
     "shared": true,
     "type": "hope",

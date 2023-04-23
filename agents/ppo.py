@@ -137,6 +137,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         return inputs
 
     def learn(self) -> Optional[Tensor]:
+        return
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             self._node_id,
