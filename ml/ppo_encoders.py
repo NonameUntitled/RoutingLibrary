@@ -7,7 +7,7 @@ from torch.distributions.categorical import Categorical
 
 from ml.embeddings import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
-from ml.utils import TensorWithMask
+from ml.utils import TensorWithMask, EXP_CLIP, BIG_NEG
 
 
 class BaseActor(TorchEncoder):
@@ -103,7 +103,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         neighbors_logits = torch.nn.functional.cosine_similarity(
             next_state_embeddings,
             torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
-        ) * 10
+        ) * EXP_CLIP
         # neighbors_logits = torch.einsum(
         #     'bnd,bd->bn',
         #     next_state_embeddings,
@@ -111,7 +111,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         # )
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         inf_tensor = torch.zeros(neighbors_logits.shape)
-        inf_tensor[~neighbor_node_embeddings.mask] = -1e10
+        inf_tensor[~neighbor_node_embeddings.mask] = BIG_NEG
         neighbors_logits = neighbors_logits + inf_tensor
 
         # 4) Get probs from logits

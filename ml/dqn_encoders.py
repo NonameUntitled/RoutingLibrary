@@ -97,7 +97,7 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
         neighbors_q = torch.squeeze(self._ff_net.forward(all_state_embeddings), dim=-1)
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         inf_tensor = torch.zeros(neighbors_q.shape)
-        inf_tensor[~neighbor_node_embeddings.mask] = -1e10
+        inf_tensor[~neighbor_node_embeddings.mask] = BIG_NEG
         neighbors_q = neighbors_q + inf_tensor
 
         # 3) Get probs from q-logits

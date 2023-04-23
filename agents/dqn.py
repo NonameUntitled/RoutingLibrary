@@ -1,9 +1,7 @@
-from copy import deepcopy
 from typing import Dict, Any, Callable, Optional
 
 import torch
 from torch import Tensor, nn
-from torch.distributions import Categorical
 
 from agents import TorchAgent
 from ml import BaseOptimizer
@@ -109,9 +107,9 @@ class DQNAgent(TorchAgent, config_name='dqn'):
     def learn(self) -> Optional[Tensor]:
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
-            self._node_id,
-            self._trajectory_sample_size,
-            1
+            node_idx=self._node_id,
+            count=self._trajectory_sample_size,
+            length=1
         )
         if not learn_trajectories:
             return None
@@ -120,13 +118,15 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             current_node_idx, neighbor_node_ids, _, destination_node_idx, next_neighbor = trajectory[0]['extra_info']
             if len(trajectory) > 1:
                 _, neighbor_node_ids_, neighbor_q_, _, next_neighbor_ = trajectory[1]['extra_info']
-                target += self._discount_factor * neighbor_q_[neighbor_node_ids_.padded_values == next_neighbor_].detach()
+                target += self._discount_factor * neighbor_q_[
+                    neighbor_node_ids_.padded_values == next_neighbor_].detach()
             _, neighbor_q = self._q_network(
                 current_node_idx=current_node_idx,
                 neighbor_node_ids=neighbor_node_ids,
                 destination_node_idx=destination_node_idx
             )
+            # TODO[Vladimir Baikalov] check
             loss += (target - neighbor_q[neighbor_node_ids.padded_values == next_neighbor]) ** 2
-        loss /= self._trajectory_sample_size
+        loss /= len(learn_trajectories)
         self._optimizer.step(loss)
         return loss.detach().item()

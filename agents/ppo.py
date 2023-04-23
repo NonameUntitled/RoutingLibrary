@@ -9,7 +9,16 @@ from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.encoders import BaseEncoder
 from ml.ppo_encoders import BaseActor, BaseCritic
+from ml.utils import BIG_NEG, EXP_CLIP
 from utils.bag_trajectory import BaseBagTrajectoryMemory, get_norm_rewards
+
+
+def _get_logprob(neighbors, neighbors_logits):
+    inf_tensor = torch.zeros(neighbors_logits.shape)
+    inf_tensor[~neighbors.mask] = BIG_NEG
+    neighbors_logits = neighbors_logits + inf_tensor
+    neighbors_logprobs = torch.nn.functional.log_softmax(neighbors_logits, dim=1)
+    return neighbors_logprobs + inf_tensor
 
 
 class PPOAgent(TorchAgent, config_name='ppo'):
@@ -23,7 +32,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             actor: BaseActor,
             critic: BaseCritic,
             actor_loss_weight: float = 1.0,
-            critic_loss_weight: float = 0.01,
+            critic_loss_weight: float = 1.0,
+            entropy_loss_weight: float = 0.01,
             discount_factor: float = 0.99,
             ratio_clip: float = 0.2,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,  # Used only in training regime
@@ -48,6 +58,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
+        self._entropy_loss_weight = entropy_loss_weight
         self._discount_factor = discount_factor
         self._ratio_clip = ratio_clip
 
@@ -68,8 +79,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             critic=BaseEncoder.create_from_config(config['critic']),
             actor_loss_weight=config.get('actor_loss_weight', 1.0),
             critic_loss_weight=config.get('critic_loss_weight', 1.0),
+            entropy_loss_weight=config.get('entropy_loss_weight', 1.0),
             discount_factor=config.get('discount_factor', 0.99),
-            ratio_clip=config.get('ratio_clip', 0.99),
+            ratio_clip=config.get('ratio_clip', 0.2),
             bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory'])
             if 'path_memory' in config else None,
             trajectory_length=config.get('trajectory_length', 5),
@@ -132,24 +144,22 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             'predicted_next_node_logits': neighbors_logits,
             'predicted_current_state_v_value': current_state_value_function
         })
-        # print(current_node_idx, destination_node_idx, current_state_value_function.detach())
-        # print(neighbor_node_ids.padded_values, neighbors_logits.detach())
         return inputs
 
     def learn(self) -> Optional[Tensor]:
-        return
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
-            self._node_id,
-            self._trajectory_sample_size,
-            self._trajectory_length
+            node_idx=self._node_id,
+            count=self._trajectory_sample_size,
+            length=self._trajectory_length
         )
         if not learn_trajectories:
             return None
+        # TODO[Zhogov Alexandr] think if norm is sane at all
         learn_norm_rewards = get_norm_rewards(learn_trajectories)
         for trajectory, norm_rewards in zip(learn_trajectories, learn_norm_rewards):
             loss += self._trajectory_loss(trajectory, norm_rewards)
-        loss /= self._trajectory_sample_size
+        loss /= len(learn_trajectories)
         self._optimizer.step(loss)
         return loss.detach().item()
 
@@ -166,8 +176,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             destination_node_idx=destination
         )
 
-        logprob_old = self._get_logprob(neighbors, neighbor_logits_old)
-        logprob = self._get_logprob(neighbors, neighbor_logits)
+        logprob_old = _get_logprob(neighbors, neighbor_logits_old)
+        logprob = _get_logprob(neighbors, neighbor_logits)
         entropy = Categorical(probs=torch.exp(logprob)).entropy()
         next_logprob_old = logprob_old[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
         next_logprob = logprob[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
@@ -179,13 +189,6 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, reward, entropy)
 
-    def _get_logprob(self, neighbors, neighbors_logits):
-        inf_tensor = torch.zeros(neighbors_logits.shape)
-        inf_tensor[~neighbors.mask] = -1e10
-        neighbors_logits = neighbors_logits + inf_tensor
-        neighbors_logprobs = torch.nn.functional.log_softmax(neighbors_logits, dim=1)
-        return neighbors_logprobs + inf_tensor
-
     def _loss(
             self,
             next_logprob,
@@ -196,7 +199,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             reward,
             entropy
     ) -> Tensor:
-        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -30, 30))
+        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -EXP_CLIP, EXP_CLIP))
 
         advantage = self._compute_advantage_score(v_old, reward, end_v_old)
         weighted_prob = prob_ratio * advantage
@@ -204,7 +207,10 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         actor_loss = -torch.min(weighted_prob, weighted_clipped_prob)
         critic_loss = (self._compute_advantage_score(v, reward, end_v_old)) ** 2
-        total_loss = self._actor_loss_weight * actor_loss + self._critic_loss_weight * critic_loss - 0.01 * entropy
+
+        total_loss = self._actor_loss_weight * actor_loss
+        total_loss += self._critic_loss_weight * critic_loss
+        total_loss -= self._entropy_loss_weight * entropy
 
         return total_loss
 

@@ -1,5 +1,8 @@
 import torch
 
+BIG_NEG = -1e10
+EXP_CLIP = 10
+
 
 def collate_fn(batch, schema):
     type_mapping = {
@@ -107,5 +110,5 @@ class TensorWithMask:
     def __iter__(self):
         cum_length = 0
         for idx in range(len(self._lengths)):
-            yield TensorWithMask(self._values[cum_length:cum_length+self._lengths[idx]], self._lengths[idx:idx+1])
+            yield TensorWithMask(self._values[cum_length:cum_length + self._lengths[idx]], self._lengths[idx:idx + 1])
             cum_length += self._lengths[idx]

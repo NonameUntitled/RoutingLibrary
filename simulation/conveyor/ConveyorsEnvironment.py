@@ -35,6 +35,9 @@ class ConveyorsEnvironment:
         self._topology_graph = topology
         self._logger = logger
 
+        self._wrong_dst_reward = -100
+        self._right_dst_reward = 100
+
         conv_ids = [int(k) for k in self._topology_config["conveyors"].keys()]
         self._conveyor_models = {}
         for conv_id in conv_ids:
@@ -212,9 +215,9 @@ class ConveyorsEnvironment:
 
         if up_type == "sink":
             if self._path_memory is not None:
-                reward = -100
+                reward = self._wrong_dst_reward
                 if bag._dst_id == up_node.id:
-                    reward = 100
+                    reward = self._right_dst_reward
                 self._path_memory.add_reward_to_trajectory(bag._id, reward, 'time', terminal=True)
             self._bag_time_reward_update(bag)
             if up_node.id != bag._dst_id:
