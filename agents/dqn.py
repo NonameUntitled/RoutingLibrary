@@ -29,7 +29,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         assert 0 < research_prob < 1, 'Incorrect `discount_factor` choice'
         super().__init__()
 
-        self._node_id = -1
+        self._node_id = None
 
         self._current_node_idx_prefix = current_node_idx_prefix
         self._destination_node_idx_prefix = destination_node_idx_prefix
@@ -66,7 +66,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         # Shape: [batch_size]
         current_node_idx = inputs[self._current_node_idx_prefix]
-        if self._node_id < 0:
+        if self._node_id is None:
             self._node_id = current_node_idx[0].item()
         batch_size = len(current_node_idx)
         # Shape: [batch_size]
@@ -98,6 +98,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
                 )
             )
         inputs[self._output_prefix] = next_neighbor_ids
+        # TODO[Zhogov Alexandr] fix it
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
             'predicted_next_node_q': neighbors_q,

@@ -45,7 +45,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         assert 0 < ratio_clip < 1, 'Incorrect `ratio_clip` choice'
         super().__init__()
 
-        self._node_id = -1
+        self._node_id = None
 
         self._current_node_idx_prefix = current_node_idx_prefix
         self._destination_node_idx_prefix = destination_node_idx_prefix
@@ -93,7 +93,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         # Shape: [batch_size]
         current_node_idx = inputs[self._current_node_idx_prefix]
-        if self._node_id < 0:
+        if self._node_id is None:
             self._node_id = current_node_idx[0].item()
         batch_size = len(current_node_idx)
         # Shape: [batch_size]
@@ -139,6 +139,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             )
 
         inputs[self._output_prefix] = next_neighbor_ids
+        # TODO[Zhogov Alexandr] fix it
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
             'predicted_next_node_logits': neighbors_logits,
