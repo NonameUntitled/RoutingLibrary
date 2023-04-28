@@ -1,3 +1,5 @@
+from typing import List
+
 from utils import MetaParent
 from topology.utils import only_reachable_from, Section
 
@@ -281,7 +283,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
 
         return dataset
 
-    def get_sample(self, current: Section, neighbors: list[Section], destination: Section):
+    def get_sample(self, current: Section, neighbors: List[Section], destination: Section):
         return {
             'current_node_idx': self._node_2_idx[current],
             'neighbors_node_ids': [

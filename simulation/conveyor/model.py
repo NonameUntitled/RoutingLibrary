@@ -1,4 +1,4 @@
-from bisect import bisect, bisect_right, bisect_left
+from bisect import bisect_right, bisect_left
 from logging import Logger
 from typing import *
 
@@ -93,7 +93,7 @@ class ConveyorModel:
       (or the end of the conveyor), and also return those checkpoint and object
     """
 
-    def __init__(self, world_env: Environment, length: float, checkpoints: list[dict[str, int | Section]],
+    def __init__(self, world_env: Environment, length: float, checkpoints: List[Dict[str, Union[int, Section]]],
                  model_id: int,
                  logger: Logger):
         assert length > 0, "Conveyor length <= 0!"

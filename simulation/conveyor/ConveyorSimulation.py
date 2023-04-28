@@ -1,7 +1,5 @@
-import random
 from logging import Logger
 
-import numpy as np
 from simpy import Environment, Timeout, Event
 from typing import *
 
@@ -34,7 +32,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         assert logger is not None, "Logger must be provided"
         return cls(config, topology, agent, logger)
 
-    def runProcess(self) -> Generator[Timeout | Event, None, None]:
+    def runProcess(self) -> Generator[Union[Timeout, Event], None, None]:
         """
         Generator which generates a series of test scenario events in
         the simulation environment.
@@ -49,36 +47,44 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         sources = [s.id for s in self._topology.sources]
         sinks = [s.id for s in self._topology.sinks]
 
-        for test in test_data:
-            action = test['action']
-            if action == 'put_bags':
-                # delta = test['delta'] + round(np.random.normal(0, 0.5), 2)
-                delta = test['delta']
+        # for test in test_data:
+        #     action = test['action']
+        #     if action == 'put_bags':
+        #         # delta = test['delta'] + round(np.random.normal(0, 0.5), 2)
+        #         delta = test['delta']
+        #
+        #         cur_sources = test.get('sources', sources)
+        #         cur_sinks = test.get('sinks', sinks)
+        #
+        #         for i in range(0, test['bags_number']):
+        #             src = random.choice(cur_sources)
+        #             dst = random.choice(cur_sinks)
+        #
+        #             mini_delta = round(abs(np.random.normal(0, 0.5)), 2)
+        #             yield self._world_env.timeout(mini_delta)
+        #
+        #             bag = Bag(bag_id, 'sink', dst, self._world_env.now, {})
+        #             yield self._simulation_env.handleEvent(BagAppearanceEvent(src, bag))
+        #
+        #             bag_id += 1
+        #             yield self._world_env.timeout(delta)
+        #     else:
+        #         conv_idx = test['conv_idx']
+        #         pause = test.get('pause', 0)
+        #         if pause > 0:
+        #             yield self._world_env.timeout(pause)
+        #         if action == 'conv_break':
+        #             yield self._simulation_env.handleEvent(ConveyorBreakEvent(conv_idx))
+        #         else:
+        #             yield self._simulation_env.handleEvent(ConveyorRestoreEvent(conv_idx))
 
-                cur_sources = test.get('sources', sources)
-                cur_sinks = test.get('sinks', sinks)
+        for i in range(0, 300):
+            bag = Bag(bag_id, 'sink', bag_id % 2, self._world_env.now, {})
+            yield self._simulation_env.handleEvent(BagAppearanceEvent(1, bag))
 
-                for i in range(0, test['bags_number']):
-                    src = random.choice(cur_sources)
-                    dst = random.choice(cur_sinks)
+            bag_id += 1
 
-                    mini_delta = round(abs(np.random.normal(0, 0.5)), 2)
-                    yield self._world_env.timeout(mini_delta)
-
-                    bag = Bag(bag_id, 'sink', dst, self._world_env.now, {})
-                    yield self._simulation_env.handleEvent(BagAppearanceEvent(src, bag))
-
-                    bag_id += 1
-                    yield self._world_env.timeout(delta)
-            else:
-                conv_idx = test['conv_idx']
-                pause = test.get('pause', 0)
-                if pause > 0:
-                    yield self._world_env.timeout(pause)
-                if action == 'conv_break':
-                    yield self._simulation_env.handleEvent(ConveyorBreakEvent(conv_idx))
-                else:
-                    yield self._simulation_env.handleEvent(ConveyorRestoreEvent(conv_idx))
+            yield self._world_env.timeout(20)
 
     def run(self) -> None:
         """

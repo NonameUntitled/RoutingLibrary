@@ -7,7 +7,7 @@ from torch.distributions.categorical import Categorical
 
 from ml.embeddings import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
-from ml.utils import TensorWithMask
+from ml.utils import TensorWithMask, EXP_CLIP, BIG_NEG
 
 
 class BaseActor(TorchEncoder):
@@ -100,32 +100,38 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
         # 3) Compute logits for existing next states (here I use dot product for scores receiving)
         # Shape: [batch_size, max_neighbors_num]
-        neighbors_logits = torch.einsum(
-            'bnd,bd->bn',
+        neighbors_logits = torch.nn.functional.cosine_similarity(
             next_state_embeddings,
-            ideal_transition_embedding
-        )
+            torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
+        ) * EXP_CLIP
+        # neighbors_logits = torch.einsum(
+        #     'bnd,bd->bn',
+        #     next_state_embeddings,
+        #     ideal_transition_embedding
+        # )
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
-        neighbors_logits[~neighbor_node_embeddings.mask] = -torch.inf
+        inf_tensor = torch.zeros(neighbors_logits.shape)
+        inf_tensor[~neighbor_node_embeddings.mask] = BIG_NEG
+        neighbors_logits = neighbors_logits + inf_tensor
 
         # 4) Get probs from logits
         # Shape: [batch_size, max_neighbors_num]
         neighbors_probs = torch.nn.functional.softmax(neighbors_logits, dim=1)
-        neighbors_probs[~neighbor_node_embeddings.mask] = 0  # Make sure we won't sample from padding
+        neighbors_probs = neighbors_probs * neighbor_node_embeddings.mask  # Make sure we won't sample from padding
 
         # 4) Sample next neighbor idx
         categorical_distribution = Categorical(probs=neighbors_probs)
         # Shape: [batch_size, 1]
-        next_neighbors_ids = torch.unsqueeze(categorical_distribution.sample(), dim=1)
+        next_neighbor_idx = torch.unsqueeze(categorical_distribution.sample(), dim=1)
 
         # Shape: [batch_size]
-        next_neighbors_ids = torch.squeeze(torch.gather(
+        next_neighbor_ids = torch.squeeze(torch.gather(
             neighbor_node_ids.padded_values,
             dim=1,
-            index=next_neighbors_ids
-        ))
+            index=next_neighbor_idx
+        ), dim=1)
 
-        return next_neighbors_ids, neighbors_logits
+        return next_neighbor_ids, neighbors_logits
 
 
 class TowerCritic(BaseCritic, config_name='tower_critic'):
@@ -174,7 +180,8 @@ class TowerCritic(BaseCritic, config_name='tower_critic'):
         # 2) Compute value function for current state
         # Shape: [batch_size]
         current_state_value_function = torch.squeeze(
-            self._ff_net.forward(current_state_embedding)
+            self._ff_net.forward(current_state_embedding),
+            dim=1
         )
 
         return current_state_value_function

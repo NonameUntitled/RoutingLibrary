@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+from typing import Tuple, List, Dict, Union
+
 import networkx as nx
 from collections import namedtuple
 
@@ -15,13 +17,13 @@ def node_type(nid: Section) -> str:
     return nid.type
 
 
-def conveyor_edges(graph: nx.DiGraph, conv_idx: int) -> list[tuple[Section, Section]]:
+def conveyor_edges(graph: nx.DiGraph, conv_idx: int) -> List[Tuple[Section, Section]]:
     edges = [(u, v) for u, v, cid in graph.edges(data='conveyor')
              if cid == conv_idx]
     return sorted(edges, key=lambda e: graph[e[0]][e[1]]['end_pos'])
 
 
-def conveyor_adj_nodes(graph: nx.DiGraph, conv_idx: int, only_own=False) -> list[Section]:
+def conveyor_adj_nodes(graph: nx.DiGraph, conv_idx: int, only_own=False) -> List[Section]:
     conv_edges = conveyor_edges(graph, conv_idx)
 
     nodes = [conv_edges[0][0]]
@@ -36,7 +38,7 @@ def conveyor_adj_nodes(graph: nx.DiGraph, conv_idx: int, only_own=False) -> list
     return nodes
 
 
-def conveyor_adj_nodes_with_data(graph: nx.DiGraph, conv_idx: int, data: str, only_own=False) -> list[dict[str, int | Section]]:
+def conveyor_adj_nodes_with_data(graph: nx.DiGraph, conv_idx: int, data: str, only_own=False) -> List[Dict[str, Union[int, Section]]]:
     conv_edges = conveyor_edges(graph, conv_idx)
 
     nodes = [conv_edges[0][0]]
@@ -68,7 +70,7 @@ def conveyor_idx(graph: nx.DiGraph, node: Section) -> int:
         return graph.nodes[node]['conveyor']
 
 
-def node_conv_pos(graph: nx.DiGraph, conv_idx: int, node: Section) -> int | None:
+def node_conv_pos(graph: nx.DiGraph, conv_idx: int, node: Section) -> Union[int, None]:
     es = conveyor_edges(graph, conv_idx)
     p_pos = 0
     for u, v in es:
