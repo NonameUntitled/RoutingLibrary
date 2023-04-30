@@ -28,3 +28,4 @@ class TorchAgent(BaseAgent, nn.Module):
     def copy(self, node_id: int):
         agent_copy = copy.deepcopy(self)
         agent_copy._node_id = node_id
+        return agent_copy
