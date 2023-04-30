@@ -45,8 +45,6 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         assert 0 < ratio_clip < 1, 'Incorrect `ratio_clip` choice'
         super().__init__()
 
-        self._node_id = None
-
         self._current_node_idx_prefix = current_node_idx_prefix
         self._destination_node_idx_prefix = destination_node_idx_prefix
         self._neighbors_node_ids_prefix = neighbors_node_ids_prefix
