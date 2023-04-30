@@ -29,8 +29,6 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         assert 0 < research_prob < 1, 'Incorrect `discount_factor` choice'
         super().__init__()
 
-        self._node_id = None
-
         self._current_node_idx_prefix = current_node_idx_prefix
         self._destination_node_idx_prefix = destination_node_idx_prefix
         self._neighbors_node_ids_prefix = neighbors_node_ids_prefix
