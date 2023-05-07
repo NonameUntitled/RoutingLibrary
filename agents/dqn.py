@@ -102,8 +102,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         return inputs
 
     def learn(self) -> Optional[Tensor]:
-        if self._node_id is None:
-            return None
+        loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             node_idx=self._node_id,
             count=self._trajectory_sample_size,
@@ -111,7 +110,6 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         )
         if not learn_trajectories:
             return None
-        loss = 0
         for trajectory in learn_trajectories:
             target = trajectory[0]['reward']
             current_node_idx, neighbor_node_ids, _, destination_node_idx, next_neighbor = trajectory[0]['extra_info']
