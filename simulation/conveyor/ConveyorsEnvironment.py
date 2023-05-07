@@ -38,16 +38,20 @@ class ConveyorsEnvironment:
         self._wrong_dst_reward = -100
         self._right_dst_reward = 100
 
+        self._collisions = 0
+
         conv_ids = [int(k) for k in self._topology_config["conveyors"].keys()]
         self._conveyor_models = {}
         for conv_id in conv_ids:
             checkpoints = conveyor_adj_nodes_with_data(self._topology_graph.graph, conv_id,
                                                        only_own=True, data="conveyor_pos")
             length = self._topology_config["conveyors"][str(conv_id)]["length"]
-            model = ConveyorModel(self._world_env, length, checkpoints, model_id=conv_id, logger=logger)
+            model = ConveyorModel(self._world_env, length, checkpoints, model_id=conv_id, logger=logger,
+                                  collision_distance=config["test"]["collision_distance"])
             self._conveyor_models[conv_id] = model
 
         self._conveyor_broken = {conv_id: False for conv_id in conv_ids}
+        self._conveyor_broken_dependencies = {conv_id: [] for conv_id in conv_ids}
 
         self._conveyor_upstreams = {
             conv_id: conveyor_adj_nodes(self._topology_graph.graph, conv_id)[-1]
@@ -57,7 +61,10 @@ class ConveyorsEnvironment:
         diverters_ids = [int(k) for k in self._topology_config["diverters"].keys()]
         self._diverter_agents = {}
         for dv_id in diverters_ids:
-            self._diverter_agents[dv_id] = copy.deepcopy(agent)
+            new_agent = copy.deepcopy(agent)
+            new_agent._node_id = self._topology_graph._node_2_idx[
+                Section(type="diverter", id=dv_id, position=int(self._topology_config["diverters"][str(dv_id)]["pos"]))]
+            self._diverter_agents[dv_id] = new_agent
 
         self._lost_bags = 0
         self._arrived_bags = 0
@@ -83,6 +90,9 @@ class ConveyorsEnvironment:
             bag = event._bag
             self._current_bags[bag._id] = set()
             conv_idx = conveyor_idx(self._topology_graph.graph, src)
+            if self._conveyor_broken[conv_idx]:
+                self._bag_lost_report(bag._id, f'Bag #{bag._id} came to the broken conveyor')
+                return self._world_env.event()
             return self._checkInterrupt(lambda: self._putBagOnConveyor(conv_idx, bag, src))
         if isinstance(event, ConveyorBreakEvent):
             return self._checkInterrupt(lambda: self._conveyorBreak(event._conveyor_id))
@@ -127,9 +137,13 @@ class ConveyorsEnvironment:
 
         current_topology_graph = working_topology(self._topology_graph.graph, self._conveyor_broken)
         topology_independence = self._test_config["topology_independence"]
-        neighbor_nodes = only_reachable_from(current_topology_graph, sink_node,
-                                             [up_conv_node, next_node]) if topology_independence == "full" else [
-            up_conv_node, next_node]
+        neighbor_nodes = [up_conv_node, next_node]
+        if topology_independence == "full" or topology_independence == "only_nodes":
+            neighbor_nodes = only_reachable_from(current_topology_graph, sink_node, neighbor_nodes)
+        if topology_independence == "full" or topology_independence == "only_collisions":
+            is_up_conv_available = self._conveyor_models[up_conv].check_collision(bag._id, 0)
+            if is_up_conv_available["is_collision"]:
+                neighbor_nodes = [next_node]
         if len(neighbor_nodes) == 0:
             neighbor_nodes = [next_node]
         sample = self._topology_graph.get_sample(node, neighbor_nodes, sink_node)
@@ -167,22 +181,24 @@ class ConveyorsEnvironment:
         some other bag on a conveyor, throws a `CollisionException`
         """
 
-        if self._conveyor_broken[conv_idx]:
-            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                "Bag lost/time",
-                self._lost_bags + 1,
-                self._world_env.now
-            )
-            self._lost_bags += 1
-            self._logger.debug(f'Bag #{bag._id} came to the broken conveyor')
-            self._current_bags.pop(bag._id)
+        topology_independence = self._test_config["topology_independence"]
+        # TODODO: smth here
+        if self._conveyor_broken[conv_idx] and not (
+                topology_independence == "full" or topology_independence == "only_collisions"):
+            self._bag_lost_report(bag._id, f'Bag #{bag._id} came to the broken conveyor')
             return
 
         pos = node_conv_pos(self._topology_graph.graph, conv_idx, node)
         assert pos is not None, "Position of the conveyor can't be None"
 
         model = self._conveyor_models[conv_idx]
-        model.putObject(bag._id, bag, pos, return_nearest=False)
+        is_collision = model.putObject(bag._id, bag, pos)
+
+        # TODODO: smth here
+        if is_collision:
+            self._bag_collision_report()
+            self._bag_lost_report(bag._id, f'Bag #{bag._id} lost because of collision')
+            return
 
         bag.last_conveyor = conv_idx
         self._current_bags[bag._id] = set()
@@ -193,7 +209,7 @@ class ConveyorsEnvironment:
         Breaks a conveyor.
         """
         model = self._conveyor_models[conv_idx]
-        model.setSpeed(0)
+        model.stop_conveyor({"type": "broken"})
 
         self._conveyor_broken[conv_idx] = True
         self._logger.debug(f'Conveyor #{conv_idx} breaks')
@@ -203,17 +219,22 @@ class ConveyorsEnvironment:
         Restores a conveyor.
         """
         model = self._conveyor_models[conv_idx]
-        model.setSpeed(1)
+        model.start_conveyor()
+
+        for cnv in self._conveyor_broken_dependencies[conv_idx]:
+            self._conveyorRestore(cnv)
+
+        self._conveyor_broken_dependencies[conv_idx] = []
 
         self._conveyor_broken[conv_idx] = False
         self._logger.debug(f'Conveyor #{conv_idx} restores')
 
     def _leaveConveyorEnd(self, conv_idx: int, bag_id: int) -> bool:
-        bag = self._removeBagFromConveyor(conv_idx, bag_id)
         up_node = self._conveyor_upstreams[conv_idx]
         up_type = node_type(up_node)
 
         if up_type == "sink":
+            bag = self._removeBagFromConveyor(conv_idx, bag_id)
             if self._path_memory is not None:
                 reward = self._wrong_dst_reward
                 if bag._dst_id == up_node.id:
@@ -221,13 +242,9 @@ class ConveyorsEnvironment:
                 self._path_memory.add_reward_to_trajectory(bag._id, reward, 'time', terminal=True)
             self._bag_time_reward_update(bag)
             if up_node.id != bag._dst_id:
-                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                    "Bag lost/time",
-                    self._lost_bags + 1,
-                    self._world_env.now
-                )
-                self._lost_bags += 1
-                self._logger.debug(f'Bag #{bag._id} came to {up_node.id} sink, but its destination was {bag._dst_id}')
+                self._bag_lost_report(bag._id,
+                                      f'Bag #{bag._id} came to {up_node.id} sink, but its destination was {bag._dst_id}')
+                return True
             else:
                 self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
                 current_time = self._world_env.now
@@ -241,12 +258,32 @@ class ConveyorsEnvironment:
                     self._arrived_bags + 1,
                     current_time
                 )
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
                 self._arrived_bags += 1
-            self._current_bags.pop(bag._id)
-            return True
+                self._current_bags.pop(bag._id)
+                return True
 
         if up_type == "junction":
             up_conv = conveyor_idx(self._topology_graph.graph, up_node)
+            pos = node_conv_pos(self._topology_graph.graph, up_conv, up_node)
+            model = self._conveyor_models[conv_idx]
+            up_model = self._conveyor_models[up_conv]
+            # TODODO: check if it is correct
+            topology_independence = self._test_config["topology_independence"]
+            if topology_independence == "full" or topology_independence == "only_collisions":
+                if self._conveyor_broken[up_conv]:
+                    model.stop_conveyor({"type": "dependence"})
+                    self._conveyor_broken[conv_idx] = True
+                    self._conveyor_broken_dependencies[up_conv] = conv_idx
+                    return False
+
+                collision_check = up_model.check_collision(bag_id, pos)
+                if collision_check["is_collision"]:
+                    model.stop_conveyor({"type": "collision", "time": self._world_env.now + collision_check["time"]})
+                    self._conveyor_broken[conv_idx] = True
+                    return False
+
+            bag = self._removeBagFromConveyor(conv_idx, bag_id)
             self._putBagOnConveyor(up_conv, bag, up_node)
         else:
             raise Exception("Invalid conveyor upstream node type: " + up_type)
@@ -304,6 +341,32 @@ class ConveyorsEnvironment:
 
         return Event(self._world_env).succeed()
 
+    def _bag_collision_report(self):
+        """
+        Bag is collided
+        """
+        self._collisions += 1
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+            f'Collisions/time',
+            self._collisions,
+            self._world_env.now
+        )
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+
+    def _bag_lost_report(self, bag_id: int, message: str):
+        """
+        Bag is lost
+        """
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+            "Bag lost/time",
+            self._lost_bags + 1,
+            self._world_env.now
+        )
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+        self._lost_bags += 1
+        self._logger.debug(message)
+        self._current_bags.pop(bag_id)
+
     def _updateEnergyConsumption(self):
         """
         Update energy consumption
@@ -349,6 +412,11 @@ class ConveyorsEnvironment:
         # Resolving all immediate events
         for (conv_idx, (bag, node, delay)) in all_unresolved_events(self._conveyor_models):
             assert delay == 0, "Event delay should be zero"
+
+            if bag is None:
+                self._conveyorRestore(conv_idx)
+                continue
+
             if self._conveyor_broken[conv_idx]:
                 continue
 
@@ -361,6 +429,7 @@ class ConveyorsEnvironment:
                 left_to_sink = self._leaveConveyorEnd(conv_idx, bag._id)
                 if left_to_sink:
                     left_to_sinks.add(bag._id)
+                continue
             elif atype == "diverter":
                 forward_node = self._diverterPrediction(node, bag, conv_idx)
 
