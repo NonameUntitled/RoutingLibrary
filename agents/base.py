@@ -1,3 +1,4 @@
+import copy
 from abc import abstractmethod
 from typing import Any, Dict, Optional
 
@@ -22,3 +23,9 @@ class TorchAgent(BaseAgent, nn.Module):
 
     def __init__(self):
         super().__init__()
+        self._node_id = None
+
+    def copy(self, node_id: int):
+        agent_copy = copy.deepcopy(self)
+        agent_copy._node_id = node_id
+        return agent_copy
