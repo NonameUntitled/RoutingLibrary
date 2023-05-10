@@ -54,7 +54,7 @@ def _get_norm_reward(reward_by_type, mean_by_type, std_by_type):
     return norm_reward * 100
 
 
-class SharedBagTrajectoryMemoryOld(BaseBagTrajectoryMemory, config_name='shared_path_memory_queue'):
+class SharedBagTrajectoryMemoryQueue(BaseBagTrajectoryMemory, config_name='shared_path_memory_queue'):
     _bag_id_buffer = defaultdict(deque)
     _node_idx_buffer = defaultdict(deque)
     _buffer = deque()
