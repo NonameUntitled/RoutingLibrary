@@ -163,9 +163,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
     def _trajectory_loss(self, trajectory, norm_rewards):
         reward = np.array(norm_rewards)
 
-        v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = trajectory[0]['extra_info']
-        _, _, _, _, _, _, end_v_old = trajectory[-1]['extra_info']
-        if trajectory[-1]['terminal']:
+        v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = trajectory[0].extra_info
+        _, _, _, _, _, _, end_v_old = trajectory[-1].extra_info
+        if trajectory[-1].terminal:
             end_v_old = 0
         _, neighbor_logits = self._actor(
             current_node_idx=node_idx,
