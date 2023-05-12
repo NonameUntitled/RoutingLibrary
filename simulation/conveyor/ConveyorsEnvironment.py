@@ -8,7 +8,7 @@ from simpy import Environment, Event, Interrupt
 import utils
 from agents import TorchAgent
 from ml.utils import TensorWithMask
-from simulation.conveyor.energy import consumption_Zhang
+from simulation.conveyor.energy import consumption_Zhang, acceleration_consumption_Zhang, deceleration_consumption_Zhang
 from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag, ConveyorBreakEvent, \
     ConveyorRestoreEvent
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
@@ -210,6 +210,7 @@ class ConveyorsEnvironment:
         """
         model = self._conveyor_models[conv_idx]
         model.stop_conveyor({"type": "broken"})
+        self._conveyorStartStopEnergyConsumption(conv_idx, "stop")
 
         self._conveyor_broken[conv_idx] = True
         self._logger.debug(f'Conveyor #{conv_idx} breaks')
@@ -225,6 +226,8 @@ class ConveyorsEnvironment:
             self._conveyorRestore(cnv)
 
         self._conveyor_broken_dependencies[conv_idx] = []
+
+        self._conveyorStartStopEnergyConsumption(conv_idx, "stop")
 
         self._conveyor_broken[conv_idx] = False
         self._logger.debug(f'Conveyor #{conv_idx} restores')
@@ -275,12 +278,14 @@ class ConveyorsEnvironment:
                     model.stop_conveyor({"type": "dependence"})
                     self._conveyor_broken[conv_idx] = True
                     self._conveyor_broken_dependencies[up_conv] = conv_idx
+                    self._conveyorStartStopEnergyConsumption(conv_idx, "stop")
                     return False
 
                 collision_check = up_model.check_collision(bag_id, pos)
                 if collision_check["is_collision"]:
                     model.stop_conveyor({"type": "collision", "time": self._world_env.now + collision_check["time"]})
                     self._conveyor_broken[conv_idx] = True
+                    self._conveyorStartStopEnergyConsumption(conv_idx, "stop")
                     return False
 
             bag = self._removeBagFromConveyor(conv_idx, bag_id)
@@ -366,6 +371,34 @@ class ConveyorsEnvironment:
         self._lost_bags += 1
         self._logger.debug(message)
         self._current_bags.pop(bag_id)
+
+    def _conveyorStartStopEnergyConsumption(self, conv_idx: int, type: str):
+        """
+        Start conveyor energy consumption
+        """
+
+        model = self._conveyor_models[conv_idx]
+        new_energy_consumption = acceleration_consumption_Zhang(model._length, model._speed,
+                                                                len(model._objects)) if type == "start" else deceleration_consumption_Zhang(
+            model._length, model._speed, len(model._objects))
+        if len(model._objects) > 0:
+            self._energy_reward_update(new_energy_consumption / len(model._objects),
+                                       [obj._id for obj in model._objects.values()])
+
+        self._system_energy_consumption += new_energy_consumption
+        self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+            f'Conveyor {model._model_id} energy/time',
+            self._conveyor_energy_consumption[model._model_id],
+            self._energy_consumption_last_update
+        )
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+            "Conveyor system energy/time",
+            self._system_energy_consumption,
+            self._energy_consumption_last_update
+        )
+        utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
 
     def _updateEnergyConsumption(self):
         """
