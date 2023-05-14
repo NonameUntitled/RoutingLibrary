@@ -61,10 +61,10 @@ class ConveyorsEnvironment:
         diverters_ids = [int(k) for k in self._topology_config["diverters"].keys()]
         self._diverter_agents = {}
         for dv_id in diverters_ids:
-            new_agent = copy.deepcopy(agent)
-            new_agent._node_id = self._topology_graph._node_2_idx[
-                Section(type="diverter", id=dv_id, position=int(self._topology_config["diverters"][str(dv_id)]["pos"]))]
-            self._diverter_agents[dv_id] = new_agent
+            agent_node_id = self._topology_graph._node_2_idx[
+                Section(type="diverter", id=dv_id, position=int(self._topology_config["diverters"][str(dv_id)]["pos"]))
+            ]
+            self._diverter_agents[dv_id] = agent.copy(agent_node_id)
 
         self._lost_bags = 0
         self._arrived_bags = 0
