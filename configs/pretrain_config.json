@@ -244,7 +244,7 @@
       }
     }
   },
-  "agent": {
+  "agent_2": {
     "type": "ppo",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -285,22 +285,24 @@
       }
     }
   },
-  "agent_2": {
+  "agent": {
     "type": "dqn",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "trajectory_sample_size": 30,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
     "q_network": {
       "type": "tower_q_network",
       "embedder": {
         "shared": true,
-        "type": "learnable"
+        "type": "hope",
+        "embedding_dim": 16
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 512,
+        "input_dim": 32,
         "hidden_dims": [
           256,
           256
@@ -312,13 +314,25 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 3e-4,
+        "lr": 1e-3,
         "eps": 1e-8
       },
-      "clip_grad_threshold": 5.0
+      "clip_grad_threshold": 50.0
     }
   },
   "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_next_node_q",
+        "ground_truth_prefix": "path_lengths",
+        "output_prefix": "mse_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "loss_2": {
     "type": "composite",
     "losses": [
       {
@@ -368,7 +382,7 @@
       }
     ]
   },
-  "model_name": "ppo_pretrain_model",
+  "model_name": "dqn_pretrain_model",
   "num_samples": 10000,
   "num_epochs": 300,
   "shared_embedder": {

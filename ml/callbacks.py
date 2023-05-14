@@ -70,7 +70,7 @@ class LossCallback(BaseCallback, config_name='loss'):
             if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
                 utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
                     '{}/{}'.format(self._regime_prefix, self._loss_prefix),
-                    inputs[self._loss_prefix],
+                    inputs.get(self._loss_prefix, 0.0),
                     step_num
                 )
                 utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()

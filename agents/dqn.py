@@ -7,6 +7,7 @@ from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.dqn_encoders import BaseQNetwork
 from ml.encoders import BaseEncoder
+from ml.utils import BIG_NEG
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
@@ -95,9 +96,10 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             )
         inputs[self._output_prefix] = next_neighbor_ids
         # TODO[Zhogov Alexandr] fix it
+        flatten_neighbors_q = neighbors_q.flatten()
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
-            'predicted_next_node_q': neighbors_q,
+            'predicted_next_node_q': flatten_neighbors_q[flatten_neighbors_q != BIG_NEG],
         })
         return inputs
 
@@ -106,7 +108,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             node_idx=self._node_id,
             count=self._trajectory_sample_size,
-            length=1
+            length=2
         )
         if not learn_trajectories:
             return None
@@ -117,6 +119,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
             current_node_idx, neighbor_node_ids, _, destination_node_idx, next_neighbor = parts[0].extra_info
             if len(parts) > 1:
                 _, neighbor_node_ids_, neighbor_q_, _, next_neighbor_ = parts[1].extra_info
+                neighbor_q_ = torch.unsqueeze(neighbor_q_, dim=0)
                 target += self._discount_factor * neighbor_q_[
                     neighbor_node_ids_.padded_values == next_neighbor_].detach()
             _, neighbor_q = self._q_network(

@@ -8,6 +8,7 @@ import networkx as nx
 import numpy as np
 import random
 
+
 class BaseTopology(metaclass=MetaParent):
 
     @property
@@ -257,7 +258,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                     weight=self.edge_weight_field
                 )
                 # In the line below we append negative value because we want to minimize actual path
-                path_lengths.append(nx.path_weight(graph, path, weight=self.edge_weight_field))
+                path_lengths.append(-nx.path_weight(graph, path, weight=self.edge_weight_field))
             sample['path_lengths'] = path_lengths
 
             # ppo-specific

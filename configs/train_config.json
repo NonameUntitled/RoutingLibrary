@@ -7,7 +7,7 @@
   "rewards": {
     "sink": {
       "wrong": -1e5,
-      "right": 0
+      "right": 1e2
     }
   },
   "learn_trigger_bag_count": 30,
@@ -285,11 +285,11 @@
       "embedder": {
         "shared": true,
         "type": "hope",
-        "embedding_dim": 32
+        "embedding_dim": 16
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 64,
+        "input_dim": 32,
         "hidden_dims": [
           256,
           256
@@ -301,7 +301,7 @@
       "type": "shared_path_memory",
       "reward_weights": {
         "time": 1.0,
-        "energy": 1e-5,
+        "energy": 5e-6,
         "sink": 1.0
       }
     },
@@ -362,7 +362,7 @@
       "type": "shared_path_memory",
       "reward_weights": {
         "time": 1.0,
-        "energy": 1e-5,
+        "energy": 5e-6,
         "sink": 1.0
       }
     },

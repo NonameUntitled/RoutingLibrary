@@ -138,8 +138,8 @@ class Trajectory:
 
 class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_path_memory'):
     trajectory_number = 0
-    buffer_size = 50
-    force_sample_length = 15
+    buffer_size = 300
+    force_sample_length = 10
     max_trajectory_length = 15
     trajectory_by_bag_id = {}
     parts_by_node_idx = defaultdict(set)
