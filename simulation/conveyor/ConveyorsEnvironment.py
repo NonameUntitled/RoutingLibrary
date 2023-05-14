@@ -35,8 +35,8 @@ class ConveyorsEnvironment:
         self._topology_graph = topology
         self._logger = logger
 
-        self._wrong_dst_reward = -100
-        self._right_dst_reward = 100
+        self._wrong_dst_reward = -1e5
+        self._right_dst_reward = 0
 
         self._collisions = 0
 
@@ -242,7 +242,7 @@ class ConveyorsEnvironment:
                 reward = self._wrong_dst_reward
                 if bag._dst_id == up_node.id:
                     reward = self._right_dst_reward
-                self._path_memory.add_reward_to_trajectory(bag._id, reward, 'time', terminal=True)
+                self._path_memory.add_reward_to_trajectory(bag._id, reward, 'sink', terminal=True)
             self._bag_time_reward_update(bag)
             if up_node.id != bag._dst_id:
                 self._bag_lost_report(bag._id,

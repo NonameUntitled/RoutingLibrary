@@ -10,7 +10,7 @@ from ml import BaseOptimizer
 from ml.encoders import BaseEncoder
 from ml.ppo_encoders import BaseActor, BaseCritic
 from ml.utils import BIG_NEG, EXP_CLIP
-from utils.bag_trajectory import BaseBagTrajectoryMemory, get_norm_rewards
+from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
 def _get_logprob(neighbors, neighbors_logits):
@@ -152,20 +152,19 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         )
         if not learn_trajectories:
             return None
-        # TODO[Zhogov Alexandr] think if norm is sane at all
-        learn_norm_rewards = get_norm_rewards(learn_trajectories)
-        for trajectory, norm_rewards in zip(learn_trajectories, learn_norm_rewards):
-            loss += self._trajectory_loss(trajectory, norm_rewards)
+        for trajectory in learn_trajectories:
+            loss += self._trajectory_loss(trajectory)
         loss /= len(learn_trajectories)
         self._optimizer.step(loss)
         return loss.detach().item()
 
-    def _trajectory_loss(self, trajectory, norm_rewards):
-        reward = np.array(norm_rewards)
+    def _trajectory_loss(self, trajectory):
+        rewards = [reward for _, reward in trajectory]
+        parts = [part for part, _ in trajectory]
 
-        v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = trajectory[0].extra_info
-        _, _, _, _, _, _, end_v_old = trajectory[-1].extra_info
-        if trajectory[-1].terminal:
+        v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = parts[0].extra_info
+        _, _, _, _, _, _, end_v_old = parts[-1].extra_info
+        if parts[-1].terminal:
             end_v_old = 0
         _, neighbor_logits = self._actor(
             current_node_idx=node_idx,
@@ -184,7 +183,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             destination_node_idx=destination
         )
 
-        return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, reward, entropy)
+        return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, rewards, entropy)
 
     def _loss(
             self,

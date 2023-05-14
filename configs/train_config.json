@@ -348,7 +348,12 @@
       }
     },
     "path_memory": {
-      "type": "shared_path_memory"
+      "type": "shared_path_memory",
+      "reward_weights": {
+        "time": 1.0,
+        "energy": 1e-5,
+        "sink": 1.0
+      }
     },
     "optimizer": {
       "type": "basic",

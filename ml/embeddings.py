@@ -89,7 +89,7 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
         assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
         v = self._W[idx]
         if len(idx) == 1:
-            v = [v]
+            v = np.array([v])
         return torch.Tensor(v)
 
 
