@@ -95,7 +95,7 @@ class ConveyorModel:
 
     def __init__(self, world_env: Environment, length: float, checkpoints: List[Dict[str, Union[int, Section]]],
                  model_id: int,
-                 logger: Logger):
+                 logger: Logger, collision_distance: float = 0.1):
         assert length > 0, "Conveyor length <= 0!"
 
         checkpoints = sorted(checkpoints, key=lambda p: p["position"])
@@ -117,10 +117,12 @@ class ConveyorModel:
         self._checkpoints = checkpoints
         self._checkpoint_positions = {cp["node"]: cp["position"] for cp in checkpoints}
         self._length = length
+        self._collision_distance = collision_distance
 
         # variables
         # TODO[Aleksandr Pakulev]: Work with object in a more clear way
         self._speed = 1
+        self._broken_type = None  # broken | dependence | collision {time}
         self._objects = {}
         self._object_positions = []
 
@@ -139,6 +141,15 @@ class ConveyorModel:
     def setSpeed(self, speed: float) -> None:
         self._speed = speed
 
+    def stop_conveyor(self, stop_info: Dict[str, Any]) -> None:
+        self._logger.debug(f"STOP {self._model_id}: {stop_info}")
+        self.setSpeed(0)
+        self._broken_type = stop_info
+
+    def start_conveyor(self) -> None:
+        self._logger.debug(f"START {self._model_id}: {self._broken_type}")
+        self.setSpeed(1)
+        self._broken_type = None
 
     def nearestObject(self, pos: float, after=None, speed=None, not_exact=False,
                       preference="nearest") -> Optional[Tuple[Any, float]]:
@@ -169,7 +180,7 @@ class ConveyorModel:
             return self._objects[oid], o_pos
         return None
 
-    def putObject(self, obj_id: int, obj: Any, pos: float, soft_collide=True, return_nearest=False):
+    def putObject(self, obj_id: int, obj: Any, pos: float):
         assert obj_id not in self._objects, f"Object {obj_id} already exists on {self._model_id} conveyor"
         pos = round(pos, POS_ROUND_DIGITS)
 
@@ -177,25 +188,11 @@ class ConveyorModel:
         if len(self._objects) > 0:
             object_description, n_idx = search_pos(self._object_positions, pos)
             (n_obj_id, n_pos) = (object_description["id"], object_description["position"])
-            if n_pos == pos:
-                if soft_collide:
-                    self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
-                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                        f'Collision at time',
-                        1,
-                        self._world_env.now
-                    )
-                    i = n_idx
-                    p_pos = pos
-                    while i < len(self._object_positions) and self._object_positions[i]["position"] >= p_pos:
-                        p_pos = round(p_pos + SOFT_COLLIDE_SHIFT, POS_ROUND_DIGITS)
-                        self._object_positions[i] = {"id": self._object_positions[i]["id"], "position": p_pos}
-                        i += 1
-                else:
-                    raise CollisionException((obj, self._objects[n_obj_id], pos, self._model_id))
+            if abs(n_pos - pos) < self._collision_distance:
+                self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
+                return True
             elif n_pos < pos:
                 n_idx += 1
-            nearest = (n_obj_id, n_pos)
         else:
             n_idx = 0
 
@@ -203,8 +200,23 @@ class ConveyorModel:
         self._object_positions.insert(n_idx, {"id": obj_id, "position": pos})
         self._stateTransfer("change")
 
-        if return_nearest:
-            return nearest
+        return False
+
+    def check_collision(self, obj_id: int, pos: float):
+        assert obj_id not in self._objects, f"Object {obj_id} already exists on {self._model_id} conveyor"
+        pos = round(pos, POS_ROUND_DIGITS)
+
+        if len(self._objects) > 0:
+            object_description, n_idx = search_pos(self._object_positions, pos)
+            (n_obj_id, n_pos) = (object_description["id"], object_description["position"])
+            if abs(n_pos - pos) < self._collision_distance:
+                self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
+                return {"is_collision": True, "time": self._collision_distance - abs(n_pos - pos)}
+            elif n_pos < pos:
+                n_idx += 1
+        else:
+            n_idx = 0
+        return {"is_collision": False, "idx": n_idx}
 
     def removeObject(self, obj_id: int):
         pos_idx = [object_description["id"] for object_description in self._object_positions].index(obj_id)
@@ -228,20 +240,24 @@ class ConveyorModel:
 
         self.shift(d)
 
-        if clean_ends:
-            while len(self._object_positions) > 0 and self._object_positions[0]["position"] < 0:
-                object_description = self._object_positions.pop(0)
-                self._objects.pop(object_description["id"])
-            while len(self._object_positions) > 0 and self._object_positions[-1]["position"] > self._length:
-                object_description = self._object_positions.pop()
-                self._objects.pop(object_description["id"])
+        # TODO[Aleksandr Pakulev]: Do we need it?
+        # if clean_ends:
+        #     while len(self._object_positions) > 0 and self._object_positions[0]["position"] < 0:
+        #         object_description = self._object_positions.pop(0)
+        #         self._logger.debug("WHATEVER1")
+        #         self._objects.pop(object_description["id"])
+        #     while len(self._object_positions) > 0 and self._object_positions[-1]["position"] > self._length:
+        #         object_description = self._object_positions.pop()
+        #         self._logger.debug(f"WHATEVER2 {object_description}, {self._broken_type}, {self._model_id}")
+        #         self._objects.pop(object_description["id"])
 
         return d
 
     # TODO[Aleksandr Pakulev]: Instead of using list of unclear tuples,
     #  it will be better to create a class for each type of events
     def nextEvents(self, skip_immediate=True) -> List[Tuple[Any, Any, float]]:
-        if self._speed == 0:
+
+        if self._speed == 0 and not (self._broken_type is not None and self._broken_type["type"] == "collision"):
             return []
 
         obj = self._objects.keys()
@@ -271,10 +287,19 @@ class ConveyorModel:
             if cp_idx < len(c_points):
                 cp = c_points[cp_idx]
                 obj = self._objects[object_description["id"]]
-                diff = (cp["position"] - object_description["position"]) / self._speed
-                events.append((obj, cp["node"], diff))
+                if self._broken_type is not None and self._broken_type["type"] == "collision":
+                    if cp["position"] - object_description["position"] == 0:
+                        events.append((obj, cp["node"], 0))
+                else:
+                    diff = (cp["position"] - object_description["position"]) / self._speed
+                    events.append((obj, cp["node"], diff))
 
         events.sort(key=lambda p: p[2])
+
+        if self._broken_type is not None and self._broken_type["type"] == "collision" and not (None, None) in self._resolved_events:
+            diff = self._broken_type["time"] - self._world_env.now
+            # TODO[Aleksandr Pakulev]: kostyl
+            return [(None, None, 0 if diff <= 0 else diff)] + events
         return events
 
     def pickUnresolvedEvent(self) -> Union[Tuple[Any, Any, float], None]:
@@ -287,7 +312,10 @@ class ConveyorModel:
         if diff > 0:
             return None
 
-        self._resolved_events.add((obj._id, cp))
+        if obj is None:
+            self._resolved_events.add((None, None))
+        else:
+            self._resolved_events.add((obj._id, cp))
         return obj, cp, diff
 
     def resume(self) -> None:

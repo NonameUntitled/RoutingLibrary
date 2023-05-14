@@ -228,7 +228,7 @@
         }
       },
       "2": {
-        "length": 10,
+        "length": 7,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -236,7 +236,7 @@
         }
       },
       "3": {
-        "length": 10,
+        "length": 7,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -244,7 +244,7 @@
         }
       },
       "4": {
-        "length": 200,
+        "length": 177,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -252,7 +252,7 @@
         }
       },
       "5": {
-        "length": 200,
+        "length": 177,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -388,97 +388,102 @@
   },
   "test": {
     "topology_independence": "full",
+    "collision_distance": 2,
     "data": [
       {
         "action": "put_bags",
-        "bags_number": 20,
+        "bags_number": 200,
         "delta": 20
       },
       {
         "action": "conv_break",
-        "conv_idx": 8,
-        "pause": 100
+        "conv_idx": 2,
+        "pause": 0
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 200,
+        "delta": 20
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 2,
+        "pause": 0
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 200,
+        "delta": 5
       },
       {
         "action": "conv_break",
-        "conv_idx": 9,
-        "pause": 100
+        "conv_idx": 2,
+        "pause": 0
       },
       {
         "action": "put_bags",
-        "bags_number": 20,
-        "delta": 20,
-        "sources": [
-          1
-        ],
-        "sinks": [
-          3,
-          4
-        ]
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 20,
-        "delta": 20,
-        "sources": [
-          0
-        ],
-        "sinks": [
-          0,
-          1,
-          2
-        ]
+        "bags_number": 200,
+        "delta": 5
       },
       {
         "action": "conv_restore",
-        "conv_idx": 8,
-        "pause": 100
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 9,
-        "pause": 100
+        "conv_idx": 2,
+        "pause": 0
       },
       {
         "action": "put_bags",
-        "bags_number": 20,
+        "bags_number": 200,
         "delta": 20
       },
       {
         "action": "conv_break",
-        "conv_idx": 8,
-        "pause": 100
+        "conv_idx": 2,
+        "pause": 0
       },
       {
         "action": "put_bags",
-        "bags_number": 20,
-        "delta": 20,
-        "sources": [
-          1
-        ]
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 8,
-        "pause": 100
+        "bags_number": 200,
+        "delta": 20
       },
       {
         "action": "conv_break",
-        "conv_idx": 8,
-        "pause": 100
+        "conv_idx": 3,
+        "pause": 0
       },
       {
         "action": "put_bags",
-        "bags_number": 20,
-        "delta": 20,
-        "sources": [
-          0
-        ]
+        "bags_number": 200,
+        "delta": 20
       },
       {
         "action": "conv_restore",
-        "conv_idx": 8,
-        "pause": 100
+        "conv_idx": 2,
+        "pause": 0
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 4,
+        "pause": 0
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 500,
+        "delta": 20
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 3,
+        "pause": 0
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 4,
+        "pause": 0
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 500,
+        "delta": 20
       }
     ]
   },

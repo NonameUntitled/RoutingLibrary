@@ -2,11 +2,11 @@ POS_ROUND_DIGITS = 3
 SOFT_COLLIDE_SHIFT = 0.2
 
 BAG_RADIUS = 0.5
-BAG_MASS = 20
+BAG_MASS = 20000
 BAG_DENSITY = 40
 
 BELT_WIDTH = 1.5
-BELT_UNIT_MASS = 15
+BELT_UNIT_MASS = 15000
 
 SPEED_STEP = 0.1
 SPEED_ROUND_DIGITS = 3
@@ -38,6 +38,31 @@ def consumption_Zhang(length: float, speed: float, n_bags: int):
     Q_g = n_bags * BAG_MASS / length
     T = Q_g * speed * 3.6
     return _P_Zhang(length, speed, T) / _ETA
+
+START_EFFICIENCY = 0.6  # 60% efficiency during start
+STOP_EFFICIENCY = 0.7  # 70% efficiency during stop
+START_TIME = 1
+STOP_TIME = 1
+
+def acceleration_consumption_Zhang(length: float, speed: float, n_bags: int):
+    if speed == 0 or START_TIME == 0:
+        return 0
+    Q_g = n_bags * BAG_MASS / length
+    T = Q_g * speed * 3.6
+    acceleration = speed / START_TIME
+    force = Q_g * acceleration
+    power = force * speed
+    return power * START_TIME / (START_EFFICIENCY * _ETA)
+
+def deceleration_consumption_Zhang(length: float, speed: float, n_bags: int):
+    if speed == 0 or STOP_TIME == 0:
+        return 0
+    Q_g = n_bags * BAG_MASS / length
+    T = Q_g * speed * 3.6
+    deceleration = speed / STOP_TIME
+    force = Q_g * deceleration
+    power = force * speed
+    return power * STOP_TIME / (STOP_EFFICIENCY * _ETA)
 
 
 def consumption_linear(length, speed, n_bags):

@@ -59,7 +59,7 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
         if isinstance(graph, nx.DiGraph):
             # TODO [Vladimir Baikalov]: Recognize how it works (line below)
             # graph = nx.relabel_nodes(graph, lambda x: x.id)
-            A = nx.to_numpy_matrix(graph, nodelist=sorted(graph.nodes), weight=weight)
+            A = nx.convert_matrix.to_numpy_array(graph, nodelist=sorted(graph.nodes), weight=weight)
             n = graph.number_of_nodes()
         else:
             A = np.mat(graph)
