@@ -35,8 +35,8 @@ class ConveyorsEnvironment:
         self._topology_graph = topology
         self._logger = logger
 
-        self._wrong_dst_reward = -1e5
-        self._right_dst_reward = 0
+        self._wrong_dst_reward = config['rewards']['sink']['wrong']
+        self._right_dst_reward = config['rewards']['sink']['right']
 
         self._collisions = 0
 
