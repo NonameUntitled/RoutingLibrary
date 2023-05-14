@@ -84,12 +84,12 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         # yield self._world_env.timeout(1000)
 
         for i in range(0, 1500):
-            bag = Bag(bag_id, 'sink', bag_id % 2, self._world_env.now, {})
-            yield self._simulation_env.handleEvent(BagAppearanceEvent(bag_id % 2, bag))
+            bag = Bag(bag_id, 'sink', (bag_id % 2) * 2, self._world_env.now, {})
+            yield self._simulation_env.handleEvent(BagAppearanceEvent((bag_id + 1) % 2, bag))
 
             bag_id += 1
 
-            yield self._world_env.timeout(20)
+            yield self._world_env.timeout(3)
 
     def run(self) -> None:
         """

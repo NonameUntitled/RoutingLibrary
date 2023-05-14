@@ -71,7 +71,7 @@
     "max_edge_length": 100,
     "length_distribution": "uniform"
   },
-  "topology_big": {
+  "topology": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -182,7 +182,7 @@
       }
     }
   },
-  "topology": {
+  "topology_small": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -272,7 +272,7 @@
     "neighbors_prefix": "neighbors_node_ids",
     "output_prefix": "next_nodes"
   },
-  "agent_2": {
+  "agent": {
     "type": "dqn",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -315,7 +315,7 @@
       "clip_grad_threshold": 50.0
     }
   },
-  "agent": {
+  "agent_2": {
     "type": "ppo",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -403,8 +403,8 @@
     }
   },
   "test": {
-    "topology_independence": "full",
-    "collision_distance": 3,
+    "topology_independence": "only_nodes",
+    "collision_distance": 2,
     "data": [
       {
         "action": "put_bags",
@@ -517,5 +517,5 @@
     "type": "hope",
     "embedding_dim": 16
   },
-  "pretrain_model_name": "ppo_pretrain_model"
+  "pretrain_model_name": "dqn_pretrain_model_big"
 }

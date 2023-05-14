@@ -48,7 +48,7 @@
       }
     }
   },
-  "topology_big": {
+  "topology": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -159,7 +159,7 @@
       }
     }
   },
-  "topology": {
+  "topology_small": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -382,7 +382,7 @@
       }
     ]
   },
-  "model_name": "dqn_pretrain_model",
+  "model_name": "dqn_pretrain_model_big",
   "num_samples": 10000,
   "num_epochs": 300,
   "shared_embedder": {
