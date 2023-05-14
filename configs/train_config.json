@@ -234,7 +234,7 @@
         }
       },
       "2": {
-        "length": 7,
+        "length": 10,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -242,7 +242,7 @@
         }
       },
       "3": {
-        "length": 7,
+        "length": 10,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -250,7 +250,7 @@
         }
       },
       "4": {
-        "length": 177,
+        "length": 200,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -258,7 +258,7 @@
         }
       },
       "5": {
-        "length": 177,
+        "length": 200,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -298,7 +298,12 @@
       }
     },
     "path_memory": {
-      "type": "shared_path_memory"
+      "type": "shared_path_memory",
+      "reward_weights": {
+        "time": 1.0,
+        "energy": 1e-5,
+        "sink": 1.0
+      }
     },
     "optimizer": {
       "type": "basic",
@@ -399,7 +404,7 @@
   },
   "test": {
     "topology_independence": "full",
-    "collision_distance": 2,
+    "collision_distance": 3,
     "data": [
       {
         "action": "put_bags",
