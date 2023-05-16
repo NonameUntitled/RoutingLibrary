@@ -1,4 +1,3 @@
-import copy
 from logging import Logger
 from typing import *
 
@@ -9,9 +8,9 @@ import utils
 from agents import TorchAgent
 from ml.utils import TensorWithMask
 from simulation.conveyor.energy import consumption_Zhang, acceleration_consumption_Zhang, deceleration_consumption_Zhang
-from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag, ConveyorBreakEvent, \
-    ConveyorRestoreEvent
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
+from simulation.conveyor.utils import ConveyorBreakEvent, \
+    ConveyorRestoreEvent
 from simulation.conveyor.utils import WorldEvent, BagAppearanceEvent, UnsupportedEventType, Bag
 from topology import BaseTopology
 from topology.utils import Section, conveyor_adj_nodes, conveyor_idx, node_type, node_id, node_conv_pos, \
@@ -379,11 +378,10 @@ class ConveyorsEnvironment:
 
         model = self._conveyor_models[conv_idx]
         new_energy_consumption = acceleration_consumption_Zhang(model._length, model._speed,
-                                                                len(model._objects)) if type == "start" else deceleration_consumption_Zhang(
+                                                                len(
+                                                                    model._objects)) if type == "start" else deceleration_consumption_Zhang(
             model._length, model._speed, len(model._objects))
-        if len(model._objects) > 0:
-            self._energy_reward_update(new_energy_consumption / len(model._objects),
-                                       [obj._id for obj in model._objects.values()])
+        self._energy_reward_update(new_energy_consumption, [obj._id for obj in model._objects.values()])
 
         self._system_energy_consumption += new_energy_consumption
         self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
@@ -409,9 +407,7 @@ class ConveyorsEnvironment:
         self._energy_consumption_last_update = cur_time
         for _, model in self._conveyor_models.items():
             new_energy_consumption = consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
-            if len(model._objects) > 0:
-                self._energy_reward_update(new_energy_consumption / len(model._objects),
-                                           [obj._id for obj in model._objects.values()])
+            self._energy_reward_update(new_energy_consumption, [obj._id for obj in model._objects.values()])
 
             self._system_energy_consumption += new_energy_consumption
             self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
