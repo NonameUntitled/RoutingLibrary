@@ -371,6 +371,7 @@ class ConveyorsEnvironment:
         """
         Bag is lost
         """
+        self._path_memory.add_reward_to_trajectory(bag_id, self._wrong_dst_reward, 'sink', terminal=True)
         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
             "Bag lost/time",
             self._lost_bags + 1,
