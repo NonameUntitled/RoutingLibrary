@@ -1,17 +1,6 @@
 {
-  "experiment_name": "ppo_train",
-  "type": "conveyor",
-  "path_memory": {
-    "type": "shared_path_memory"
-  },
-  "rewards": {
-    "sink": {
-      "wrong": -1e5,
-      "right": 1e2
-    }
-  },
-  "learn_trigger_bag_count": 30,
-  "topology_3": {
+  "experiment_name": "ppo_pre_train",
+  "topology_2": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -58,18 +47,6 @@
         }
       }
     }
-  },
-  "topology_2": {
-    "type": "monte_carlo",
-    "seed": 42,
-    "sources_cnt": 10,
-    "sinks_cnt": 10,
-    "vertices_cnt": 10,
-    "edges_cnt": 20,
-    "generate_cycles": true,
-    "min_edge_length": 10,
-    "max_edge_length": 100,
-    "length_distribution": "uniform"
   },
   "topology_big": {
     "type": "oriented",
@@ -134,7 +111,7 @@
         }
       },
       "2": {
-        "length": 40,
+        "length": 4,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -182,7 +159,7 @@
       }
     }
   },
-  "topology": {
+  "topology_tri": {
     "type": "oriented",
     "sources": {
       "0": {
@@ -245,32 +222,47 @@
         "conveyor": 2,
         "pos": 90,
         "upstream_conv": 11
+      },
+      "9": {
+        "conveyor": 0,
+        "pos": 95,
+        "upstream_conv": 12
+      },
+      "10": {
+        "conveyor": 1,
+        "pos": 95,
+        "upstream_conv": 13
+      },
+      "11": {
+        "conveyor": 2,
+        "pos": 95,
+        "upstream_conv": 14
       }
     },
     "conveyors": {
       "0": {
-        "length": 100,
+        "length": 110,
         "upstream": {
           "type": "sink",
           "id": 0
         }
       },
       "1": {
-        "length": 100,
+        "length": 110,
         "upstream": {
           "type": "sink",
           "id": 1
         }
       },
       "2": {
-        "length": 100,
+        "length": 110,
         "upstream": {
           "type": "sink",
           "id": 2
         }
       },
       "3": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -278,7 +270,7 @@
         }
       },
       "4": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -286,7 +278,7 @@
         }
       },
       "5": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -294,7 +286,7 @@
         }
       },
       "6": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -302,7 +294,7 @@
         }
       },
       "7": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -310,7 +302,7 @@
         }
       },
       "8": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -318,27 +310,110 @@
         }
       },
       "9": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 1,
-          "pos": 95
+          "pos": 85
         }
       },
       "10": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 2,
-          "pos": 95
+          "pos": 85
         }
       },
       "11": {
-        "length": 3,
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 95
+          "pos": 85
+        }
+      },
+      "12": {
+        "length": 100,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 100
+        }
+      },
+      "13": {
+        "length": 100,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 100
+        }
+      },
+      "14": {
+        "length": 100,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 100
+        }
+      }
+    }
+  },
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      }
+    },
+    "sinks": [
+      0,
+      1
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 1,
+        "pos": 5,
+        "upstream_conv": 3
+      },
+      "1": {
+        "conveyor": 0,
+        "pos": 20,
+        "upstream_conv": 2
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 30,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      },
+      "2": {
+        "length": 10,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "3": {
+        "length": 30,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 5
         }
       }
     }
@@ -513,62 +588,11 @@
       }
     }
   },
-  "agent_1": {
-    "type": "random",
-    "neighbors_prefix": "neighbors_node_ids",
-    "output_prefix": "next_nodes"
-  },
   "agent": {
-    "type": "dqn",
-    "current_node_idx_prefix": "current_node_idx",
-    "destination_node_idx_prefix": "destination_node_idx",
-    "neighbors_node_ids_prefix": "neighbors_node_ids",
-    "trajectory_sample_size": 30,
-    "bag_ids_prefix": "bag_ids",
-    "output_prefix": "next_nodes",
-    "q_network": {
-      "type": "tower_q_network",
-      "embedder": {
-        "shared": true,
-        "type": "hope",
-        "embedding_dim": 16
-      },
-      "ff_net": {
-        "type": "tower",
-        "input_dim": 32,
-        "hidden_dims": [
-          256,
-          256
-        ],
-        "output_dim": 1
-      }
-    },
-    "path_memory": {
-      "type": "shared_path_memory",
-      "reward_weights": {
-        "time": 1.0,
-        "energy": 0.0,
-        "sink": 1.0
-      }
-    },
-    "optimizer": {
-      "type": "basic",
-      "optimizer": {
-        "type": "adamw",
-        "lr": 1e-3,
-        "eps": 1e-8
-      },
-      "clip_grad_threshold": 50.0
-    }
-  },
-  "agent_2": {
     "type": "ppo",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
-    "trajectory_sample_size": 30,
-    "trajectory_length": 10,
-    "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
     "actor": {
       "type": "tower_actor",
@@ -603,13 +627,31 @@
         ],
         "output_dim": 1
       }
-    },
-    "path_memory": {
-      "type": "shared_path_memory",
-      "reward_weights": {
-        "time": 1.0,
-        "energy": 0.0,
-        "sink": 1.0
+    }
+  },
+  "agent_2": {
+    "type": "dqn",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "trajectory_sample_size": 30,
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes",
+    "q_network": {
+      "type": "tower_q_network",
+      "embedder": {
+        "shared": true,
+        "type": "hope",
+        "embedding_dim": 16
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 32,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 1
       }
     },
     "optimizer": {
@@ -617,242 +659,79 @@
       "optimizer": {
         "type": "adamw",
         "lr": 1e-3,
-        "eps": 1e-5
+        "eps": 1e-8
       },
       "clip_grad_threshold": 50.0
     }
   },
-  "pretrain": {
-    "type": "dijkstra",
-    "stable_topology": true,
-    "steps_num": 5000,
-    "current_node_prefix": "current_node",
-    "neighbors_nodes_prefix": 123,
-    "target_node_prefix": 123,
-    "next_node_prefix": 123,
+  "loss_2": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_next_node_q",
+        "ground_truth_prefix": "path_lengths",
+        "output_prefix": "mse_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_current_state_v_value",
+        "ground_truth_prefix": "path_length",
+        "output_prefix": "mse_loss"
+      },
+      {
+        "type": "cross_entropy",
+        "labels_prefix": "next_node_idx",
+        "predictions_prefix": "predicted_next_node_logits",
+        "output_prefix": "cross_entropy_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "optimizer": {
+    "type": "basic",
     "optimizer": {
-      "type": "adam"
-    }
-  },
-  "train": {
-    "multi_agent": true,
-    "type": "scenario",
-    "scenario_1": {
-      "type": "from_file"
+      "type": "adamw",
+      "lr": 1e-3,
+      "eps": 1e-8
     },
-    "scenario_2": {
-      "type": "sequence"
-    },
-    "scenario_3": {
-      "type": "random",
-      "here_we_need_some_variabes": true
-    }
+    "clip_grad_threshold": 5.0
   },
-  "test": {
-    "topology_independence": "full",
-    "collision_distance": 2,
-    "data": [
+  "callback": {
+    "type": "composite",
+    "callbacks": [
       {
-        "action": "put_bags",
-        "bags_number": 100,
-        "delta": 5
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "loss"
       },
       {
-        "action": "conv_break",
-        "conv_idx": 3,
-        "pause": 0
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "mse_loss"
       },
       {
-        "action": "conv_break",
-        "conv_idx": 4,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 100,
-        "delta": 5
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 6,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 7,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 8,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 100,
-        "delta": 5
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 3,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 100,
-        "delta": 5
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 8,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 100,
-        "delta": 5
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 100,
-        "delta": 5
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 4,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 6,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 7,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 300,
-        "delta": 5
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "cross_entropy_loss"
       }
     ]
   },
-  "test_": {
-    "topology_independence": "full",
-    "collision_distance": 2,
-    "data": [
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 20
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 2,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 20
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 2,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 5
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 2,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 5
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 2,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 20
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 2,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 20
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 3,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 20
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 2,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 4,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 500,
-        "delta": 20
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 3,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 4,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 500,
-        "delta": 20
-      }
-    ]
-  },
-  "test1": {
-    "topology_independence": "only_nodes"
-  },
-  "test2": {
-    "topology_independence": "only_collisions"
-  },
-  "test3": {
-    "topology_independence": "disabled"
-  },
+  "model_name": "ppo_pretrain_model",
+  "num_samples": 10000,
+  "num_epochs": 300,
   "shared_embedder": {
     "shared": true,
     "type": "hope",
     "embedding_dim": 16
-  },
-  "pretrain_model_name": "dqn_pretrain_model"
+  }
 }

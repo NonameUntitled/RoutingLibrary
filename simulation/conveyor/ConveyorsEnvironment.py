@@ -91,7 +91,7 @@ class ConveyorsEnvironment:
             conv_idx = conveyor_idx(self._topology_graph.graph, src)
             if self._conveyor_broken[conv_idx]:
                 self._bag_lost_report(bag._id, f'Bag #{bag._id} came to the broken conveyor')
-                return self._world_env.event()
+                return Event(self._world_env).succeed()
             return self._checkInterrupt(lambda: self._putBagOnConveyor(conv_idx, bag, src))
         if isinstance(event, ConveyorBreakEvent):
             return self._checkInterrupt(lambda: self._conveyorBreak(event._conveyor_id))
