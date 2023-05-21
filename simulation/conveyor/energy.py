@@ -1,26 +1,22 @@
-POS_ROUND_DIGITS = 3
-SOFT_COLLIDE_SHIFT = 0.2
-
-BAG_RADIUS = 0.5
-BAG_MASS = 20000
+BAG_MASS = 20
 BAG_DENSITY = 40
 
 BELT_WIDTH = 1.5
-BELT_UNIT_MASS = 15000
+BELT_UNIT_MASS = 15
 
-SPEED_STEP = 0.1
-SPEED_ROUND_DIGITS = 3
+# SPEED_STEP = 0.1
+# SPEED_ROUND_DIGITS = 3
 
-MODEL_BELT_LEN = 313.25
+# MODEL_BELT_LEN = 313.25
 
 _G = 9.8
-_FRICTON_COEFF = 0.024
+_FRICTON_COEFF = 0.5
 _THETA_1 = 1 / (6.48 * BELT_WIDTH * BELT_WIDTH * BAG_DENSITY)
 _THETA_2_L = _G * _FRICTON_COEFF * BELT_UNIT_MASS
-_k_3 = 4000
+_k_3 = 50000
 _THETA_3 = 0.0031
 _THETA_4_L = _G * _FRICTON_COEFF
-_k_2 = 30
+_k_2 = 1
 
 _ETA = 0.8
 
@@ -29,7 +25,7 @@ _ETA = 0.8
 
 def _P_Zhang(length: float, V: float, T: float):
     return _THETA_1 * V * T * T + (_THETA_2_L * length + _k_3) * V + \
-           _THETA_3 * T * T / V + (_THETA_4_L * length + _k_2) * T + V * V * T / 3.6
+           _THETA_3 * T * T / V + (_THETA_4_L * length / 3.6 + _k_2) * T + V * V * T / 3.6
 
 
 def consumption_Zhang(length: float, speed: float, n_bags: int):
@@ -45,24 +41,10 @@ START_TIME = 1
 STOP_TIME = 1
 
 def acceleration_consumption_Zhang(length: float, speed: float, n_bags: int):
-    if speed == 0 or START_TIME == 0:
-        return 0
-    Q_g = n_bags * BAG_MASS / length
-    T = Q_g * speed * 3.6
-    acceleration = speed / START_TIME
-    force = Q_g * acceleration
-    power = force * speed
-    return power * START_TIME / (START_EFFICIENCY * _ETA)
+    return consumption_Zhang(length, speed, n_bags) * START_TIME / START_EFFICIENCY
 
 def deceleration_consumption_Zhang(length: float, speed: float, n_bags: int):
-    if speed == 0 or STOP_TIME == 0:
-        return 0
-    Q_g = n_bags * BAG_MASS / length
-    T = Q_g * speed * 3.6
-    deceleration = speed / STOP_TIME
-    force = Q_g * deceleration
-    power = force * speed
-    return power * STOP_TIME / (STOP_EFFICIENCY * _ETA)
+    return consumption_Zhang(length, speed, n_bags) * STOP_TIME / STOP_EFFICIENCY
 
 
 def consumption_linear(length, speed, n_bags):

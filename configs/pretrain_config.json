@@ -195,33 +195,48 @@
       },
       "3": {
         "conveyor": 0,
-        "pos": 60,
+        "pos": 40,
         "upstream_conv": 6
       },
       "4": {
         "conveyor": 1,
-        "pos": 60,
+        "pos": 40,
         "upstream_conv": 7
       },
       "5": {
         "conveyor": 2,
-        "pos": 60,
+        "pos": 40,
         "upstream_conv": 8
       },
       "6": {
         "conveyor": 0,
-        "pos": 90,
+        "pos": 60,
         "upstream_conv": 9
       },
       "7": {
         "conveyor": 1,
-        "pos": 90,
+        "pos": 60,
         "upstream_conv": 10
       },
       "8": {
         "conveyor": 2,
-        "pos": 90,
+        "pos": 60,
         "upstream_conv": 11
+      },
+      "9": {
+        "conveyor": 0,
+        "pos": 80,
+        "upstream_conv": 12
+      },
+      "10": {
+        "conveyor": 1,
+        "pos": 80,
+        "upstream_conv": 13
+      },
+      "11": {
+        "conveyor": 2,
+        "pos": 80,
+        "upstream_conv": 14
       }
     },
     "conveyors": {
@@ -247,7 +262,7 @@
         }
       },
       "3": {
-        "length": 3,
+        "length": 5,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -255,7 +270,7 @@
         }
       },
       "4": {
-        "length": 3,
+        "length": 5,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -263,7 +278,7 @@
         }
       },
       "5": {
-        "length": 3,
+        "length": 5,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -271,51 +286,75 @@
         }
       },
       "6": {
-        "length": 3,
+        "length": 10,
         "upstream": {
           "type": "conveyor",
           "id": 1,
-          "pos": 65
+          "pos": 45
         }
       },
       "7": {
-        "length": 3,
+        "length": 10,
         "upstream": {
           "type": "conveyor",
           "id": 2,
-          "pos": 65
+          "pos": 45
         }
       },
       "8": {
-        "length": 3,
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 45
+        }
+      },
+      "9": {
+        "length": 20,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 65
+        }
+      },
+      "10": {
+        "length": 20,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 65
+        }
+      },
+      "11": {
+        "length": 20,
         "upstream": {
           "type": "conveyor",
           "id": 0,
           "pos": 65
         }
       },
-      "9": {
-        "length": 3,
+      "12": {
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 1,
-          "pos": 95
+          "pos": 85
         }
       },
-      "10": {
-        "length": 3,
+      "13": {
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 2,
-          "pos": 95
+          "pos": 85
         }
       },
-      "11": {
-        "length": 3,
+      "14": {
+        "length": 30,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 95
+          "pos": 85
         }
       }
     }
@@ -490,7 +529,7 @@
       }
     }
   },
-  "agent": {
+  "agent_2": {
     "type": "ppo",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -531,7 +570,7 @@
       }
     }
   },
-  "agent_2": {
+  "agent": {
     "type": "dqn",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -566,7 +605,7 @@
       "clip_grad_threshold": 50.0
     }
   },
-  "loss_2": {
+  "loss": {
     "type": "composite",
     "losses": [
       {
@@ -578,7 +617,7 @@
     ],
     "output_prefix": "loss"
   },
-  "loss": {
+  "loss_2": {
     "type": "composite",
     "losses": [
       {
@@ -628,7 +667,7 @@
       }
     ]
   },
-  "model_name": "ppo_pretrain_model",
+  "model_name": "dqn_pretrain_model",
   "num_samples": 10000,
   "num_epochs": 300,
   "shared_embedder": {

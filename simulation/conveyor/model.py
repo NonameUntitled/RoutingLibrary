@@ -184,14 +184,32 @@ class ConveyorModel:
         assert obj_id not in self._objects, f"Object {obj_id} already exists on {self._model_id} conveyor"
         pos = round(pos, POS_ROUND_DIGITS)
 
-        nearest = None
         if len(self._objects) > 0:
             object_description, n_idx = search_pos(self._object_positions, pos)
             (n_obj_id, n_pos) = (object_description["id"], object_description["position"])
-            if abs(n_pos - pos) < self._collision_distance:
-                self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
-                return True
-            elif n_pos < pos:
+            nextO = None
+            prevO = None
+            if n_idx == len(self._object_positions) - 1 and n_pos < pos:
+                nextO = None
+                prevO = object_description
+            elif n_idx == 0 and n_pos > pos:
+                nextO = object_description
+                prevO = None
+            else:
+                nextO = object_description
+                prevO = self._object_positions[n_idx - 1]
+
+            if nextO is not None:
+                if abs(nextO["position"] - pos) < self._collision_distance:
+                    self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
+                    return True
+
+            if prevO is not None:
+                if abs(prevO["position"] - pos) < self._collision_distance:
+                    self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
+                    return True
+
+            if n_pos < pos:
                 n_idx += 1
         else:
             n_idx = 0
@@ -209,10 +227,27 @@ class ConveyorModel:
         if len(self._objects) > 0:
             object_description, n_idx = search_pos(self._object_positions, pos)
             (n_obj_id, n_pos) = (object_description["id"], object_description["position"])
-            if abs(n_pos - pos) < self._collision_distance:
-                self._logger.debug(f"{self._model_id}: TRUE COLLISION: #{obj_id} and #{n_obj_id} on {pos}")
-                return {"is_collision": True, "time": self._collision_distance - abs(n_pos - pos)}
-            elif n_pos < pos:
+            nextO = None
+            prevO = None
+            if n_idx == len(self._object_positions) - 1 and n_pos < pos:
+                nextO = None
+                prevO = object_description
+            elif n_idx == 0 and n_pos > pos:
+                nextO = object_description
+                prevO = None
+            else:
+                nextO = object_description
+                prevO = self._object_positions[n_idx - 1]
+
+            if nextO is not None:
+                if abs(nextO["position"] - pos) < self._collision_distance:
+                    return {"is_collision": True, "time": self._collision_distance - abs(nextO["position"] - pos)}
+
+            if prevO is not None:
+                if abs(prevO["position"] - pos) < self._collision_distance:
+                    return {"is_collision": True, "time": self._collision_distance + abs(prevO["position"] - pos)}
+
+            if n_pos < pos:
                 n_idx += 1
         else:
             n_idx = 0
@@ -241,15 +276,15 @@ class ConveyorModel:
         self.shift(d)
 
         # TODO[Aleksandr Pakulev]: Do we need it?
-        # if clean_ends:
-        #     while len(self._object_positions) > 0 and self._object_positions[0]["position"] < 0:
-        #         object_description = self._object_positions.pop(0)
-        #         self._logger.debug("WHATEVER1")
-        #         self._objects.pop(object_description["id"])
-        #     while len(self._object_positions) > 0 and self._object_positions[-1]["position"] > self._length:
-        #         object_description = self._object_positions.pop()
-        #         self._logger.debug(f"WHATEVER2 {object_description}, {self._broken_type}, {self._model_id}")
-        #         self._objects.pop(object_description["id"])
+        if clean_ends:
+            while len(self._object_positions) > 0 and self._object_positions[0]["position"] < 0:
+                object_description = self._object_positions.pop(0)
+                self._logger.debug("WHATEVER1")
+                self._objects.pop(object_description["id"])
+            while len(self._object_positions) > 0 and self._object_positions[-1]["position"] > self._length:
+                object_description = self._object_positions.pop()
+                self._logger.debug(f"WHATEVER2 {object_description}, {self._broken_type}, {self._model_id}")
+                self._objects.pop(object_description["id"])
 
         return d
 
