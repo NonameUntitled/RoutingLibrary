@@ -23,11 +23,16 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         self._config = config
         self._world_env = Environment()
         self._topology = topology
-        events = ["bag_arrived", "bag_lost", "bag_time", "collision", "energy_consumption"]
-        event_series = {event: EventSeries() for event in events}
+        events = [{"name": "bag_arrived", "aggregation": "count"}, {"name": "bag_lost", "aggregation": "count"},
+                  {"name": "bag_time", "aggregation": "average"}, {"name": "collision", "aggregation": "count"},
+                  {"name": "energy_consumption", "aggregation": "weighted_average"}]
+        ev_s = MultiEventSeries(
+            {event["name"]: EventSeries(name=event["name"], aggregation=event["aggregation"],
+                                        experiment_name=config['experiment_name']) for event in events})
+        self._event_series = ev_s
         self._simulation_env = ConveyorsEnvironment(config=self._config, world_env=self._world_env, topology=topology,
                                                     agent=agent,
-                                                    logger=logger, event_series=MultiEventSeries(event_series))
+                                                    logger=logger, event_series=self._event_series)
         self._logger = logger
 
     @classmethod
@@ -100,7 +105,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         #
         #     yield self._world_env.timeout(3)
 
-    def run(self) -> None:
+    def run(self):
         """
         Runs the environment, optionally reporting the progress to a given queue.
         """
@@ -122,3 +127,4 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         self._logger.debug(f"Arrived bags {self._simulation_env._arrived_bags}")
         self._logger.debug(f"Lost bags {self._simulation_env._lost_bags}")
         self._logger.debug(f"Average time {self._simulation_env._bags_whole_time / self._simulation_env._arrived_bags}")
+        return self._event_series

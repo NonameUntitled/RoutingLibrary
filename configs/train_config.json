@@ -1,5 +1,5 @@
 {
-  "experiment_name": "ppo_train",
+  "experiment_name": "dqn",
   "type": "conveyor",
   "path_memory": {
     "type": "shared_path_memory"
@@ -586,7 +586,7 @@
       "type": "shared_path_memory",
       "reward_weights": {
         "time": 1.0,
-        "energy": 0.0,
+        "energy": 5e-4,
         "sink": 1.0
       }
     },
