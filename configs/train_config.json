@@ -586,7 +586,7 @@
       "type": "shared_path_memory",
       "reward_weights": {
         "time": 1.0,
-        "energy": 5e-4,
+        "energy": 0.0,
         "sink": 1.0
       }
     },
@@ -594,7 +594,7 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 1e-3,
+        "lr": 1e-4,
         "eps": 1e-8
       },
       "clip_grad_threshold": 50.0
@@ -688,7 +688,7 @@
     }
   },
   "test": {
-    "topology_independence": "full",
+    "topology_independence": "only_nodes",
     "collision_distance": 8,
     "data": [
       {
