@@ -8,6 +8,7 @@ from typing import *
 from agents import TorchAgent
 from simulation import BaseSimulation
 from simulation.conveyor.ConveyorsEnvironment import ConveyorsEnvironment
+from simulation.conveyor.events import EventSeries, MultiEventSeries
 from simulation.conveyor.utils import Bag, BagAppearanceEvent, ConveyorBreakEvent, ConveyorRestoreEvent
 from topology import BaseTopology
 
@@ -22,9 +23,16 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         self._config = config
         self._world_env = Environment()
         self._topology = topology
+        events = [{"name": "bag_arrived", "aggregation": "count"}, {"name": "bag_lost", "aggregation": "count"},
+                  {"name": "bag_time", "aggregation": "average"}, {"name": "collision", "aggregation": "count"},
+                  {"name": "energy_consumption", "aggregation": "weighted_average"}]
+        ev_s = MultiEventSeries(
+            {event["name"]: EventSeries(name=event["name"], aggregation=event["aggregation"],
+                                        experiment_name=config['experiment_name']) for event in events})
+        self._event_series = ev_s
         self._simulation_env = ConveyorsEnvironment(config=self._config, world_env=self._world_env, topology=topology,
                                                     agent=agent,
-                                                    logger=logger)
+                                                    logger=logger, event_series=self._event_series)
         self._logger = logger
 
     @classmethod
@@ -50,6 +58,9 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         sources = [s.id for s in self._topology.sources]
         sinks = [s.id for s in self._topology.sinks]
 
+        # TODO: remove it
+        source_id = 0
+
         for test in test_data:
             action = test['action']
             if action == 'put_bags':
@@ -60,7 +71,9 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
                 cur_sinks = test.get('sinks', sinks)
 
                 for i in range(0, test['bags_number']):
-                    src = random.choice(cur_sources)
+                    # TODO: remove it
+                    src = cur_sources[source_id]
+                    source_id = (source_id + 1) % len(cur_sources)
                     dst = random.choice(cur_sinks)
 
                     mini_delta = round(abs(np.random.normal(0, 0.5)), 2)
@@ -92,7 +105,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         #
         #     yield self._world_env.timeout(3)
 
-    def run(self) -> None:
+    def run(self):
         """
         Runs the environment, optionally reporting the progress to a given queue.
         """
@@ -113,4 +126,5 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
         self._logger.debug(f"Arrived bags {self._simulation_env._arrived_bags}")
         self._logger.debug(f"Lost bags {self._simulation_env._lost_bags}")
-
+        self._logger.debug(f"Average time {self._simulation_env._bags_whole_time / self._simulation_env._arrived_bags}")
+        return self._event_series
