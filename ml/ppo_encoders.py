@@ -59,7 +59,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             current_node_idx: Tensor,
             neighbor_node_ids: TensorWithMask,
             destination_node_idx: Tensor
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         # 0) Create embeddings from indices
         # Shape: [batch_size, embedding_dim]
         current_node_embedding = self._embedder(current_node_idx)
@@ -131,7 +131,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             index=next_neighbor_idx
         ), dim=1)
 
-        return next_neighbor_ids, neighbors_logits
+        return next_neighbor_ids, neighbors_logits, neighbors_probs
 
 
 class TowerCritic(BaseCritic, config_name='tower_critic'):

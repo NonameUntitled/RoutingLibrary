@@ -1,5 +1,5 @@
 {
-  "experiment_name": "dqn",
+  "experiment_name": "ppo_train",
   "type": "conveyor",
   "path_memory": {
     "type": "shared_path_memory"
@@ -647,7 +647,7 @@
       "type": "shared_path_memory",
       "reward_weights": {
         "time": 1.0,
-        "energy": 5e-4,
+        "energy": 0.0,
         "sink": 1.0
       }
     },
@@ -689,7 +689,7 @@
   },
   "test": {
     "topology_independence": "only_nodes",
-    "collision_distance": 8,
+    "collision_distance": 10,
     "data": [
       {
         "action": "put_bags",

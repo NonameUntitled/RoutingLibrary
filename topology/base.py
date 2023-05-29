@@ -1,5 +1,7 @@
 from typing import List
 
+import torch
+
 from utils import MetaParent
 from topology.utils import only_reachable_from, Section
 
@@ -261,6 +263,8 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 path_lengths.append(-nx.path_weight(graph, path, weight=self.edge_weight_field))
             sample['path_lengths'] = path_lengths
 
+            sample['next_node_probs'] = list(torch.nn.functional.softmax(torch.tensor(path_lengths, dtype=torch.float64), dim=0))
+
             # ppo-specific
             path = nx.dijkstra_path(
                 graph,
@@ -316,6 +320,10 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
             'next_node_idx': {
                 'type': 'long',
                 'is_ragged': False
+            },
+            'next_node_probs': {
+                'type': 'float',
+                'is_ragged': True
             },
             'path_length': {
                 'type': 'float',

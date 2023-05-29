@@ -1,0 +1,302 @@
+{
+  "experiment_name": "ppo_pretrain",
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      },
+      "2": {
+        "upstream_conv": 2
+      }
+    },
+    "sinks": [
+      0,
+      1,
+      2
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 0,
+        "pos": 120,
+        "upstream_conv": 3
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 120,
+        "upstream_conv": 4
+      },
+      "2": {
+        "conveyor": 2,
+        "pos": 120,
+        "upstream_conv": 5
+      },
+      "3": {
+        "conveyor": 0,
+        "pos": 140,
+        "upstream_conv": 6
+      },
+      "4": {
+        "conveyor": 1,
+        "pos": 140,
+        "upstream_conv": 7
+      },
+      "5": {
+        "conveyor": 2,
+        "pos": 140,
+        "upstream_conv": 8
+      },
+      "6": {
+        "conveyor": 0,
+        "pos": 160,
+        "upstream_conv": 9
+      },
+      "7": {
+        "conveyor": 1,
+        "pos": 160,
+        "upstream_conv": 10
+      },
+      "8": {
+        "conveyor": 2,
+        "pos": 160,
+        "upstream_conv": 11
+      },
+      "9": {
+        "conveyor": 0,
+        "pos": 180,
+        "upstream_conv": 12
+      },
+      "10": {
+        "conveyor": 1,
+        "pos": 180,
+        "upstream_conv": 13
+      },
+      "11": {
+        "conveyor": 2,
+        "pos": 180,
+        "upstream_conv": 14
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 200,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 200,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "2": {
+        "length": 200,
+        "upstream": {
+          "type": "sink",
+          "id": 2
+        }
+      },
+      "3": {
+        "length": 5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 125
+        }
+      },
+      "4": {
+        "length": 5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 125
+        }
+      },
+      "5": {
+        "length": 5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 125
+        }
+      },
+      "6": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 145
+        }
+      },
+      "7": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 145
+        }
+      },
+      "8": {
+        "length": 10,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 145
+        }
+      },
+      "9": {
+        "length": 20,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 165
+        }
+      },
+      "10": {
+        "length": 20,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 165
+        }
+      },
+      "11": {
+        "length": 20,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 165
+        }
+      },
+      "12": {
+        "length": 30,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 185
+        }
+      },
+      "13": {
+        "length": 30,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 185
+        }
+      },
+      "14": {
+        "length": 30,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 185
+        }
+      }
+    }
+  },
+  "agent": {
+    "type": "ppo",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "output_prefix": "next_nodes",
+    "actor": {
+      "type": "tower_actor",
+      "embedder": {
+        "shared": true,
+        "type": "hope",
+        "embedding_dim": 16
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 16,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 16
+      }
+    },
+    "critic": {
+      "type": "tower_critic",
+      "embedder": {
+        "shared": true,
+        "type": "hope",
+        "embedding_dim": 16
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 16,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 1
+      }
+    }
+  },
+  "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_current_state_v_value",
+        "ground_truth_prefix": "path_length",
+        "output_prefix": "mse_loss"
+      },
+      {
+        "type": "cross_entropy",
+        "labels_prefix": "next_node_idx",
+        "predictions_prefix": "predicted_next_node_logits",
+        "output_prefix": "cross_entropy_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "optimizer": {
+    "type": "basic",
+    "optimizer": {
+      "type": "adamw",
+      "lr": 3e-4,
+      "eps": 1e-8
+    },
+    "clip_grad_threshold": 5.0
+  },
+  "callback": {
+    "type": "composite",
+    "callbacks": [
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "mse_loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "cross_entropy_loss"
+      }
+    ]
+  },
+  "model_name": "ppo_dijkstra_model",
+  "num_samples": 10000,
+  "num_epochs": 500,
+  "shared_embedder": {
+    "shared": true,
+    "type": "hope",
+    "embedding_dim": 16
+  }
+}

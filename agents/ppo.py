@@ -1,6 +1,5 @@
 from typing import Dict, Any, Callable, Optional
 
-import numpy as np
 import torch
 from torch import Tensor, nn
 from torch.distributions import Categorical
@@ -77,7 +76,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             critic=BaseEncoder.create_from_config(config['critic']),
             actor_loss_weight=config.get('actor_loss_weight', 1.0),
             critic_loss_weight=config.get('critic_loss_weight', 1.0),
-            entropy_loss_weight=config.get('entropy_loss_weight', 1.0),
+            entropy_loss_weight=config.get('entropy_loss_weight', 0.01),
             discount_factor=config.get('discount_factor', 0.99),
             ratio_clip=config.get('ratio_clip', 0.2),
             bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory'])
@@ -98,7 +97,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
 
         # Shape: [batch_size], [batch_size, max_neighbors_num]
-        next_neighbor_ids, neighbors_logits = self._actor(
+        next_neighbor_ids, neighbors_logits, neighbors_probs = self._actor(
             current_node_idx=current_node_idx,
             neighbor_node_ids=neighbor_node_ids,
             destination_node_idx=destination_node_idx
@@ -139,12 +138,12 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
             'predicted_next_node_logits': neighbors_logits,
+            'predicted_next_node_probs': torch.flatten(neighbors_probs[neighbors_probs != 0.0]),
             'predicted_current_state_v_value': current_state_value_function
         })
         return inputs
 
     def learn(self) -> Optional[Tensor]:
-        # return None
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             node_idx=self._node_id,
@@ -167,7 +166,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         _, _, _, _, _, _, end_v_old = parts[-1].extra_info
         if parts[-1].terminal:
             end_v_old = 0
-        _, neighbor_logits = self._actor(
+        _, neighbor_logits, _ = self._actor(
             current_node_idx=node_idx,
             neighbor_node_ids=neighbors,
             destination_node_idx=destination
