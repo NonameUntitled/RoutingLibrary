@@ -41,7 +41,7 @@ def main():
             # TODO[Vladimir Baikalov]: Think about how to fit not shared embeddings
             embeddings.fit(topology.graph)
 
-    agent = BaseAgent.create_from_config(params['agent'])
+    agent = BaseAgent.create_from_config(params['agent_3'])
     # TODO[Vladimir Baikalov]: check loading
     if 'pretrain_model_name' in params:
         load_path = os.path.join(CHECKPOINT_DIR, '{}.pth'.format(params['pretrain_model_name']))

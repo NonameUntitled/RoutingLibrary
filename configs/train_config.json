@@ -661,6 +661,44 @@
       "clip_grad_threshold": 50.0
     }
   },
+    "agent_3": {
+    "type": "reinforce",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "trajectory_sample_size": 30,
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes",
+    "q_network": {
+      "type": "tower_q_network",
+      "embedder": {
+        "shared": true,
+        "type": "hope",
+        "embedding_dim": 32
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 64,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 32
+      }
+    },
+    "path_memory": {
+      "type": "shared_path_memory"
+    },
+    "optimizer": {
+      "type": "basic",
+      "optimizer": {
+        "type": "adamw",
+        "lr": 1e-3,
+        "eps": 1e-8
+      },
+      "clip_grad_threshold": 50.0
+    }
+  },
   "pretrain": {
     "type": "dijkstra",
     "stable_topology": true,

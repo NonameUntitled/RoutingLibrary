@@ -5,6 +5,7 @@ import torch
 from simpy import Environment, Event, Interrupt
 
 import utils
+from utils import DEVICE
 from agents import TorchAgent
 from ml.utils import TensorWithMask
 from simulation.conveyor.energy import consumption_Zhang, acceleration_consumption_Zhang, deceleration_consumption_Zhang
@@ -165,15 +166,15 @@ class ConveyorsEnvironment:
         for key in sample.keys():
             if key == "neighbors_node_ids":
                 sample_tensor[key] = TensorWithMask(
-                    values=torch.tensor(sample[key], dtype=torch.int64),
+                    values=torch.tensor(sample[key], dtype=torch.int64).to(DEVICE),
                     # values=torch.tensor([sample[key]], dtype=torch.int64),
-                    lengths=torch.tensor([len(sample[key])], dtype=torch.int64)
+                    lengths=torch.tensor([len(sample[key])], dtype=torch.int64).to(DEVICE)
                 )
             else:
-                sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64)
+                sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64).to(DEVICE)
 
         # sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id])
-        sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id])
+        sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id]).to(DEVICE)
 
         output = dv_agent.forward(sample_tensor)
         forward_node_id = output[dv_agent._output_prefix].item()

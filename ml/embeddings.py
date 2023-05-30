@@ -6,7 +6,7 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as linalg
 import torch
 
-from utils import shared, MetaParent
+from utils import shared, MetaParent, DEVICE
 
 
 class BaseEmbedding(metaclass=MetaParent):
@@ -87,10 +87,10 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
 
     def __call__(self, idx):
         assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
-        v = self._W[idx]
+        v = self._W[idx.cpu()]
         if len(idx) == 1:
             v = np.array([v])
-        return torch.Tensor(v)
+        return torch.Tensor(v).to(DEVICE)
 
 
 @shared
