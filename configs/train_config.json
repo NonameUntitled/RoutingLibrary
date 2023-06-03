@@ -689,7 +689,9 @@
   },
   "test": {
     "topology_independence": "full",
-    "collision_distance": 2,
+    "collision_distance": 50,
+    "bags_queue": true,
+    "time_outlier": 500,
     "data": [
       {
         "action": "put_bags",
@@ -978,5 +980,5 @@
     "type": "hope",
     "embedding_dim": 16
   },
-  "pretrain_model_name": "dqn_pretrain_model"
+  "pretrain_model_name": "ppo_pretrain_model"
 }

@@ -58,9 +58,6 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         sources = [s.id for s in self._topology.sources]
         sinks = [s.id for s in self._topology.sinks]
 
-        # TODO: remove it
-        source_id = 0
-
         for test in test_data:
             action = test['action']
             if action == 'put_bags':
@@ -72,8 +69,7 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
                 for i in range(0, test['bags_number']):
                     # TODO: remove it
-                    src = cur_sources[source_id]
-                    source_id = (source_id + 1) % len(cur_sources)
+                    src = random.choice(cur_sources)
                     dst = random.choice(cur_sinks)
 
                     mini_delta = round(abs(np.random.normal(0, 0.5)), 2)
