@@ -177,6 +177,8 @@ class ConveyorsEnvironment:
 
         # sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id])
         sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id])
+        if hasattr(dv_agent, "_topology_prefix"):
+            sample_tensor[dv_agent._topology_prefix] = self._topology_graph
 
         output = dv_agent.forward(sample_tensor)
         forward_node_id = output[dv_agent._output_prefix].item()
