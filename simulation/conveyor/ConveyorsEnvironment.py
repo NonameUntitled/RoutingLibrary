@@ -126,7 +126,7 @@ class ConveyorsEnvironment:
         n_bag, n_pos = conv_model.nearestObject(pos)
 
         self._removeBagFromConveyor(conv_idx, n_bag._id)
-        self._putBagOnConveyor(up_conv, n_bag, diverter)
+        self._putBagOnConveyor(up_conv, n_bag, diverter, True)
         self._logger.debug(
             f"Diverter {diverter} kicked bag {n_bag._id} from conveyor {conv_idx} to conveyor {up_conv}.")
 
@@ -304,7 +304,7 @@ class ConveyorsEnvironment:
                     return False
 
             bag = self._removeBagFromConveyor(conv_idx, bag_id)
-            self._putBagOnConveyor(up_conv, bag, up_node)
+            self._putBagOnConveyor(up_conv, bag, up_node, True)
         else:
             raise Exception("Invalid conveyor upstream node type: " + up_type)
         return False
