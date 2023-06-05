@@ -1,5 +1,5 @@
 {
-  "experiment_name": "ppo",
+  "experiment_name": "ppo_dijkstra",
   "type": "conveyor",
   "path_memory": {
     "type": "shared_path_memory"
@@ -257,8 +257,8 @@
     "path_memory": {
       "type": "shared_path_memory",
       "reward_weights": {
-        "time": 0.0,
-        "energy": 1e-4,
+        "time": 1.0,
+        "energy": 0.0,
         "sink": 1.0
       }
     },
@@ -266,7 +266,7 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 1e-4,
+        "lr": 1e-5,
         "eps": 1e-8
       },
       "clip_grad_threshold": 50.0
@@ -288,5 +288,5 @@
     "type": "hope",
     "embedding_dim": 16
   },
-  "pretrain_model_name": "ppo_pretrain_model"
+  "pretrain_model_name": "ppo_dijkstra_model"
 }

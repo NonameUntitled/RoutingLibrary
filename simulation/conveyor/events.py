@@ -86,11 +86,15 @@ class EventSeries:
     def get_df(self):
         return pd.DataFrame(self.get_aggregated())
 
+    def get_df_entries(self):
+        return pd.DataFrame(self._entries)
+
     def write_to_csv(self, path_prefix):
         df = self.get_df()
-        outfile = open(f'{path_prefix}{self._name}_{self._experiment_name}.csv', 'wb')
         df.to_csv(f'{path_prefix}{self._name}_{self._experiment_name}.csv', index=False)
-        outfile.close()
+
+        df = self.get_df_entries()
+        df.to_csv(f'{path_prefix}{self._name}_{self._experiment_name}_entries.csv', index=False)
 
     def save_series(self, path):
         self.write_to_csv(path)

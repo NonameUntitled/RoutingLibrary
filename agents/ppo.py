@@ -81,7 +81,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             ratio_clip=config.get('ratio_clip', 0.2),
             bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory'])
             if 'path_memory' in config else None,
-            trajectory_length=config.get('trajectory_length', 5),
+            trajectory_length=config.get('trajectory_length', 10),
             trajectory_sample_size=config.get('trajectory_sample_size', 30),
             optimizer_factory=lambda m: BaseOptimizer.create_from_config(config['optimizer'], model=m)
             if 'optimizer' in config else None,

@@ -286,12 +286,13 @@
       {
         "type": "loss",
         "on_step": 1,
+        "with_logits": false,
         "regime_prefix": "pretrain",
-        "loss_prefix": "cross_entropy_loss"
+        "loss_prefix": "binary_cross_entropy_loss"
       }
     ]
   },
-  "model_name": "ppo_dijkstra_model",
+  "model_name": "ppo_pretrain_model",
   "num_samples": 10000,
   "num_epochs": 500,
   "shared_embedder": {
