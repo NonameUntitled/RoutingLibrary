@@ -30,6 +30,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             bag_ids_prefix: str,
             actor: BaseActor,
             critic: BaseCritic,
+            freeze_weights: bool = False,
             actor_loss_weight: float = 1.0,
             critic_loss_weight: float = 1.0,
             entropy_loss_weight: float = 0.01,
@@ -53,6 +54,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         self._actor = actor
         self._critic = critic
 
+        self._freeze_weights = freeze_weights
+
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
         self._entropy_loss_weight = entropy_loss_weight
@@ -74,6 +77,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             bag_ids_prefix=config.get('bag_ids_prefix', None),
             actor=BaseEncoder.create_from_config(config['actor']),
             critic=BaseEncoder.create_from_config(config['critic']),
+            freeze_weights=config.get('freeze_weights', False),
             actor_loss_weight=config.get('actor_loss_weight', 1.0),
             critic_loss_weight=config.get('critic_loss_weight', 1.0),
             entropy_loss_weight=config.get('entropy_loss_weight', 0.01),
@@ -144,6 +148,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         return inputs
 
     def learn(self) -> Optional[Tensor]:
+        if self._freeze_weights:
+            return None
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             node_idx=self._node_id,
