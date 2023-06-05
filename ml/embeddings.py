@@ -120,10 +120,7 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
             weight = 'length'
 
         # TODO [Vladimir Baikalov]: Recognize how it works (line below)
-        # graph = nx.relabel_nodes(
-        #     graph.to_undirected(),
-        #     lambda x: x.id
-        # )
+        graph = graph.to_undirected()
 
         if weight is not None:
             if self._renormalize_weights:
@@ -171,7 +168,10 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
 
     def __call__(self, idx):
         assert self._X is not None, 'Embedding matrix isn\'t fitted yet'
-        return self._X[idx]
+        v = self._X[idx]
+        if len(idx) == 1:
+            v = np.array([v])
+        return torch.Tensor(v)
 
 
 @shared
