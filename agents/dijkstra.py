@@ -64,9 +64,13 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
                 nodes[destination_node_idx.item()],
                 weight=topology.edge_weight_field
             )
-            inputs[self._output_prefix] = torch.tensor([nodes.index(path[1])])
+            node_idx = nodes.index(path[1])
+            if node_idx in neighbor_node_ids.padded_values[0]:
+                inputs[self._output_prefix] = torch.tensor([node_idx])
+            else:
+                inputs[self._output_prefix] = torch.tensor([neighbor_node_ids.padded_values[0][0]])
         except:
-            inputs[self._output_prefix] = torch.tensor([self._neighbors_node_ids_prefix[0][0]])
+            inputs[self._output_prefix] = torch.tensor([neighbor_node_ids.padded_values[0][0]])
         return inputs
 
     def learn(self) -> Optional[Tensor]:
