@@ -35,6 +35,7 @@ class ConveyorsEnvironment:
         self._topology_graph = topology
         self._logger = logger
         self._event_series = event_series
+        self._global_config = config
 
         self._wrong_dst_reward = config['rewards']['sink']['wrong']
         self._right_dst_reward = config['rewards']['sink']['right']
@@ -93,10 +94,12 @@ class ConveyorsEnvironment:
             bag = event._bag
             self._current_bags[bag._id] = set()
             conv_idx = conveyor_idx(self._topology_graph.graph, src)
-            collision = self._conveyor_models[conv_idx].check_collision(bag._id, 0)
-            if self._conveyor_broken[conv_idx] or collision["is_collision"]:
-                self._bag_lost_report(bag._id, f'Bag #{bag._id} came to the broken conveyor')
-                return self._world_env.event()
+            use_queue = self._global_config["test"]["bags_queue"]
+            if not use_queue:
+                collision = self._conveyor_models[conv_idx].check_collision(bag._id, 0)
+                if self._conveyor_broken[conv_idx] or collision["is_collision"]:
+                    self._bag_lost_report(bag._id, f'Bag #{bag._id} came to the broken conveyor')
+                    return Event(self._world_env).succeed()
             return self._checkInterrupt(lambda: self._putBagOnConveyor(conv_idx, bag, src))
         if isinstance(event, ConveyorBreakEvent):
             return self._checkInterrupt(lambda: self._conveyorBreak(event._conveyor_id))
@@ -181,7 +184,7 @@ class ConveyorsEnvironment:
         assert forward_node is not None, "Forward node should be found"
         return forward_node
 
-    def _putBagOnConveyor(self, conv_idx: int, bag: Bag, node: Section):
+    def _putBagOnConveyor(self, conv_idx: int, bag: Bag, node: Section, no_queue: bool = False):
         """
         Puts a bag on a given position to a given conveyor. If there is currently
         some other bag on a conveyor, throws a `CollisionException`
@@ -198,7 +201,7 @@ class ConveyorsEnvironment:
         assert pos is not None, "Position of the conveyor can't be None"
 
         model = self._conveyor_models[conv_idx]
-        is_collision = model.putObject(bag._id, bag, pos)
+        is_collision = model.putObject(bag._id, bag, pos, no_queue)
 
         # TODODO: smth here
         if is_collision:
@@ -257,7 +260,8 @@ class ConveyorsEnvironment:
             else:
                 self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
                 current_time = self._world_env.now
-                if current_time - bag._start_time < 500:
+                time_outlier = self._global_config["test"]["time_outlier"]
+                if time_outlier == 0 or current_time - bag._start_time < time_outlier:
                     utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
                         f'Bag time/Bag arrived time',
                         current_time - bag._start_time,
@@ -465,13 +469,14 @@ class ConveyorsEnvironment:
                 self._conveyorRestore(conv_idx)
                 continue
 
-            if self._conveyor_broken[conv_idx]:
-                continue
-
-            if bag._id in left_to_sinks or node in self._current_bags[bag._id]:
-                continue
+            # if self._conveyor_broken[conv_idx]:
+            #     continue
 
             atype = node_type(node)
+
+            if bag._id in left_to_sinks or (node in self._current_bags[bag._id] and atype != "source"):
+                continue
+
 
             if atype == "conv_end":
                 left_to_sink = self._leaveConveyorEnd(conv_idx, bag._id)
@@ -483,6 +488,11 @@ class ConveyorsEnvironment:
 
                 if forward_node.type == "diverter" and forward_node.position == 0:
                     self._diverterKick(node, bag)
+            elif atype == "source":
+                self._putBagOnConveyor(conv_idx, bag, node, True)
+                model = self._conveyor_models[conv_idx]
+                model._queue.pop(0)
+                continue
             elif atype != "junction":
                 raise Exception(f"Impossible conv node: {node}")
 

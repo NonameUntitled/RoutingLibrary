@@ -1,5 +1,5 @@
 {
-  "experiment_name": "ppo_train",
+  "experiment_name": "dqn",
   "type": "conveyor",
   "path_memory": {
     "type": "shared_path_memory"
@@ -557,7 +557,7 @@
     "neighbors_prefix": "neighbors_node_ids",
     "output_prefix": "next_nodes"
   },
-  "agent_2": {
+  "agent": {
     "type": "dqn",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -594,13 +594,13 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 1e-4,
+        "lr": 1e-3,
         "eps": 1e-8
       },
       "clip_grad_threshold": 50.0
     }
   },
-  "agent": {
+  "agent_2": {
     "type": "ppo",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -647,7 +647,7 @@
       "type": "shared_path_memory",
       "reward_weights": {
         "time": 1.0,
-        "energy": 0.0,
+        "energy": 5e-4,
         "sink": 1.0
       }
     },
@@ -688,8 +688,10 @@
     }
   },
   "test": {
-    "topology_independence": "only_nodes",
-    "collision_distance": 10,
+    "topology_independence": "full",
+    "collision_distance": 50,
+    "bags_queue": true,
+    "time_outlier": 500,
     "data": [
       {
         "action": "put_bags",
