@@ -95,6 +95,9 @@ class ConveyorsEnvironment:
             self._current_bags[bag._id] = set()
             conv_idx = conveyor_idx(self._topology_graph.graph, src)
             use_queue = self._global_config["test"]["bags_queue"]
+            model = self._conveyor_models[conv_idx]
+            if model.source_id is None:
+                model.source_id = event._src_id
             if not use_queue:
                 collision = self._conveyor_models[conv_idx].check_collision(bag._id, 0)
                 if self._conveyor_broken[conv_idx] or collision["is_collision"]:

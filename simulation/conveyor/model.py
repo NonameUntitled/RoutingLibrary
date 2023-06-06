@@ -131,6 +131,8 @@ class ConveyorModel:
         self._resume_time = 0
         self._resolved_events = set()
 
+        self.source_id = None
+
     def _stateTransfer(self, action: str) -> None:
         try:
             self._state = _model_automata[self._state][action]
@@ -356,7 +358,7 @@ class ConveyorModel:
         if len(self._queue) > 0:
             obj = self._queue[0]["object"][1]
             diff = self._queue[0]["wait"]
-            events.append((obj, Section("source", self._model_id, 0), diff))
+            events.append((obj, Section("source", self.source_id, 0), diff))
 
         events.sort(key=lambda p: p[2])
 
