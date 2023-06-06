@@ -452,7 +452,7 @@ class ConveyorsEnvironment:
 
     def _energy_reward_update(self, energy_consumption_per_bag: float, bag_ids: List[int]):
         for bag_id in bag_ids:
-            self._path_memory.add_reward_to_trajectory(bag_id, -energy_consumption_per_bag, 'energy')
+            self._path_memory.add_reward_to_trajectory(bag_id, -energy_consumption_per_bag / len(bag_ids), 'energy')
 
     def _updateAll(self):
         """
