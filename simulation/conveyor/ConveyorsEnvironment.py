@@ -258,28 +258,13 @@ class ConveyorsEnvironment:
                     reward = self._right_dst_reward
                 self._path_memory.add_reward_to_trajectory(bag._id, reward, 'sink', terminal=True)
             self._bag_time_reward_update(bag)
+            self._update_time(bag)
             if up_node.id != bag._dst_id:
                 self._bag_lost_report(bag._id,
                                       f'Bag #{bag._id} came to {up_node.id} sink, but its destination was {bag._dst_id}')
                 return True
             else:
                 self._logger.debug(f"Bag {bag._id} arrived to {up_node}.")
-                current_time = self._world_env.now
-                time_outlier = self._global_config["test"]["time_outlier"]
-                if time_outlier == 0 or current_time - bag._start_time < time_outlier:
-                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                        f'Bag time/Bag arrived time',
-                        current_time - bag._start_time,
-                        current_time
-                    )
-                    self._event_series.logEvent("bag_time", bag._start_time, current_time - bag._start_time)
-                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                        "Bag arrived/time",
-                        self._arrived_bags + 1,
-                        current_time
-                    )
-                    self._event_series.logEvent("bag_arrived", current_time, 1)
-                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
                 self._arrived_bags += 1
                 self._current_bags.pop(bag._id)
                 return True
@@ -311,6 +296,24 @@ class ConveyorsEnvironment:
         else:
             raise Exception("Invalid conveyor upstream node type: " + up_type)
         return False
+
+    def _update_time(self, bag: Bag):
+        current_time = self._world_env.now
+        time_outlier = self._global_config["test"]["time_outlier"]
+        if time_outlier == 0 or current_time - bag._start_time < time_outlier:
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                f'Bag time/Bag arrived time',
+                current_time - bag._start_time,
+                current_time
+            )
+            self._event_series.logEvent("bag_time", bag._start_time, current_time - bag._start_time)
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                "Bag arrived/time",
+                self._arrived_bags + 1,
+                current_time
+            )
+            self._event_series.logEvent("bag_arrived", current_time, 1)
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
 
     def _bag_time_reward_update(self, bag: Bag):
         current_time = self._world_env.now

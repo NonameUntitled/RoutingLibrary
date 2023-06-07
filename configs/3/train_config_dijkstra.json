@@ -1,0 +1,150 @@
+{
+  "experiment_name": "dijkstra",
+  "type": "conveyor",
+  "path_memory": {
+    "type": "shared_path_memory"
+  },
+  "rewards": {
+    "sink": {
+      "wrong": -1e9,
+      "right": 1e2
+    }
+  },
+  "learn_trigger_bag_count": 30,
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      },
+      "2": {
+        "upstream_conv": 3
+      }
+    },
+    "sinks": [
+      0,
+      1
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 3,
+        "pos": 50,
+        "upstream_conv": 4
+      },
+      "1": {
+        "conveyor": 0,
+        "pos": 75,
+        "upstream_conv": 6
+      },
+      "2": {
+        "conveyor": 1,
+        "pos": 100,
+        "upstream_conv": 5
+      },
+      "3": {
+        "conveyor": 3,
+        "pos": 150,
+        "upstream_conv": 7
+      },
+      "4": {
+        "conveyor": 0,
+        "pos": 300,
+        "upstream_conv": 2
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 500,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "1": {
+        "length": 200,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 150
+        }
+      },
+      "2": {
+        "length": 200,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "3": {
+        "length": 200,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 150
+        }
+      },
+      "4": {
+        "length": 150,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 25
+        }
+      },
+      "5": {
+        "length": 500,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 400
+        }
+      },
+      "6": {
+        "length": 1000,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 50
+        }
+      },
+      "7": {
+        "length": 1000,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 450
+        }
+      }
+    }
+  },
+  "agent": {
+    "type": "dijkstra",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "topology_prefix": "topology",
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes"
+  },
+  "test": {
+    "topology_independence": "full",
+    "bags_queue": true,
+    "time_outlier": 0,
+    "collision_distance": 4,
+    "data": [
+      {
+        "action": "put_bags",
+        "bags_number": 1000,
+        "delta": 3
+      }
+    ]
+  },
+  "shared_embedder": {
+    "shared": true,
+    "type": "hope",
+    "embedding_dim": 16
+  }
+}

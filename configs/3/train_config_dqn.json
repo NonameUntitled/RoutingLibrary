@@ -21,192 +21,101 @@
         "upstream_conv": 1
       },
       "2": {
-        "upstream_conv": 2
+        "upstream_conv": 3
       }
     },
     "sinks": [
       0,
-      1,
-      2
+      1
     ],
     "diverters": {
       "0": {
-        "conveyor": 0,
-        "pos": 20,
-        "upstream_conv": 3
-      },
-      "1": {
-        "conveyor": 1,
-        "pos": 20,
+        "conveyor": 3,
+        "pos": 50,
         "upstream_conv": 4
       },
+      "1": {
+        "conveyor": 0,
+        "pos": 75,
+        "upstream_conv": 6
+      },
       "2": {
-        "conveyor": 2,
-        "pos": 20,
+        "conveyor": 1,
+        "pos": 100,
         "upstream_conv": 5
       },
       "3": {
-        "conveyor": 0,
-        "pos": 40,
-        "upstream_conv": 6
-      },
-      "4": {
-        "conveyor": 1,
-        "pos": 40,
+        "conveyor": 3,
+        "pos": 150,
         "upstream_conv": 7
       },
-      "5": {
-        "conveyor": 2,
-        "pos": 40,
-        "upstream_conv": 8
-      },
-      "6": {
+      "4": {
         "conveyor": 0,
-        "pos": 60,
-        "upstream_conv": 9
-      },
-      "7": {
-        "conveyor": 1,
-        "pos": 60,
-        "upstream_conv": 10
-      },
-      "8": {
-        "conveyor": 2,
-        "pos": 60,
-        "upstream_conv": 11
-      },
-      "9": {
-        "conveyor": 0,
-        "pos": 80,
-        "upstream_conv": 12
-      },
-      "10": {
-        "conveyor": 1,
-        "pos": 80,
-        "upstream_conv": 13
-      },
-      "11": {
-        "conveyor": 2,
-        "pos": 80,
-        "upstream_conv": 14
+        "pos": 300,
+        "upstream_conv": 2
       }
     },
     "conveyors": {
       "0": {
-        "length": 100,
+        "length": 500,
         "upstream": {
           "type": "sink",
           "id": 0
         }
       },
       "1": {
-        "length": 100,
+        "length": 200,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 150
+        }
+      },
+      "2": {
+        "length": 200,
         "upstream": {
           "type": "sink",
           "id": 1
         }
       },
-      "2": {
-        "length": 100,
-        "upstream": {
-          "type": "sink",
-          "id": 2
-        }
-      },
       "3": {
-        "length": 5,
-        "upstream": {
-          "type": "conveyor",
-          "id": 1,
-          "pos": 25
-        }
-      },
-      "4": {
-        "length": 5,
+        "length": 200,
         "upstream": {
           "type": "conveyor",
           "id": 2,
+          "pos": 150
+        }
+      },
+      "4": {
+        "length": 150,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
           "pos": 25
         }
       },
       "5": {
-        "length": 5,
+        "length": 500,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 25
+          "pos": 400
         }
       },
       "6": {
-        "length": 10,
+        "length": 1000,
         "upstream": {
           "type": "conveyor",
-          "id": 1,
-          "pos": 45
+          "id": 2,
+          "pos": 50
         }
       },
       "7": {
-        "length": 10,
-        "upstream": {
-          "type": "conveyor",
-          "id": 2,
-          "pos": 45
-        }
-      },
-      "8": {
-        "length": 10,
+        "length": 1000,
         "upstream": {
           "type": "conveyor",
           "id": 0,
-          "pos": 45
-        }
-      },
-      "9": {
-        "length": 20,
-        "upstream": {
-          "type": "conveyor",
-          "id": 1,
-          "pos": 65
-        }
-      },
-      "10": {
-        "length": 20,
-        "upstream": {
-          "type": "conveyor",
-          "id": 2,
-          "pos": 65
-        }
-      },
-      "11": {
-        "length": 20,
-        "upstream": {
-          "type": "conveyor",
-          "id": 0,
-          "pos": 65
-        }
-      },
-      "12": {
-        "length": 30,
-        "upstream": {
-          "type": "conveyor",
-          "id": 1,
-          "pos": 85
-        }
-      },
-      "13": {
-        "length": 30,
-        "upstream": {
-          "type": "conveyor",
-          "id": 2,
-          "pos": 85
-        }
-      },
-      "14": {
-        "length": 30,
-        "upstream": {
-          "type": "conveyor",
-          "id": 0,
-          "pos": 85
+          "pos": 450
         }
       }
     }
@@ -223,7 +132,7 @@
       "type": "tower_q_network",
       "embedder": {
         "shared": true,
-        "type": "hope",
+        "type": "laplacian",
         "embedding_dim": 16
       },
       "ff_net": {
@@ -258,7 +167,7 @@
     "topology_independence": "full",
     "bags_queue": true,
     "time_outlier": 0,
-    "collision_distance": 6,
+    "collision_distance": 4,
     "data": [
       {
         "action": "put_bags",
@@ -269,7 +178,7 @@
   },
   "shared_embedder": {
     "shared": true,
-    "type": "hope",
+    "type": "laplacian",
     "embedding_dim": 16
   },
   "pretrain_model_name": "dqn_pretrain_model"

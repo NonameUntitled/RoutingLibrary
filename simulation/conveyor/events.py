@@ -77,9 +77,9 @@ class EventSeries:
         if self._aggregation == "count":
             return self.count_per_time()
         elif self._aggregation == "average":
-            return self.average_per_time_period(100)
+            return self.average_per_time_period(200)
         elif self._aggregation == "weighted_average":
-            return self.weighted_average_per_time_period(100)
+            return self.weighted_average_per_time_period(200)
         else:
             raise Exception(f"Unknown aggregation type {self._aggregation}")
 
