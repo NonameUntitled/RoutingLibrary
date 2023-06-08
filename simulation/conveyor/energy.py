@@ -25,7 +25,7 @@ _ETA = 0.8
 
 def _P_Zhang(length: float, V: float, T: float):
     return _THETA_1 * V * T * T + (_THETA_2_L * length + _k_3) * V + \
-           _THETA_3 * T * T / V + (_THETA_4_L * length / 3.6 + _k_2) * T + V * V * T / 3.6
+           _THETA_3 * T * T / V + (_THETA_4_L * length / 3.6 + _k_2) * T * 1e-4 + V * V * T / 36
 
 
 def _consumption_Zhang(length: float, speed: float, n_bags: int):
@@ -44,10 +44,10 @@ START_TIME = 1
 STOP_TIME = 1
 
 def acceleration_consumption_Zhang(length: float, speed: float, n_bags: int):
-    return 0 # consumption_Zhang(length, speed, n_bags) * START_TIME / START_EFFICIENCY
+    return consumption_Zhang(length, speed, n_bags) * START_TIME / START_EFFICIENCY
 
 def deceleration_consumption_Zhang(length: float, speed: float, n_bags: int):
-    return 0 # consumption_Zhang(length, speed, n_bags) * STOP_TIME / STOP_EFFICIENCY
+    return consumption_Zhang(length, speed, n_bags) * STOP_TIME / STOP_EFFICIENCY
 
 
 def consumption_linear(length, speed, n_bags):

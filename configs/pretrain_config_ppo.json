@@ -1,0 +1,341 @@
+{
+  "experiment_name": "ppo_pretrain",
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      },
+      "2": {
+        "upstream_conv": 2
+      }
+    },
+    "sinks": [
+      0,
+      1,
+      2
+    ],
+    "diverters": {
+      "3": {
+        "conveyor": 0,
+        "pos": 10,
+        "upstream_conv": 6
+      },
+      "4": {
+        "conveyor": 0,
+        "pos": 50,
+        "upstream_conv": 7
+      },
+      "5": {
+        "conveyor": 0,
+        "pos": 90,
+        "upstream_conv": 8
+      },
+      "9": {
+        "conveyor": 1,
+        "pos": 10,
+        "upstream_conv": 12
+      },
+      "10": {
+        "conveyor": 1,
+        "pos": 50,
+        "upstream_conv": 13
+      },
+      "11": {
+        "conveyor": 1,
+        "pos": 90,
+        "upstream_conv": 14
+      },
+      "12": {
+        "conveyor": 1,
+        "pos": 30,
+        "upstream_conv": 15
+      },
+      "13": {
+        "conveyor": 1,
+        "pos": 70,
+        "upstream_conv": 32
+      },
+      "14": {
+        "conveyor": 1,
+        "pos": 110,
+        "upstream_conv": 17
+      },
+      "18": {
+        "conveyor": 2,
+        "pos": 30,
+        "upstream_conv": 21
+      },
+      "19": {
+        "conveyor": 2,
+        "pos": 70,
+        "upstream_conv": 22
+      },
+      "20": {
+        "conveyor": 2,
+        "pos": 110,
+        "upstream_conv": 23
+      },
+      "0": {
+        "conveyor": 0,
+        "pos": 200,
+        "upstream_conv": 3
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 200,
+        "upstream_conv": 4
+      },
+      "2": {
+        "conveyor": 2,
+        "pos": 200,
+        "upstream_conv": 5
+      }
+    },
+    "conveyors": {
+      "6": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 20
+        }
+      },
+      "7": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 60
+        }
+      },
+      "8": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 100
+        }
+      },
+      "12": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 20
+        }
+      },
+      "13": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 60
+        }
+      },
+      "14": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 100
+        }
+      },
+      "15": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 40
+        }
+      },
+      "32": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 80
+        }
+      },
+      "17": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 120
+        }
+      },
+      "21": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 40
+        }
+      },
+      "22": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 80
+        }
+      },
+      "23": {
+        "length": 15,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 120
+        }
+      },
+      "0": {
+        "length": 320,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "3": {
+        "length": 75,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 180
+        }
+      },
+      "1": {
+        "length": 320,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "4": {
+        "length": 75,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 180
+        }
+      },
+      "2": {
+        "length": 320,
+        "upstream": {
+          "type": "sink",
+          "id": 2
+        }
+      },
+      "5": {
+        "length": 75,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 180
+        }
+      }
+    }
+  },
+  "agent": {
+    "type": "ppo",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "output_prefix": "next_nodes",
+    "actor": {
+      "type": "tower_actor",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 32
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 32,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 32
+      }
+    },
+    "critic": {
+      "type": "tower_critic",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 32
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 32,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 1
+      }
+    }
+  },
+  "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_current_state_v_value",
+        "ground_truth_prefix": "path_length",
+        "output_prefix": "mse_loss"
+      },
+      {
+        "type": "cross_entropy",
+        "labels_prefix": "next_node_idx",
+        "predictions_prefix": "predicted_next_node_logits",
+        "output_prefix": "cross_entropy_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "optimizer": {
+    "type": "basic",
+    "optimizer": {
+      "type": "adamw",
+      "lr": 3e-4,
+      "eps": 1e-8
+    },
+    "clip_grad_threshold": 5.0
+  },
+  "callback": {
+    "type": "composite",
+    "callbacks": [
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "mse_loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "cross_entropy_loss"
+      }
+    ]
+  },
+  "model_name": "ppo_pretrain_model",
+  "num_samples": 10000,
+  "num_epochs": 500,
+  "shared_embedder": {
+    "shared": true,
+    "type": "laplacian",
+    "embedding_dim": 32
+  }
+}

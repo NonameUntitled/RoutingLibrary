@@ -147,8 +147,6 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
         D = sp.spdiags(diags.flatten(), [0], m, n, format='csr')
         L = D - A
 
-        print(n, m, len(graph.nodes))
-
         # (Changed by Igor):
         # Added v0 parameter, the "starting vector for iteration".
         # Otherwise, the operation behaves nondeterministically, and as a result
