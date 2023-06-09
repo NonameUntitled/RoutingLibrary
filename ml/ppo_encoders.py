@@ -110,7 +110,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             'bnd,bd->bn',
             next_state_embeddings,
             ideal_transition_embedding
-        )
+        ) / 10.0
 
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         inf_tensor = torch.zeros(neighbors_logits.shape)

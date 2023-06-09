@@ -218,13 +218,15 @@
     "neighbors_node_ids_prefix": "neighbors_node_ids",
     "trajectory_sample_size": 60,
     "trajectory_length": 15,
+    "critic_loss_weight": 1e-6,
+    "discount_factor": 0.8,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
     "actor": {
       "type": "tower_actor",
       "embedder": {
         "shared": true,
-        "type": "hope",
+        "type": "laplacian",
         "embedding_dim": 16
       },
       "ff_net": {
@@ -241,7 +243,7 @@
       "type": "tower_critic",
       "embedder": {
         "shared": true,
-        "type": "hope",
+        "type": "laplacian",
         "embedding_dim": 16
       },
       "ff_net": {
@@ -257,8 +259,8 @@
     "path_memory": {
       "type": "shared_path_memory",
       "reward_weights": {
-        "time": 1.0,
-        "energy": 0.0,
+        "time": 0.0,
+        "energy": 100.0,
         "sink": 1.0
       }
     },
@@ -266,7 +268,7 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 1e-5,
+        "lr": 1e-3,
         "eps": 1e-8
       },
       "clip_grad_threshold": 50.0
@@ -276,7 +278,7 @@
     "topology_independence": "full",
     "bags_queue": true,
     "time_outlier": 0,
-    "collision_distance": 6,
+    "collision_distance": 10,
     "data": [
       {
         "action": "put_bags",
@@ -287,7 +289,7 @@
   },
   "shared_embedder": {
     "shared": true,
-    "type": "hope",
+    "type": "laplacian",
     "embedding_dim": 16
   },
   "pretrain_model_name": "ppo_pretrain_model"

@@ -1,5 +1,5 @@
 {
-  "experiment_name": "dqn",
+  "experiment_name": "dijkstra",
   "type": "conveyor",
   "path_memory": {
     "type": "shared_path_memory"
@@ -10,7 +10,7 @@
       "right": 1e2
     }
   },
-  "learn_trigger_bag_count": 100,
+  "learn_trigger_bag_count": 30,
   "topology": {
     "type": "oriented",
     "sources": {
@@ -212,57 +212,92 @@
     }
   },
   "agent": {
-    "type": "dqn",
+    "type": "dijkstra",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
-    "trajectory_sample_size": 60,
+    "topology_prefix": "topology",
     "bag_ids_prefix": "bag_ids",
-    "output_prefix": "next_nodes",
-    "q_network": {
-      "type": "tower_q_network",
-      "embedder": {
-        "shared": true,
-        "type": "hope",
-        "embedding_dim": 16
-      },
-      "ff_net": {
-        "type": "tower",
-        "input_dim": 32,
-        "hidden_dims": [
-          256,
-          256
-        ],
-        "output_dim": 1
-      }
-    },
-    "path_memory": {
-      "type": "shared_path_memory",
-      "reward_weights": {
-        "time": 1.0,
-        "energy": 0.0,
-        "sink": 1.0
-      }
-    },
-    "optimizer": {
-      "type": "basic",
-      "optimizer": {
-        "type": "adamw",
-        "lr": 1e-5,
-        "eps": 1e-8
-      },
-      "clip_grad_threshold": 50.0
-    }
+    "output_prefix": "next_nodes"
   },
- "test": {
+  "test": {
     "topology_independence": "full",
     "bags_queue": true,
     "time_outlier": 0,
-    "collision_distance": 6,
+    "collision_distance": 10,
     "data": [
       {
         "action": "put_bags",
-        "bags_number": 1000,
+        "bags_number": 300,
+        "delta": 3
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 3,
+        "pause": 0
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 4,
+        "pause": 0
+      },{
+        "action": "conv_break",
+        "conv_idx": 5,
+        "pause": 0
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 6,
+        "pause": 0
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 7,
+        "pause": 0
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 8,
+        "pause": 0
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 300,
+        "delta": 3
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 3,
+        "pause": 0
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 4,
+        "pause": 0
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 5,
+        "pause": 0
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 6,
+        "pause": 0
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 7,
+        "pause": 0
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 8,
+        "pause": 0
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 300,
         "delta": 3
       }
     ]
@@ -271,6 +306,5 @@
     "shared": true,
     "type": "hope",
     "embedding_dim": 16
-  },
-  "pretrain_model_name": "dqn_pretrain_model"
+  }
 }

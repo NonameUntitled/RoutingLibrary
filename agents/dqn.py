@@ -3,11 +3,13 @@ from typing import Dict, Any, Callable, Optional
 import torch
 from torch import Tensor, nn
 
+import utils
 from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.dqn_encoders import BaseQNetwork
 from ml.encoders import BaseEncoder
-from ml.utils import BIG_NEG
+from ml.utils import BIG_NEG, TensorWithMask
+from topology.utils import only_reachable_from
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
@@ -43,6 +45,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         self._trajectory_sample_size = trajectory_sample_size
 
         self._optimizer = optimizer_factory(self) if optimizer_factory is not None else None
+        self._optimizer_factory = optimizer_factory
 
     @classmethod
     def create_from_config(cls, config):
@@ -132,3 +135,32 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         loss /= len(learn_trajectories)
         self._optimizer.step(loss)
         return loss.detach().item()
+
+    def debug(self, topology, step_num):
+        nodes_list = sorted(topology.graph.nodes)
+        nodes = {node: idx for idx, node in enumerate(nodes_list)}
+        sinks = list(filter(lambda n: n.type == 'sink', topology.graph.nodes))
+        diverter = nodes_list[self._node_id]
+        for sink in sinks:
+            all_neighbors = list(topology.graph.successors(diverter))
+            neighbors = only_reachable_from(
+                graph=topology.graph,
+                final_node=sink,
+                start_nodes=all_neighbors
+            )
+            if not neighbors:
+                continue
+            _, q_func = self._q_network(
+                current_node_idx=torch.LongTensor([nodes[diverter]]),
+                neighbor_node_ids=TensorWithMask(torch.LongTensor([nodes[n] for n in neighbors]), torch.LongTensor([len(neighbors)])),
+                destination_node_idx=torch.LongTensor([nodes[sink]])
+             )
+            for idx, q in enumerate(q_func[0]):
+                if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
+                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                        '{}/{}'.format('train', f'q_func_{diverter}_{neighbors[idx]}_{sink}'),
+                        q.item(),
+                        step_num
+                      )
+                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+

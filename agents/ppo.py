@@ -4,11 +4,13 @@ import torch
 from torch import Tensor, nn
 from torch.distributions import Categorical
 
+import utils
 from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.encoders import BaseEncoder
 from ml.ppo_encoders import BaseActor, BaseCritic
-from ml.utils import BIG_NEG, EXP_CLIP
+from ml.utils import BIG_NEG, EXP_CLIP, TensorWithMask
+from topology.utils import only_reachable_from
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
@@ -66,6 +68,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         self._trajectory_length = trajectory_length
         self._trajectory_sample_size = trajectory_sample_size
         self._optimizer = optimizer_factory(self) if optimizer_factory is not None else None
+        self._optimizer_factory = optimizer_factory
 
     @classmethod
     def create_from_config(cls, config):
@@ -168,7 +171,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         rewards = [reward for _, reward in trajectory]
         parts = [part for part, _ in trajectory]
 
-        v_old, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = parts[0].extra_info
+        _, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = parts[0].extra_info
         _, _, _, _, _, _, end_v_old = parts[-1].extra_info
         if parts[-1].terminal:
             end_v_old = 0
@@ -189,21 +192,20 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             destination_node_idx=destination
         )
 
-        return self._loss(next_logprob, next_logprob_old, v, v_old, end_v_old, rewards, entropy)
+        return self._loss(next_logprob, next_logprob_old, v, end_v_old, rewards, entropy)
 
     def _loss(
             self,
             next_logprob,
             next_logprob_old,
             v,
-            v_old,
             end_v_old,
             reward,
             entropy
     ) -> Tensor:
         prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -EXP_CLIP, EXP_CLIP))
 
-        advantage = self._compute_advantage_score(v_old, reward, end_v_old)
+        advantage = self._compute_advantage_score(v.detach(), reward, end_v_old)
         weighted_prob = prob_ratio * advantage
         weighted_clipped_prob = torch.clamp(prob_ratio, 1 - self._ratio_clip, 1 + self._ratio_clip) * advantage
 
@@ -227,3 +229,44 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             advantage = self._discount_factor * advantage + reward
         advantage = self._discount_factor * advantage - v
         return advantage
+
+    def debug(self, topology, step_num):
+        nodes_list = sorted(topology.graph.nodes)
+        nodes = {node: idx for idx, node in enumerate(nodes_list)}
+        sinks = list(filter(lambda n: n.type == 'sink', topology.graph.nodes))
+        diverter = nodes_list[self._node_id]
+        current_node_idx = torch.LongTensor([nodes[diverter]])
+        for sink in sinks:
+            all_neighbors = list(topology.graph.successors(diverter))
+            neighbors = only_reachable_from(
+                graph=topology.graph,
+                final_node=sink,
+                start_nodes=all_neighbors
+            )
+            if not neighbors:
+                continue
+            neighbor_node_ids = TensorWithMask(torch.LongTensor([nodes[n] for n in neighbors]), torch.LongTensor([len(neighbors)]))
+            destination_node_idx = torch.LongTensor([nodes[sink]])
+            _, _, neighbors_probs = self._actor(
+                current_node_idx=current_node_idx,
+                neighbor_node_ids=neighbor_node_ids,
+                destination_node_idx=destination_node_idx
+            )
+            current_state_value_function = self._critic(
+                current_node_idx=current_node_idx,
+                destination_node_idx=destination_node_idx
+            )
+            if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                    '{}/{}'.format('train', f'v_func_{diverter}_{sink}'),
+                    current_state_value_function.item(),
+                    step_num
+                )
+                utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
+                for idx, p in enumerate(neighbors_probs[0]):
+                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
+                        '{}/{}'.format('train', f'prob_{diverter}_{neighbors[idx]}_{sink}'),
+                        p.item(),
+                        step_num
+                      )
+                    utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()

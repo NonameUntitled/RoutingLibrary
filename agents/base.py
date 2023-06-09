@@ -28,4 +28,6 @@ class TorchAgent(BaseAgent, nn.Module):
     def copy(self, node_id: int):
         agent_copy = copy.deepcopy(self)
         agent_copy._node_id = node_id
+        if hasattr(agent_copy, '_optimizer_factory'):
+            agent_copy._optimizer = agent_copy._optimizer_factory(agent_copy)
         return agent_copy

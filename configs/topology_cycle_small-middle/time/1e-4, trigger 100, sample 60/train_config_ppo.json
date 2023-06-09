@@ -1,5 +1,16 @@
 {
-  "experiment_name": "dqn_pretrain",
+  "experiment_name": "ppo",
+  "type": "conveyor",
+  "path_memory": {
+    "type": "shared_path_memory"
+  },
+  "rewards": {
+    "sink": {
+      "wrong": -1e9,
+      "right": 1e2
+    }
+  },
+  "learn_trigger_bag_count": 100,
   "topology": {
     "type": "oriented",
     "sources": {
@@ -201,15 +212,16 @@
     }
   },
   "agent": {
-    "type": "dqn",
+    "type": "ppo",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
-    "trajectory_sample_size": 30,
+    "trajectory_sample_size": 60,
+    "trajectory_length": 15,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
-    "q_network": {
-      "type": "tower_q_network",
+    "actor": {
+      "type": "tower_actor",
       "embedder": {
         "shared": true,
         "type": "laplacian",
@@ -217,12 +229,37 @@
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 32,
+        "input_dim": 16,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 16
+      }
+    },
+    "critic": {
+      "type": "tower_critic",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 16
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 16,
         "hidden_dims": [
           256,
           256
         ],
         "output_dim": 1
+      }
+    },
+    "path_memory": {
+      "type": "shared_path_memory",
+      "reward_weights": {
+        "time": 1.0,
+        "energy": 0.0,
+        "sink": 1.0
       }
     },
     "optimizer": {
@@ -235,56 +272,23 @@
       "clip_grad_threshold": 50.0
     }
   },
-  "loss": {
-    "type": "composite",
-    "losses": [
+  "test": {
+    "topology_independence": "full",
+    "bags_queue": true,
+    "time_outlier": 0,
+    "collision_distance": 10,
+    "data": [
       {
-        "type": "mse",
-        "predictions_prefix": "predicted_next_node_q",
-        "ground_truth_prefix": "path_lengths",
-        "output_prefix": "mse_loss"
-      }
-    ],
-    "output_prefix": "loss"
-  },
-  "optimizer": {
-    "type": "basic",
-    "optimizer": {
-      "type": "adamw",
-      "lr": 3e-3,
-      "eps": 1e-8
-    },
-    "clip_grad_threshold": 5.0
-  },
-  "callback": {
-    "type": "composite",
-    "callbacks": [
-      {
-        "type": "loss",
-        "on_step": 1,
-        "regime_prefix": "pretrain",
-        "loss_prefix": "loss"
-      },
-      {
-        "type": "loss",
-        "on_step": 1,
-        "regime_prefix": "pretrain",
-        "loss_prefix": "mse_loss"
-      },
-      {
-        "type": "loss",
-        "on_step": 1,
-        "regime_prefix": "pretrain",
-        "loss_prefix": "cross_entropy_loss"
+        "action": "put_bags",
+        "bags_number": 1000,
+        "delta": 3
       }
     ]
   },
-  "model_name": "dqn_pretrain_model",
-  "num_samples": 10000,
-  "num_epochs": 100,
   "shared_embedder": {
     "shared": true,
     "type": "laplacian",
     "embedding_dim": 16
-  }
+  },
+  "pretrain_model_name": "ppo_pretrain_model"
 }

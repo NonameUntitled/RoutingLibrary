@@ -1,5 +1,5 @@
 {
-  "experiment_name": "ppo_dijkstra",
+  "experiment_name": "dqn",
   "type": "conveyor",
   "path_memory": {
     "type": "shared_path_memory"
@@ -10,7 +10,7 @@
       "right": 1e2
     }
   },
-  "learn_trigger_bag_count": 30,
+  "learn_trigger_bag_count": 100,
   "topology": {
     "type": "oriented",
     "sources": {
@@ -212,41 +212,23 @@
     }
   },
   "agent": {
-    "type": "ppo",
+    "type": "dqn",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
     "trajectory_sample_size": 60,
-    "trajectory_length": 15,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
-    "actor": {
-      "type": "tower_actor",
+    "q_network": {
+      "type": "tower_q_network",
       "embedder": {
         "shared": true,
-        "type": "hope",
+        "type": "laplacian",
         "embedding_dim": 16
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 16,
-        "hidden_dims": [
-          256,
-          256
-        ],
-        "output_dim": 16
-      }
-    },
-    "critic": {
-      "type": "tower_critic",
-      "embedder": {
-        "shared": true,
-        "type": "hope",
-        "embedding_dim": 16
-      },
-      "ff_net": {
-        "type": "tower",
-        "input_dim": 16,
+        "input_dim": 32,
         "hidden_dims": [
           256,
           256
@@ -254,7 +236,6 @@
         "output_dim": 1
       }
     },
-    "freeze_weights": true,
     "path_memory": {
       "type": "shared_path_memory",
       "reward_weights": {
@@ -267,17 +248,17 @@
       "type": "basic",
       "optimizer": {
         "type": "adamw",
-        "lr": 1e-5,
+        "lr": 1e-4,
         "eps": 1e-8
       },
       "clip_grad_threshold": 50.0
     }
   },
-  "test": {
+ "test": {
     "topology_independence": "full",
     "bags_queue": true,
     "time_outlier": 0,
-    "collision_distance": 6,
+    "collision_distance": 10,
     "data": [
       {
         "action": "put_bags",
@@ -288,8 +269,8 @@
   },
   "shared_embedder": {
     "shared": true,
-    "type": "hope",
+    "type": "laplacian",
     "embedding_dim": 16
   },
-  "pretrain_model_name": "ppo_dijkstra_model"
+  "pretrain_model_name": "dqn_pretrain_model"
 }

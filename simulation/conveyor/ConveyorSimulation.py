@@ -66,14 +66,24 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
 
                 cur_sources = test.get('sources', sources)
                 cur_sinks = test.get('sinks', sinks)
+                sources_idx = 0
+                sinks_idx = 0
 
                 for i in range(0, test['bags_number']):
                     # TODO: remove it
-                    src = random.choice(cur_sources)
-                    dst = random.choice(cur_sinks)
+                    # src = random.choice(cur_sources)
+                    # dst = random.choice(cur_sinks)
 
-                    mini_delta = round(abs(np.random.normal(0, 0.5)), 2)
-                    yield self._world_env.timeout(mini_delta)
+                    src = cur_sources[sources_idx]
+                    dst = cur_sinks[sinks_idx]
+
+                    sinks_idx += 1
+                    if sinks_idx == len(cur_sinks):
+                        sources_idx = (sources_idx + 1) % len(cur_sources)
+                        sinks_idx = 0
+
+                    # mini_delta = round(abs(np.random.normal(0, 0.5)), 2)
+                    # yield self._world_env.timeout(mini_delta)
 
                     bag = Bag(bag_id, 'sink', dst, self._world_env.now, {})
                     yield self._simulation_env.handleEvent(BagAppearanceEvent(src, bag))

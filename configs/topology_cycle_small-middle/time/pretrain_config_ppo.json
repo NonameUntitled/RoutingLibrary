@@ -210,7 +210,7 @@
       "type": "tower_actor",
       "embedder": {
         "shared": true,
-        "type": "hope",
+        "type": "laplacian",
         "embedding_dim": 16
       },
       "ff_net": {
@@ -227,7 +227,7 @@
       "type": "tower_critic",
       "embedder": {
         "shared": true,
-        "type": "hope",
+        "type": "laplacian",
         "embedding_dim": 16
       },
       "ff_net": {
@@ -296,7 +296,7 @@
   "num_epochs": 500,
   "shared_embedder": {
     "shared": true,
-    "type": "hope",
+    "type": "laplacian",
     "embedding_dim": 16
   }
 }

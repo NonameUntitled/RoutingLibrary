@@ -1,3 +1,4 @@
+from collections import defaultdict
 from logging import Logger
 from typing import *
 
@@ -37,8 +38,10 @@ class ConveyorsEnvironment:
         self._event_series = event_series
         self._global_config = config
 
-        self._wrong_dst_reward = config['rewards']['sink']['wrong']
-        self._right_dst_reward = config['rewards']['sink']['right']
+        self._wrong_dst_reward = config['rewards']['sink']['wrong'] if 'rewards' in config else 0.0
+        self._right_dst_reward = config['rewards']['sink']['right'] if 'rewards' in config else 0.0
+
+        self._debug = config.get('debug', False)
 
         self._collisions = 0
 
@@ -72,6 +75,8 @@ class ConveyorsEnvironment:
         self._arrived_bags = 0
         self._bags_whole_time = 0
         self._bags_arrived_window = []
+
+        self._bag_time = defaultdict(list)
 
         self._path_memory = BaseBagTrajectoryMemory.create_from_config(config['path_memory']) \
             if 'path_memory' in config else None
@@ -301,12 +306,16 @@ class ConveyorsEnvironment:
         current_time = self._world_env.now
         time_outlier = self._global_config["test"]["time_outlier"]
         if time_outlier == 0 or current_time - bag._start_time < time_outlier:
+            time = current_time - bag._start_time
+            times = self._bag_time[current_time]
+            times.append(time)
             utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
                 f'Bag time/Bag arrived time',
-                current_time - bag._start_time,
+                sum(times) / len(times),
                 current_time
             )
             self._event_series.logEvent("bag_time", bag._start_time, current_time - bag._start_time)
+            utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
             utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
                 "Bag arrived/time",
                 self._arrived_bags + 1,
@@ -331,6 +340,8 @@ class ConveyorsEnvironment:
                 self._step_num = 0
             for dv_agent in self._diverter_agents.values():
                 loss = dv_agent.learn()
+                if self._debug:
+                    dv_agent.debug(self._topology_graph, self._step_num)
                 if loss is not None:
                     if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
                         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
@@ -437,7 +448,6 @@ class ConveyorsEnvironment:
         for _, model in self._conveyor_models.items():
             new_energy_consumption = consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
             self._energy_reward_update(new_energy_consumption, [obj._id for obj in model._objects.values()])
-
             self._system_energy_consumption += new_energy_consumption
             cur_iteration_energy_consumption += new_energy_consumption
             self._conveyor_energy_consumption[model._model_id] += new_energy_consumption
