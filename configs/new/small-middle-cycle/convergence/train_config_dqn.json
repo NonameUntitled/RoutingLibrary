@@ -1,5 +1,5 @@
 {
-  "experiment_name": "ppo",
+  "experiment_name": "dqn",
   "type": "conveyor",
   "path_memory": {
     "type": "shared_path_memory"
@@ -213,21 +213,16 @@
     }
   },
   "agent": {
-    "type": "ppo",
+    "type": "dqn",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
     "trajectory_sample_size": 60,
-    "actor_loss_weight": 1.0,
-    "critic_loss_weight": 1.0,
-    "entropy_loss_weight": 0.1,
-    "trajectory_length": 15,
     "discount_factor": 0.8,
-    "ratio_clip": 0.5,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
-    "actor": {
-      "type": "tower_actor",
+    "q_network": {
+      "type": "tower_q_network",
       "embedder": {
         "shared": true,
         "type": "laplacian",
@@ -235,24 +230,7 @@
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 16,
-        "hidden_dims": [
-          256,
-          256
-        ],
-        "output_dim": 16
-      }
-    },
-    "critic": {
-      "type": "tower_critic",
-      "embedder": {
-        "shared": true,
-        "type": "laplacian",
-        "embedding_dim": 16
-      },
-      "ff_net": {
-        "type": "tower",
-        "input_dim": 16,
+        "input_dim": 32,
         "hidden_dims": [
           256,
           256
@@ -277,7 +255,7 @@
       }
     }
   },
-  "test": {
+ "test": {
     "topology_independence": "full",
     "bags_queue": true,
     "time_outlier": 0,
@@ -295,5 +273,5 @@
     "type": "laplacian",
     "embedding_dim": 16
   },
-  "pretrain_model_name": "ppo_pretrain_model"
+  "pretrain_model_name_": "dqn_pretrain_model"
 }
