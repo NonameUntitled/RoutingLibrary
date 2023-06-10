@@ -262,7 +262,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 # In the line below we append negative value because we want to minimize actual path
                 length_to_neighbor = graph[current_node][filtered_out_neighbor][self.edge_weight_field]
                 path_length = nx.path_weight(graph, path, weight=self.edge_weight_field) + length_to_neighbor
-                path_lengths.append(-path_length / 5.0)
+                path_lengths.append(-path_length)
             sample['path_lengths'] = path_lengths
 
             sample['next_node_probs'] = list(torch.nn.functional.softmax(torch.tensor(path_lengths, dtype=torch.float64), dim=0))

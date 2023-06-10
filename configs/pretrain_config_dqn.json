@@ -281,7 +281,7 @@
   },
   "model_name": "dqn_pretrain_model",
   "num_samples": 10000,
-  "num_epochs": 100,
+  "num_epochs": 300,
   "shared_embedder": {
     "shared": true,
     "type": "laplacian",

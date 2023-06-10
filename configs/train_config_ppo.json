@@ -220,10 +220,10 @@
     "trajectory_sample_size": 60,
     "actor_loss_weight": 1.0,
     "critic_loss_weight": 1.0,
-    "entropy_loss_weight": 0.1,
+    "entropy_loss_weight": 0.05,
     "trajectory_length": 15,
-    "discount_factor": 0.8,
-    "ratio_clip": 0.5,
+    "discount_factor": 0.99,
+    "ratio_clip": 0.2,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
     "actor": {
@@ -285,7 +285,7 @@
     "data": [
       {
         "action": "put_bags",
-        "bags_number": 1000,
+        "bags_number": 500,
         "delta": 3
       }
     ]

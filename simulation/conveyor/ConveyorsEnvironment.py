@@ -345,7 +345,7 @@ class ConveyorsEnvironment:
                 if loss is not None:
                     if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
                         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                            '{}/{}'.format('train', f'agent_{dv_agent._node_id}'),
+                            '{}/{}'.format('train', f'agent_{get_node_by_id(self._topology_graph, dv_agent._node_id)}'),
                             loss,
                             self._step_num
                         )
@@ -414,7 +414,7 @@ class ConveyorsEnvironment:
 
         model = self._conveyor_models[conv_idx]
         # TODO for test
-        new_energy_consumption = model._model_id * acceleration_consumption_Zhang(model._length, model._speed,
+        new_energy_consumption = 0 * acceleration_consumption_Zhang(model._length, model._speed,
                                                                 len(
                                                                     model._objects)) if type == "start" else deceleration_consumption_Zhang(
             model._length, model._speed, len(model._objects))
@@ -448,7 +448,7 @@ class ConveyorsEnvironment:
         cur_iteration_energy_consumption = 0
         for _, model in self._conveyor_models.items():
             # TODO for test
-            new_energy_consumption = model._model_id * consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
+            new_energy_consumption = 1 / model._length**2 * consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
             self._energy_reward_update(new_energy_consumption, [obj._id for obj in model._objects.values()])
             self._system_energy_consumption += new_energy_consumption
             cur_iteration_energy_consumption += new_energy_consumption
@@ -470,7 +470,7 @@ class ConveyorsEnvironment:
 
     def _energy_reward_update(self, energy_consumption_per_bag: float, bag_ids: List[int]):
         for bag_id in bag_ids:
-            self._path_memory.add_reward_to_trajectory(bag_id, -energy_consumption_per_bag, 'energy')
+            self._path_memory.add_reward_to_trajectory(bag_id, -energy_consumption_per_bag / len(bag_ids), 'energy')
 
     def _updateAll(self):
         """

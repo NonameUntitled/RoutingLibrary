@@ -218,7 +218,7 @@
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
     "trajectory_sample_size": 60,
-    "discount_factor": 0.8,
+    "discount_factor": 0.99,
     "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
     "q_network": {
@@ -263,7 +263,7 @@
     "data": [
       {
         "action": "put_bags",
-        "bags_number": 1000,
+        "bags_number": 500,
         "delta": 3
       }
     ]
