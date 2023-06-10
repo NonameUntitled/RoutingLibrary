@@ -93,7 +93,7 @@ class ConveyorModel:
       (or the end of the conveyor), and also return those checkpoint and object
     """
 
-    def __init__(self, world_env: Environment, length: float, checkpoints: List[Dict[str, Union[int, Section]]],
+    def __init__(self, world_env: Environment, length: float, quality: float, checkpoints: List[Dict[str, Union[int, Section]]],
                  model_id: int,
                  logger: Logger, collision_distance: float = 0.1):
         assert length > 0, "Conveyor length <= 0!"
@@ -117,6 +117,7 @@ class ConveyorModel:
         self._checkpoints = checkpoints
         self._checkpoint_positions = {cp["node"]: cp["position"] for cp in checkpoints}
         self._length = length
+        self._quality = quality
         self._collision_distance = collision_distance
 
         # variables

@@ -146,15 +146,16 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
     buffer_update_sample_count = 1
     buffer_update_sample_counter = 0
 
-    def __init__(self, reward_weights=None):
+    def __init__(self, reward_weights=None, buffer_size=300):
         if reward_weights is None:
             reward_weights = {}
         self._cls = SharedBagTrajectoryMemory
+        self._cls.buffer_size = buffer_size
         self._reward_weights = reward_weights
 
     @classmethod
     def create_from_config(cls, config):
-        return cls(config.get('reward_weights', None))
+        return cls(config.get('reward_weights', None), config.get('buffer_size', 300))
 
     def add_to_trajectory(self, bag_ids: Iterable, node_idxs: Iterable, extra_infos: Iterable):
         for bag_id, node_idx, extra_info in zip(bag_ids, node_idxs, extra_infos):

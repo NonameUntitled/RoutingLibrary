@@ -1,3 +1,4 @@
+import copy
 from typing import Dict, Any, Optional
 
 import networkx as nx
@@ -24,7 +25,8 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
             neighbors_node_ids_prefix: str,
             topology_prefix: str,
             output_prefix: str,
-            bag_ids_prefix: str
+            bag_ids_prefix: str,
+            static: bool
     ):
         super().__init__()
 
@@ -34,6 +36,8 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
         self._topology_prefix = topology_prefix
         self._output_prefix = output_prefix
         self._bag_ids_prefix = bag_ids_prefix
+        self._static = static
+        self._topology = None
 
     @classmethod
     def create_from_config(cls, config):
@@ -43,7 +47,8 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
             neighbors_node_ids_prefix=config['neighbors_node_ids_prefix'],
             topology_prefix=config['topology_prefix'],
             output_prefix=config['output_prefix'],
-            bag_ids_prefix=config.get('bag_ids_prefix', None)
+            bag_ids_prefix=config.get('bag_ids_prefix', None),
+            static=config.get('static', False)
         )
 
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
@@ -55,7 +60,13 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
         # TensorWithMask
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
         # Topology
-        topology = inputs[self._topology_prefix]
+        if self._static:
+            if self._topology is None:
+                self._topology = copy.deepcopy(inputs[self._topology_prefix])
+            topology = self._topology
+        else:
+            topology = inputs[self._topology_prefix]
+
         try:
             nodes = sorted(topology.graph.nodes)
             path = nx.dijkstra_path(

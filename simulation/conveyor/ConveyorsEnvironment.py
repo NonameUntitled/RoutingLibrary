@@ -51,7 +51,8 @@ class ConveyorsEnvironment:
             checkpoints = conveyor_adj_nodes_with_data(self._topology_graph.graph, conv_id,
                                                        only_own=True, data="conveyor_pos")
             length = self._topology_config["conveyors"][str(conv_id)]["length"]
-            model = ConveyorModel(self._world_env, length, checkpoints, model_id=conv_id, logger=logger,
+            quality = self._topology_config["conveyors"][str(conv_id)].get("quality", 1)
+            model = ConveyorModel(self._world_env, length, quality, checkpoints, model_id=conv_id, logger=logger,
                                   collision_distance=config["test"]["collision_distance"])
             self._conveyor_models[conv_id] = model
 
@@ -448,7 +449,7 @@ class ConveyorsEnvironment:
         cur_iteration_energy_consumption = 0
         for _, model in self._conveyor_models.items():
             # TODO for test
-            new_energy_consumption = 1 / model._length**2 * consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
+            new_energy_consumption = model._quality * time_diff * len(model._objects)  # consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
             self._energy_reward_update(new_energy_consumption, [obj._id for obj in model._objects.values()])
             self._system_energy_consumption += new_energy_consumption
             cur_iteration_energy_consumption += new_energy_consumption
