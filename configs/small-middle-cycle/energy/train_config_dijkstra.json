@@ -4,12 +4,6 @@
   "path_memory": {
     "type": "shared_path_memory"
   },
-  "rewards": {
-    "sink": {
-      "wrong": -1e9,
-      "right": 1e2
-    }
-  },
   "learn_trigger_bag_count": 30,
   "topology": {
     "type": "oriented",
@@ -115,6 +109,7 @@
       },
       "3": {
         "length": 5,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -123,6 +118,7 @@
       },
       "4": {
         "length": 5,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -131,6 +127,7 @@
       },
       "5": {
         "length": 5,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -224,80 +221,11 @@
     "topology_independence": "full",
     "bags_queue": true,
     "time_outlier": 0,
-    "collision_distance": 10,
+    "collision_distance": 1,
     "data": [
       {
         "action": "put_bags",
-        "bags_number": 300,
-        "delta": 3
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 3,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 4,
-        "pause": 0
-      },{
-        "action": "conv_break",
-        "conv_idx": 5,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 6,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 7,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 8,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 300,
-        "delta": 3
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 3,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 4,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 5,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 6,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 7,
-        "pause": 0
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 8,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 300,
+        "bags_number": 2000,
         "delta": 3
       }
     ]
