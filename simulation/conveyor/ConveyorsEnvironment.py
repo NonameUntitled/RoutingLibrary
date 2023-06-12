@@ -449,7 +449,8 @@ class ConveyorsEnvironment:
         cur_iteration_energy_consumption = 0
         for _, model in self._conveyor_models.items():
             # TODO for test
-            new_energy_consumption = model._quality * time_diff * len(model._objects)  # consumption_Zhang(model._length, model._speed, len(model._objects)) * time_diff
+            new_energy_consumption = model._quality * time_diff * consumption_Zhang(model._length, model._speed, len(model._objects))
+            # new_energy_consumption = model._quality * time_diff * len(model._objects)
             self._energy_reward_update(new_energy_consumption, [obj._id for obj in model._objects.values()])
             self._system_energy_consumption += new_energy_consumption
             cur_iteration_energy_consumption += new_energy_consumption

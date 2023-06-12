@@ -10,7 +10,7 @@
       "right": 0
     }
   },
-  "debug": true,
+  "debug": false,
   "learn_trigger_bag_count": 10,
   "topology": {
     "type": "oriented",
@@ -116,7 +116,7 @@
       },
       "3": {
         "length": 5,
-        "quality": 2.5,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -125,7 +125,7 @@
       },
       "4": {
         "length": 5,
-        "quality": 2.5,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -134,7 +134,7 @@
       },
       "5": {
         "length": 5,
-        "quality": 2.5,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -143,7 +143,6 @@
       },
       "6": {
         "length": 10,
-        "quality": 2.5,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -152,7 +151,6 @@
       },
       "7": {
         "length": 10,
-        "quality": 2.5,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -161,7 +159,6 @@
       },
       "8": {
         "length": 10,
-        "quality": 2.5,
         "upstream": {
           "type": "conveyor",
           "id": 0,

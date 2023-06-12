@@ -24,15 +24,15 @@ _ETA = 0.8
 # THETAS_ORIG = [2.3733e-4, 8566.3, 0.0031, 51.6804]
 
 def _P_Zhang(length: float, V: float, T: float):
-    return _THETA_1 * V * T * T + (_THETA_2_L * length + _k_3) * V + \
-           _THETA_3 * T * T / V + (_THETA_4_L * length / 3.6 + _k_2) * T * 1e-4 + V * V * T / 36
+    return _THETA_1 * V * T * T + (_THETA_2_L * length + _k_3) * V +  \
+            _THETA_3 * T * T / V + (_THETA_4_L * length / 3.6 + _k_2) * T + V * V * T / 3.6
 
 
 def _consumption_Zhang(length: float, speed: float, n_bags: int):
     if speed == 0:
         return 0
     Q_g = n_bags * BAG_MASS / length
-    T = Q_g * speed * 3.6
+    T = Q_g * speed * 0.018
     return _P_Zhang(length, speed, T) / _ETA
 
 def consumption_Zhang(length: float, speed: float, n_bags: int):
