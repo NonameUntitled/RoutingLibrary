@@ -1,0 +1,541 @@
+{
+  "experiment_name": "dqn_pretrain",
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      },
+      "2": {
+        "upstream_conv": 2
+      },
+      "3": {
+        "upstream_conv": 3
+      }
+    },
+    "sinks": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "diverters": {
+      "4": {
+        "conveyor": 0,
+        "pos": 10,
+        "upstream_conv": 8
+      },
+      "5": {
+        "conveyor": 0,
+        "pos": 50,
+        "upstream_conv": 9
+      },
+      "6": {
+        "conveyor": 0,
+        "pos": 90,
+        "upstream_conv": 10
+      },
+      "7": {
+        "conveyor": 0,
+        "pos": 130,
+        "upstream_conv": 11
+      },
+      "12": {
+        "conveyor": 1,
+        "pos": 10,
+        "upstream_conv": 16
+      },
+      "13": {
+        "conveyor": 1,
+        "pos": 50,
+        "upstream_conv": 17
+      },
+      "14": {
+        "conveyor": 1,
+        "pos": 90,
+        "upstream_conv": 18
+      },
+      "15": {
+        "conveyor": 1,
+        "pos": 130,
+        "upstream_conv": 19
+      },
+      "20": {
+        "conveyor": 2,
+        "pos": 10,
+        "upstream_conv": 24
+      },
+      "21": {
+        "conveyor": 2,
+        "pos": 50,
+        "upstream_conv": 25
+      },
+      "22": {
+        "conveyor": 2,
+        "pos": 90,
+        "upstream_conv": 26
+      },
+      "23": {
+        "conveyor": 2,
+        "pos": 130,
+        "upstream_conv": 27
+      },
+      "16": {
+        "conveyor": 1,
+        "pos": 30,
+        "upstream_conv": 20
+      },
+      "17": {
+        "conveyor": 1,
+        "pos": 70,
+        "upstream_conv": 21
+      },
+      "18": {
+        "conveyor": 1,
+        "pos": 110,
+        "upstream_conv": 22
+      },
+      "19": {
+        "conveyor": 1,
+        "pos": 150,
+        "upstream_conv": 23
+      },
+      "24": {
+        "conveyor": 2,
+        "pos": 30,
+        "upstream_conv": 28
+      },
+      "25": {
+        "conveyor": 2,
+        "pos": 70,
+        "upstream_conv": 29
+      },
+      "26": {
+        "conveyor": 2,
+        "pos": 110,
+        "upstream_conv": 30
+      },
+      "27": {
+        "conveyor": 2,
+        "pos": 150,
+        "upstream_conv": 31
+      },
+      "32": {
+        "conveyor": 3,
+        "pos": 30,
+        "upstream_conv": 36
+      },
+      "33": {
+        "conveyor": 3,
+        "pos": 70,
+        "upstream_conv": 37
+      },
+      "34": {
+        "conveyor": 3,
+        "pos": 110,
+        "upstream_conv": 38
+      },
+      "35": {
+        "conveyor": 3,
+        "pos": 150,
+        "upstream_conv": 39
+      },
+      "0": {
+        "conveyor": 0,
+        "pos": 240,
+        "upstream_conv": 4
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 240,
+        "upstream_conv": 5
+      },
+      "2": {
+        "conveyor": 2,
+        "pos": 240,
+        "upstream_conv": 6
+      },
+      "3": {
+        "conveyor": 3,
+        "pos": 240,
+        "upstream_conv": 7
+      }
+    },
+    "conveyors": {
+      "8": {
+        "length": 20.854938547042828,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 20
+        }
+      },
+      "9": {
+        "length": 17.090700415240473,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 60
+        }
+      },
+      "10": {
+        "length": 18.237168854810392,
+        "quality": 1.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 100
+        }
+      },
+      "11": {
+        "length": 16.44564655481947,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 140
+        }
+      },
+      "16": {
+        "length": 23.14377664661935,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 20
+        }
+      },
+      "17": {
+        "length": 22.474959679144003,
+        "quality": 1.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 60
+        }
+      },
+      "18": {
+        "length": 15.112264273196288,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 100
+        }
+      },
+      "19": {
+        "length": 18.601035002748375,
+        "quality": 1.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 140
+        }
+      },
+      "24": {
+        "length": 16.75542190357515,
+        "quality": 1.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 3,
+          "pos": 20
+        }
+      },
+      "25": {
+        "length": 18.128567106503056,
+        "quality": 1.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 3,
+          "pos": 60
+        }
+      },
+      "26": {
+        "length": 24.53379659314116,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 3,
+          "pos": 100
+        }
+      },
+      "27": {
+        "length": 17.109304188908467,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 3,
+          "pos": 140
+        }
+      },
+      "20": {
+        "length": 23.328309309694234,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 40
+        }
+      },
+      "21": {
+        "length": 23.133660688111366,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 80
+        }
+      },
+      "22": {
+        "length": 18.600072465740052,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 120
+        }
+      },
+      "23": {
+        "length": 22.769264357699413,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 160
+        }
+      },
+      "28": {
+        "length": 22.311012896680364,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 40
+        }
+      },
+      "29": {
+        "length": 22.53032322975493,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 80
+        }
+      },
+      "30": {
+        "length": 17.76992281525939,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 120
+        }
+      },
+      "31": {
+        "length": 23.40221802025704,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 160
+        }
+      },
+      "36": {
+        "length": 18.489779384008454,
+        "quality": 1.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 40
+        }
+      },
+      "37": {
+        "length": 21.855036297168215,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 80
+        }
+      },
+      "38": {
+        "length": 23.243836020881034,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 120
+        }
+      },
+      "39": {
+        "length": 21.12445251092526,
+        "quality": 1.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 160
+        }
+      },
+      "0": {
+        "length": 360,
+        "quality": 1.0,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "4": {
+        "length": 75,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 220
+        }
+      },
+      "1": {
+        "length": 360,
+        "quality": 1.5,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "5": {
+        "length": 75,
+        "quality": 2.5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 220
+        }
+      },
+      "2": {
+        "length": 360,
+        "quality": 2.5,
+        "upstream": {
+          "type": "sink",
+          "id": 2
+        }
+      },
+      "6": {
+        "length": 75,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 3,
+          "pos": 220
+        }
+      },
+      "3": {
+        "length": 360,
+        "quality": 1.5,
+        "upstream": {
+          "type": "sink",
+          "id": 3
+        }
+      },
+      "7": {
+        "length": 75,
+        "quality": 1.0,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 220
+        }
+      }
+    }
+  },
+  "agent": {
+    "type": "dqn",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "trajectory_sample_size": 30,
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes",
+    "q_network": {
+      "type": "tower_q_network",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 16
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 32,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 1
+      }
+    },
+    "optimizer": {
+      "type": "basic",
+      "optimizer": {
+        "type": "adamw",
+        "lr": 1e-4,
+        "eps": 1e-8
+      },
+      "clip_grad_threshold": 50.0
+    }
+  },
+  "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_next_node_q",
+        "ground_truth_prefix": "path_lengths",
+        "output_prefix": "mse_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "optimizer": {
+    "type": "basic",
+    "optimizer": {
+      "type": "adamw",
+      "lr": 3e-3,
+      "eps": 1e-8
+    },
+    "clip_grad_threshold": 5.0
+  },
+  "callback": {
+    "type": "composite",
+    "callbacks": [
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "mse_loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "cross_entropy_loss"
+      }
+    ]
+  },
+  "model_name": "dqn_pretrain_model",
+  "num_samples": 10000,
+  "num_epochs": 100,
+  "shared_embedder": {
+    "shared": true,
+    "type": "laplacian",
+    "embedding_dim": 16
+  }
+}
