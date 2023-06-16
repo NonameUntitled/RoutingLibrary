@@ -130,7 +130,6 @@ class PPOAgent(TorchAgent, config_name='ppo'):
                 bag_ids=bag_ids,
                 node_idxs=torch.full([batch_size], self._node_id),
                 extra_infos=zip(
-                    torch.unsqueeze(current_state_value_function.detach(), dim=1),
                     torch.unsqueeze(current_node_idx, dim=1),
                     neighbor_node_ids,
                     torch.unsqueeze(next_neighbor_ids.detach(), dim=1),
@@ -142,10 +141,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         inputs[self._output_prefix] = next_neighbor_ids
         # TODO[Zhogov Alexandr] fix it
-        flatten_neighbors_logits = neighbors_logits.flatten()
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
-            'predicted_next_node_logits': flatten_neighbors_logits[flatten_neighbors_logits != BIG_NEG],
+            'predicted_next_node_logits': neighbors_logits[neighbor_node_ids.mask].flatten(),
             'predicted_current_state_v_value': current_state_value_function
         })
         return inputs
@@ -171,8 +169,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         rewards = [reward for _, reward in trajectory]
         parts = [part for part, _ in trajectory]
 
-        _, node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = parts[0].extra_info
-        _, _, _, _, _, _, end_v_old = parts[-1].extra_info
+        node_idx, neighbors, next_neighbor, neighbor_logits_old, destination, _ = parts[0].extra_info
+        _, _, _, _, _, end_v_old = parts[-1].extra_info
         if parts[-1].terminal:
             end_v_old = 0
         _, neighbor_logits, _ = self._actor(

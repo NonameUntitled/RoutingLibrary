@@ -65,6 +65,8 @@ class TensorWithMask:
     def __init__(self, values: torch.Tensor, lengths: torch.Tensor):
         self._values = values
         self._lengths = lengths
+        self._padded_values_cache = None
+        self._mask_cache = None
 
     @property
     def flatten_values(self):
@@ -72,6 +74,8 @@ class TensorWithMask:
 
     @property
     def padded_values(self):
+        if self._padded_values_cache is not None:
+            return self._padded_values_cache
         batch_size = self._lengths.shape[0]
         max_sequence_length = self._lengths.max().item()
 
@@ -82,6 +86,7 @@ class TensorWithMask:
         )
 
         padded_values[self.mask] = self._values
+        self._padded_values_cache = padded_values
 
         return padded_values
 
@@ -91,6 +96,9 @@ class TensorWithMask:
 
     @property
     def mask(self):
+        if self._mask_cache is not None:
+            return self._mask_cache
+
         batch_size = self._lengths.shape[0]
         max_sequence_length = self._lengths.max().item()
 
@@ -100,11 +108,16 @@ class TensorWithMask:
             device=self._lengths.device
         )[None].tile([batch_size, 1]) < self._lengths[:, None]
 
-        return mask.bool()
+        mask = mask.bool()
+        self._mask_cache = mask
+
+        return mask
 
     def to(self, device):
         self._values = self._values.to(device)
         self._lengths = self._lengths.to(device)
+        self._padded_values_cache = None
+        self._mask_cache = None
         return self
 
     def __iter__(self):

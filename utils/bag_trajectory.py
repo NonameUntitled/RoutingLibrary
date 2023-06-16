@@ -138,7 +138,6 @@ class Trajectory:
 
 class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_path_memory'):
     trajectory_number = 0
-    buffer_size = 300
     force_sample_length = 10
     max_trajectory_length = 15
     trajectory_by_bag_id = {}
@@ -150,7 +149,7 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
         if reward_weights is None:
             reward_weights = {}
         self._cls = SharedBagTrajectoryMemory
-        self._cls.buffer_size = buffer_size
+        self._buffer_size = buffer_size
         self._reward_weights = reward_weights
 
     @classmethod
@@ -178,7 +177,7 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
                 next_part = trajectory[-1].next
                 if next_part and next_part.reward_by_type:
                     trajectory.append(next_part)
-        self.buffer_update_sample_counter += 1
+        self._cls.buffer_update_sample_counter += 1
         if self._cls.buffer_update_sample_counter == self.buffer_update_sample_count:
             self._update_buffer()
             self._cls.buffer_update_sample_counter = 0
@@ -212,10 +211,12 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
             filter(lambda tr: tr.for_sample, self.trajectory_by_bag_id.values()),
             key=lambda tr: tr.create_time
         )
-        if len(complete_trajectories) > self._cls.buffer_size:
-            for trajectory in complete_trajectories[self.buffer_size:]:
-                for part in trajectory:
+        if len(complete_trajectories) > self._buffer_size:
+            for trajectory in complete_trajectories[:-self._buffer_size]:
+                part = trajectory.root
+                while part:
                     self._cls.parts_by_node_idx[part.node_idx].remove(part)
+                    part = part.next
                 del self._cls.trajectory_by_bag_id[trajectory.bag_id]
         for trajectory in self._cls.trajectory_by_bag_id.values():
             while trajectory.size > self._cls.max_trajectory_length:

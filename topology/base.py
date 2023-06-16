@@ -128,6 +128,12 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                     type='junction', id=junction_idx, position=upstream_conveyor_position
                 ))
 
+                graph.add_node(
+                    Section(
+                        type='junction', id=junction_idx, position=upstream_conveyor_position
+                    )
+                )
+
                 junction_idx += 1
             else:
                 raise Exception('Invalid conveyor upstream type: ' + upstream_cfg['type'])

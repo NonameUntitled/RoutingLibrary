@@ -286,7 +286,7 @@ class ConveyorsEnvironment:
                 if self._conveyor_broken[up_conv]:
                     model.stop_conveyor({"type": "dependence"})
                     self._conveyor_broken[conv_idx] = True
-                    self._conveyor_broken_dependencies[up_conv] = conv_idx
+                    self._conveyor_broken_dependencies[up_conv].append(conv_idx)
                     self._conveyorStartStopEnergyConsumption(conv_idx, "stop")
                     return False
 
