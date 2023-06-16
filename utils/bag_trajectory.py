@@ -169,7 +169,6 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
         ]
         if len(for_sample_parts) == 0:
             return []
-        # trajectories = [[part] for part in for_sample_parts]
         trajectories = list(map(
             lambda idx: [for_sample_parts[idx]],
             np.random.randint(len(for_sample_parts), size=count)

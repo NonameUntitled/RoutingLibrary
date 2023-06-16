@@ -142,10 +142,10 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         inputs[self._output_prefix] = next_neighbor_ids
         # TODO[Zhogov Alexandr] fix it
+        flatten_neighbors_logits = neighbors_logits.flatten()
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
-            'predicted_next_node_logits': neighbors_logits,
-            'predicted_next_node_probs': torch.flatten(neighbors_probs[neighbors_probs != 0.0]),
+            'predicted_next_node_logits': flatten_neighbors_logits[flatten_neighbors_logits != BIG_NEG],
             'predicted_current_state_v_value': current_state_value_function
         })
         return inputs
@@ -225,9 +225,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             end_v
     ):
         advantage = end_v
-        for reward in rewards:
+        for reward in rewards[::-1]:
             advantage = self._discount_factor * advantage + reward
-        advantage = self._discount_factor * advantage - v
+        advantage -= v
         return advantage
 
     def debug(self, topology, step_num):
