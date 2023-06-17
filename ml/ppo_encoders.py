@@ -7,7 +7,7 @@ from torch.distributions.categorical import Categorical
 
 from ml.embeddings import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
-from ml.utils import TensorWithMask, EXP_CLIP, BIG_NEG
+from ml.utils import TensorWithMask, BIG_NEG
 
 
 class BaseActor(TorchEncoder):
@@ -101,16 +101,16 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         # 3) Compute logits for existing next states (here I use dot product for scores receiving)
         # Shape: [batch_size, max_neighbors_num]
 
-        # neighbors_logits = torch.nn.functional.cosine_similarity(
-        #     next_state_embeddings,
-        #     torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
-        # ) * EXP_CLIP
-
-        neighbors_logits = torch.einsum(
-            'bnd,bd->bn',
+        neighbors_logits = torch.nn.functional.cosine_similarity(
             next_state_embeddings,
-            ideal_transition_embedding
-        ) / 10.0
+            torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
+        ) * 3
+
+        # neighbors_logits = torch.einsum(
+        #     'bnd,bd->bn',
+        #     next_state_embeddings,
+        #     ideal_transition_embedding
+        # ) / 10.0
 
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         inf_tensor = torch.zeros(neighbors_logits.shape)

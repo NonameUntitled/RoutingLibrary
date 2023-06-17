@@ -9,7 +9,7 @@ from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.encoders import BaseEncoder
 from ml.ppo_encoders import BaseActor, BaseCritic
-from ml.utils import BIG_NEG, EXP_CLIP, TensorWithMask
+from ml.utils import BIG_NEG, TensorWithMask
 from topology.utils import only_reachable_from
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
@@ -143,7 +143,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         # TODO[Zhogov Alexandr] fix it
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
-            'predicted_next_node_logits': neighbors_logits[neighbor_node_ids.mask].flatten(),
+            'predicted_next_node_logits': neighbors_logits,  # [neighbor_node_ids.mask].flatten(),
             'predicted_current_state_v_value': current_state_value_function
         })
         return inputs
@@ -173,6 +173,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         _, _, _, _, _, end_v_old = parts[-1].extra_info
         if parts[-1].terminal:
             end_v_old = 0
+        else:
+            rewards = rewards[:-1]
         _, neighbor_logits, _ = self._actor(
             current_node_idx=node_idx,
             neighbor_node_ids=neighbors,
@@ -181,7 +183,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         logprob_old = _get_logprob(neighbors, neighbor_logits_old)
         logprob = _get_logprob(neighbors, neighbor_logits)
-        entropy = Categorical(probs=torch.exp(logprob)).entropy()
+        entropy = Categorical(logits=neighbor_logits).entropy()
         next_logprob_old = logprob_old[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
         next_logprob = logprob[neighbors.padded_values == torch.unsqueeze(next_neighbor, dim=1)]
 
@@ -189,6 +191,9 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             current_node_idx=node_idx,
             destination_node_idx=destination
         )
+
+        if neighbor_logits.shape[1] == 1:
+            entropy = None
 
         return self._loss(next_logprob, next_logprob_old, v, end_v_old, rewards, entropy)
 
@@ -201,7 +206,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             reward,
             entropy
     ) -> Tensor:
-        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -EXP_CLIP, EXP_CLIP))
+        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -300, 300))
 
         advantage = self._compute_advantage_score(v.detach(), reward, end_v_old)
         weighted_prob = prob_ratio * advantage
@@ -212,7 +217,8 @@ class PPOAgent(TorchAgent, config_name='ppo'):
 
         total_loss = self._actor_loss_weight * actor_loss
         total_loss += self._critic_loss_weight * critic_loss
-        total_loss -= self._entropy_loss_weight * entropy
+        if entropy is not None:
+            total_loss -= self._entropy_loss_weight * entropy
 
         return total_loss
 
@@ -225,8 +231,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
         advantage = end_v
         for reward in rewards[::-1]:
             advantage = self._discount_factor * advantage + reward
-        advantage -= v
-        return advantage
+        return advantage - v
 
     def debug(self, topology, step_num):
         nodes_list = sorted(topology.graph.nodes)

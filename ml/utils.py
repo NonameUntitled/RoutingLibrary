@@ -1,7 +1,6 @@
 import torch
 
 BIG_NEG = -1e10
-EXP_CLIP = 10
 
 
 def collate_fn(batch, schema):
