@@ -277,5 +277,5 @@
     "type": "laplacian",
     "embedding_dim": 16
   },
-  "pretrain_model_name": "dqn_pretrain_model"
+  "pretrain_model_name_": "dqn_pretrain_model"
 }

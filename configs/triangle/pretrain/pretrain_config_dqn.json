@@ -1,0 +1,221 @@
+{
+  "experiment_name": "dqn_pretrain",
+  "topology": {
+    "type": "oriented",
+    "sources": {
+      "0": {
+        "upstream_conv": 0
+      },
+      "1": {
+        "upstream_conv": 1
+      },
+      "2": {
+        "upstream_conv": 2
+      }
+    },
+    "sinks": [
+      0,
+      1,
+      2
+    ],
+    "diverters": {
+      "0": {
+        "conveyor": 0,
+        "pos": 30,
+        "upstream_conv": 3
+      },
+      "1": {
+        "conveyor": 1,
+        "pos": 30,
+        "upstream_conv": 4
+      },
+      "2": {
+        "conveyor": 2,
+        "pos": 30,
+        "upstream_conv": 5
+      },
+      "3": {
+        "conveyor": 0,
+        "pos": 25,
+        "upstream_conv": 6
+      },
+      "4": {
+        "conveyor": 1,
+        "pos": 25,
+        "upstream_conv": 7
+      },
+      "5": {
+        "conveyor": 2,
+        "pos": 25,
+        "upstream_conv": 8
+      }
+    },
+    "conveyors": {
+      "0": {
+        "length": 40,
+        "quality": 1,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 10
+        }
+      },
+      "1": {
+        "length": 40,
+        "quality": 1,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 10
+        }
+      },
+      "2": {
+        "length": 40,
+        "quality": 1,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 10
+        }
+      },
+      "3": {
+        "length": 10,
+        "quality": 5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 1,
+          "pos": 20
+        }
+      },
+      "4": {
+        "length": 10,
+        "quality": 5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 2,
+          "pos": 20
+        }
+      },
+      "5": {
+        "length": 10,
+        "quality": 5,
+        "upstream": {
+          "type": "conveyor",
+          "id": 0,
+          "pos": 20
+        }
+      },
+      "6": {
+        "length": 10,
+        "quality": 1,
+        "upstream": {
+          "type": "sink",
+          "id": 0
+        }
+      },
+      "7": {
+        "length": 10,
+        "quality": 1,
+        "upstream": {
+          "type": "sink",
+          "id": 1
+        }
+      },
+      "8": {
+        "length": 10,
+        "quality": 1,
+        "upstream": {
+          "type": "sink",
+          "id": 2
+        }
+      }
+    }
+  },
+  "agent": {
+    "type": "dqn",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "trajectory_sample_size": 30,
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes",
+    "q_network": {
+      "type": "tower_q_network",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 16
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 32,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 1
+      }
+    },
+    "optimizer": {
+      "type": "basic",
+      "optimizer": {
+        "type": "adamw",
+        "lr": 1e-4,
+        "eps": 1e-8
+      },
+      "clip_grad_threshold": 50.0
+    }
+  },
+  "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_next_node_q",
+        "ground_truth_prefix": "path_lengths",
+        "output_prefix": "mse_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "optimizer": {
+    "type": "basic",
+    "optimizer": {
+      "type": "adamw",
+      "lr": 3e-3,
+      "eps": 1e-8
+    },
+    "clip_grad_threshold": 5.0
+  },
+  "callback": {
+    "type": "composite",
+    "callbacks": [
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "mse_loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "cross_entropy_loss"
+      }
+    ]
+  },
+  "model_name": "dqn_pretrain_model",
+  "num_samples": 10000,
+  "num_epochs": 500,
+  "shared_embedder": {
+    "shared": true,
+    "type": "laplacian",
+    "embedding_dim": 16
+  }
+}
