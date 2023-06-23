@@ -10,7 +10,7 @@
       "right": 0
     }
   },
-  "debug": true,
+  "debug": false,
   "learn_trigger_bag_count": 10,
   "topology": {
     "type": "oriented",
@@ -270,7 +270,7 @@
         "energy": 1.0,
         "sink": 1.0
       },
-      "buffer_size": 300
+      "buffer_size": 60
     },
     "optimizer": {
       "type": "basic",

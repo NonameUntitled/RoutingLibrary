@@ -131,6 +131,7 @@
       },
       "6": {
         "length": 10,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -139,6 +140,7 @@
       },
       "7": {
         "length": 10,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -147,6 +149,7 @@
       },
       "8": {
         "length": 10,
+        "quality": 5,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -154,7 +157,7 @@
         }
       },
       "9": {
-        "length": 20,
+        "length": 15,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -162,7 +165,7 @@
         }
       },
       "10": {
-        "length": 20,
+        "length": 15,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -170,7 +173,7 @@
         }
       },
       "11": {
-        "length": 20,
+        "length": 15,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -178,7 +181,7 @@
         }
       },
       "12": {
-        "length": 30,
+        "length": 20,
         "upstream": {
           "type": "conveyor",
           "id": 1,
@@ -186,7 +189,7 @@
         }
       },
       "13": {
-        "length": 30,
+        "length": 20,
         "upstream": {
           "type": "conveyor",
           "id": 2,
@@ -194,7 +197,7 @@
         }
       },
       "14": {
-        "length": 30,
+        "length": 20,
         "upstream": {
           "type": "conveyor",
           "id": 0,
@@ -296,7 +299,7 @@
   },
   "model_name": "ppo_pretrain_model",
   "num_samples": 10000,
-  "num_epochs": 500,
+  "num_epochs": 300,
   "shared_embedder": {
     "shared": true,
     "type": "laplacian",
