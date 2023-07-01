@@ -4,3 +4,4 @@ venv
 tensorboard_logs
 checkpoints
 results
+.*
