@@ -153,53 +153,8 @@
     "data": [
       {
         "action": "put_bags",
-        "bags_number": 300,
+        "bags_number": 1000,
         "delta": 3
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 3,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 4,
-        "pause": 0
-      },
-      {
-        "action": "conv_break",
-        "conv_idx": 5,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 100,
-        "delta": 3
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 3,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 3
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 4,
-        "pause": 0
-      },
-      {
-        "action": "put_bags",
-        "bags_number": 200,
-        "delta": 3
-      },
-      {
-        "action": "conv_restore",
-        "conv_idx": 5,
-        "pause": 0
       }
     ]
   },

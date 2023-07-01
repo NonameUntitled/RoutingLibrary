@@ -104,7 +104,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         neighbors_logits = torch.nn.functional.cosine_similarity(
             next_state_embeddings,
             torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
-        ) * 3
+        ) * 4
 
         # neighbors_logits = torch.einsum(
         #     'bnd,bd->bn',
