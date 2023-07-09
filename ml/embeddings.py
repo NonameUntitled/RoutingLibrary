@@ -119,7 +119,6 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
             graph = nx.from_numpy_array(graph, create_using=nx.DiGraph)
             weight = 'length'
 
-        # TODO [Vladimir Baikalov]: Recognize how it works (line below)
         graph = graph.to_undirected()
 
         if weight is not None:

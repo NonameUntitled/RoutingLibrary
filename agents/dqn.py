@@ -109,6 +109,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
 
     def learn(self) -> Optional[Tensor]:
         loss = 0
+        # We consider only one step because it was proposed directly in the original paper
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             node_idx=self.node_id,
             count=self._trajectory_sample_size,

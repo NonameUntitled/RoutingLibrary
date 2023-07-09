@@ -14,7 +14,7 @@ def _get_logprob(neighbors, neighbors_logits):
     inf_tensor[~neighbors.mask] = BIG_NEG
     neighbors_logits = neighbors_logits + inf_tensor
     neighbors_logprobs = torch.nn.functional.log_softmax(neighbors_logits, dim=1)
-    return neighbors_logprobs + inf_tensor
+    return neighbors_logprobs
 
 
 class DijkstraAgent(TorchAgent, config_name='dijkstra'):
@@ -26,7 +26,7 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
             topology_prefix: str,
             output_prefix: str,
             bag_ids_prefix: str,
-            static: bool
+            is_static: bool
     ):
         super().__init__()
 
@@ -36,7 +36,7 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
         self._topology_prefix = topology_prefix
         self._output_prefix = output_prefix
         self._bag_ids_prefix = bag_ids_prefix
-        self._static = static
+        self._is_static = is_static
         self._topology = None
 
     @classmethod
@@ -60,13 +60,15 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
         # TensorWithMask
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
         # Topology
-        if self._static:
+        if self._is_static:
             if self._topology is None:
                 self._topology = copy.deepcopy(inputs[self._topology_prefix])
             topology = self._topology
         else:
             topology = inputs[self._topology_prefix]
 
+        # may be there is no way due to topology change?
+        # TODO [Vladimir Baikalov]: refactor for batch
         try:
             nodes = sorted(topology.graph.nodes)
             path = nx.dijkstra_path(

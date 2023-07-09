@@ -39,19 +39,22 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             self,
             embedder: TorchEncoder,
             ff_net: TorchEncoder,
-            use_embedding_shift: bool = True
+            use_embedding_shift: bool = True,
+            logits_scale: float = 4.0
     ):
         super().__init__()
         self._embedder = embedder
         self._ff_net = ff_net
         self._use_embedding_shift = use_embedding_shift
+        self._logits_scale = logits_scale
 
     @classmethod
     def create_from_config(cls, config):
         return cls(
             embedder=BaseEmbedding.create_from_config(config['embedder']),
             ff_net=TowerEncoder.create_from_config(config['ff_net']),
-            use_embedding_shift=config.get('use_embedding_shift', True)
+            use_embedding_shift=config.get('use_embedding_shift', True),
+            logits_scale=config.get('logits_scale', 4.0)
         )
 
     def forward(
@@ -104,7 +107,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
         neighbors_logits = torch.nn.functional.cosine_similarity(
             next_state_embeddings,
             torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
-        ) * 4
+        ) * self._logits_scale
 
         # neighbors_logits = torch.einsum(
         #     'bnd,bd->bn',
