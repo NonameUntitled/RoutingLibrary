@@ -1,4 +1,3 @@
-import copy
 from abc import abstractmethod
 from typing import Any, Dict, Optional
 
@@ -23,11 +22,12 @@ class TorchAgent(BaseAgent, nn.Module):
 
     def __init__(self):
         super().__init__()
-        self._node_id = None
+        self.node_id = None
 
     def copy(self, node_id: int):
-        agent_copy = copy.deepcopy(self)
-        agent_copy._node_id = node_id
-        if hasattr(agent_copy, '_optimizer_factory'):
-            agent_copy._optimizer = agent_copy._optimizer_factory(agent_copy)
-        return agent_copy
+        agent_copy = self._copy()
+        agent_copy.node_id = node_id
+
+    @abstractmethod
+    def _copy(self):
+        raise NotImplementedError

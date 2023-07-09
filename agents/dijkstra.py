@@ -86,3 +86,6 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
 
     def learn(self) -> Optional[Tensor]:
         return None
+
+    def _copy(self):
+        return copy.deepcopy(self)

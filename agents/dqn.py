@@ -1,3 +1,4 @@
+import copy
 from typing import Dict, Any, Callable, Optional
 
 import torch
@@ -88,7 +89,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
 
             self._bag_trajectory_memory.add_to_trajectory(
                 bag_ids=bag_ids,
-                node_idxs=torch.full([batch_size], self._node_id),
+                node_idxs=torch.full([batch_size], self.node_id),
                 extra_infos=zip(
                     torch.unsqueeze(current_node_idx, dim=1),
                     neighbor_node_ids,
@@ -109,7 +110,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
     def learn(self) -> Optional[Tensor]:
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
-            node_idx=self._node_id,
+            node_idx=self.node_id,
             count=self._trajectory_sample_size,
             length=2
         )
@@ -140,7 +141,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         nodes_list = sorted(topology.graph.nodes)
         nodes = {node: idx for idx, node in enumerate(nodes_list)}
         sinks = list(filter(lambda n: n.type == 'sink', topology.graph.nodes))
-        diverter = nodes_list[self._node_id]
+        diverter = nodes_list[self.node_id]
         for sink in sinks:
             all_neighbors = list(topology.graph.successors(diverter))
             neighbors = only_reachable_from(
@@ -164,3 +165,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
                       )
                     utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.flush()
 
+    def _copy(self):
+        agent_copy = copy.deepcopy(self)
+        agent_copy._optimizer = agent_copy._optimizer_factory(agent_copy)
+        return agent_copy
