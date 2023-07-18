@@ -7,7 +7,7 @@ from torch.distributions.categorical import Categorical
 
 from ml.embeddings import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
-from ml.utils import TensorWithMask, BIG_NEG
+from ml.utils import TensorWithMask
 
 
 class BaseActor(TorchEncoder):
@@ -117,7 +117,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         inf_tensor = torch.zeros(neighbors_logits.shape)
-        inf_tensor[~neighbor_node_embeddings.mask] = BIG_NEG
+        inf_tensor[~neighbor_node_embeddings.mask] = -torch.inf
         neighbors_logits = neighbors_logits + inf_tensor
 
         # 4) Get probs from logits

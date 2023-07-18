@@ -9,7 +9,7 @@ from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.dqn_encoders import BaseQNetwork
 from ml.encoders import BaseEncoder
-from ml.utils import BIG_NEG, TensorWithMask
+from ml.utils import TensorWithMask
 from topology.utils import only_reachable_from
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
@@ -103,7 +103,7 @@ class DQNAgent(TorchAgent, config_name='dqn'):
         flatten_neighbors_q = neighbors_q.flatten()
         inputs.update({
             'predicted_next_node_idx': next_neighbor_ids,
-            'predicted_next_node_q': flatten_neighbors_q[flatten_neighbors_q != BIG_NEG],
+            'predicted_next_node_q': flatten_neighbors_q[flatten_neighbors_q != -torch.inf],
         })
         return inputs
 

@@ -10,14 +10,14 @@ from agents import TorchAgent
 from ml import BaseOptimizer
 from ml.encoders import BaseEncoder
 from ml.ppo_encoders import BaseActor, BaseCritic
-from ml.utils import BIG_NEG, TensorWithMask
+from ml.utils import TensorWithMask
 from topology.utils import only_reachable_from
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
 def _get_logprob(neighbors, neighbors_logits):
     inf_tensor = torch.zeros(neighbors_logits.shape)
-    inf_tensor[~neighbors.mask] = BIG_NEG
+    inf_tensor[~neighbors.mask] = -torch.inf
     neighbors_logits = neighbors_logits + inf_tensor
     neighbors_logprobs = torch.nn.functional.log_softmax(neighbors_logits, dim=1)
     return neighbors_logprobs + inf_tensor

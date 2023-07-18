@@ -1,7 +1,5 @@
 import torch
 
-BIG_NEG = -1e10
-
 
 def collate_fn(batch, schema):
     type_mapping = {

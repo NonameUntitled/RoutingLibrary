@@ -7,7 +7,7 @@ from torch.distributions import Categorical
 
 from ml import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
-from ml.utils import TensorWithMask, BIG_NEG
+from ml.utils import TensorWithMask
 
 
 class BaseQNetwork(TorchEncoder):
@@ -97,7 +97,7 @@ class TowerQNetwork(BaseQNetwork, config_name='tower_q_network'):
         neighbors_q = torch.squeeze(self._ff_net.forward(all_state_embeddings), dim=-1)
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         inf_tensor = torch.zeros(neighbors_q.shape)
-        inf_tensor[~neighbor_node_embeddings.mask] = BIG_NEG
+        inf_tensor[~neighbor_node_embeddings.mask] = -torch.inf
         neighbors_q = neighbors_q + inf_tensor
 
         # 3) Get probs from q-logits

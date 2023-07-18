@@ -6,12 +6,11 @@ import torch
 from torch import Tensor
 
 from agents import TorchAgent
-from ml.utils import BIG_NEG
 
 
 def _get_logprob(neighbors, neighbors_logits):
     inf_tensor = torch.zeros(neighbors_logits.shape)
-    inf_tensor[~neighbors.mask] = BIG_NEG
+    inf_tensor[~neighbors.mask] = -torch.inf
     neighbors_logits = neighbors_logits + inf_tensor
     neighbors_logprobs = torch.nn.functional.log_softmax(neighbors_logits, dim=1)
     return neighbors_logprobs
