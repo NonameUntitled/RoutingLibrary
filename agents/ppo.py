@@ -15,6 +15,9 @@ from topology.utils import only_reachable_from
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
+EXP_CLIP = 300
+
+
 def _get_logprob(neighbors, neighbors_logits):
     inf_tensor = torch.zeros(neighbors_logits.shape)
     inf_tensor[~neighbors.mask] = -torch.inf
@@ -207,7 +210,7 @@ class PPOAgent(TorchAgent, config_name='ppo'):
             reward,
             entropy
     ) -> Tensor:
-        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -300, 300))
+        prob_ratio = torch.exp(torch.clamp(next_logprob - next_logprob_old, -EXP_CLIP, EXP_CLIP))
 
         advantage = self._compute_advantage_score(v.detach(), reward, end_v_old)
         weighted_prob = prob_ratio * advantage
