@@ -22,38 +22,6 @@ class BaseBagTrajectoryMemory(metaclass=MetaParent):
         raise NotImplementedError
 
 
-def get_norm_rewards(trajectories):
-    mean_by_type = defaultdict(float)
-    std_by_type = defaultdict(float)
-    count_by_type = defaultdict(float)
-    for trajectory in trajectories:
-        for info in trajectory:
-            for reward_type, reward in info.reward_by_type.items():
-                mean_by_type[reward_type] += reward
-                count_by_type[reward_type] += 1
-    for reward_type in mean_by_type:
-        mean_by_type[reward_type] /= (count_by_type[reward_type] + 1e-8)
-    for trajectory in trajectories:
-        for info in trajectory:
-            for reward_type, reward in info.reward_by_type.items():
-                std_by_type[reward_type] += (reward - 0.0) ** 2
-    for reward_type in std_by_type:
-        std_by_type[reward_type] = (std_by_type[reward_type] / (count_by_type[reward_type] + 1e-8)) ** 0.5
-    return [
-        [_get_norm_reward(info.reward_by_type, mean_by_type, std_by_type) for info in trajectory]
-        for trajectory in trajectories
-    ]
-
-
-def _get_norm_reward(reward_by_type, mean_by_type, std_by_type):
-    norm_reward = 0.0
-    for reward_type, reward in reward_by_type.items():
-        if reward_type != 'time':
-            continue
-        norm_reward += (reward - 0.0) / (std_by_type[reward_type] + 1e-8)
-    return norm_reward * 100
-
-
 class SharedBagTrajectoryMemoryQueue(BaseBagTrajectoryMemory, config_name='shared_path_memory_queue'):
     _bag_id_buffer = defaultdict(deque)
     _node_idx_buffer = defaultdict(deque)
@@ -131,6 +99,9 @@ class Part:
     def bind_parent(self, parent):
         self.parent = parent
 
+    def get_reward(self, reward_weights: Dict[str, float]):
+        return sum(r * reward_weights.get(t, 0.0) for t, r in self.reward_by_type.items())
+
 
 class Trajectory:
     def __init__(
@@ -167,16 +138,23 @@ class Trajectory:
 
 class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_path_memory'):
     trajectory_number = 0
-    buffer_size = 50
-    force_sample_length = 10e6
+    force_sample_length = 10
     max_trajectory_length = 15
     trajectory_by_bag_id = {}
     parts_by_node_idx = defaultdict(set)
-    buffer_update_sample_count = 10
+    buffer_update_sample_count = 1
     buffer_update_sample_counter = 0
 
-    def __init__(self):
+    def __init__(self, reward_weights=None, buffer_size=300):
+        if reward_weights is None:
+            reward_weights = {}
         self._cls = SharedBagTrajectoryMemory
+        self._buffer_size = buffer_size
+        self._reward_weights = reward_weights
+
+    @classmethod
+    def create_from_config(cls, config):
+        return cls(config.get('reward_weights', None), config.get('buffer_size', 300))
 
     def add_to_trajectory(self, bag_ids: Iterable, node_idxs: Iterable, extra_infos: Iterable):
         for bag_id, node_idx, extra_info in zip(bag_ids, node_idxs, extra_infos):
@@ -184,25 +162,28 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
 
     def sample_trajectories_for_node_idx(self, node_idx, count, length):
         node_idx = int(node_idx)
-        trajectories = [
-            [part] for part in self._cls.parts_by_node_idx[node_idx]
-            if part.reward_by_type and part.parent.for_sample
+        for_sample_parts = [
+            part for part in self._cls.parts_by_node_idx[node_idx]
+            if part.reward_by_type and part.parent.for_sample and (part.terminal or part.next)
         ]
+        if len(for_sample_parts) == 0:
+            return []
+        trajectories = list(map(
+            lambda idx: [for_sample_parts[idx]],
+            np.random.randint(len(for_sample_parts), size=count)
+        ))
         for _ in range(length - 1):
             for trajectory in trajectories:
                 next_part = trajectory[-1].next
-                if next_part and next_part.reward_by_type:
+                if next_part:
                     trajectory.append(next_part)
-        self.buffer_update_sample_counter += 1
+        self._cls.buffer_update_sample_counter += 1
         if self._cls.buffer_update_sample_counter == self.buffer_update_sample_count:
             self._update_buffer()
             self._cls.buffer_update_sample_counter = 0
         if len(trajectories) == 0:
             return []
-        return list(map(
-            lambda idx: trajectories[idx],
-            np.random.randint(len(trajectories), size=count)
-        ))
+        return [[(part, part.get_reward(self._reward_weights)) for part in tr] for tr in trajectories]
 
     def _add_to_trajectory(self, bag_id, node_idx, extra_info):
         if bag_id not in self._cls.trajectory_by_bag_id:
@@ -230,10 +211,12 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
             filter(lambda tr: tr.for_sample, self.trajectory_by_bag_id.values()),
             key=lambda tr: tr.create_time
         )
-        if len(complete_trajectories) > self._cls.buffer_size:
-            for trajectory in complete_trajectories[self.buffer_size:]:
-                for part in trajectory:
+        if len(complete_trajectories) > self._buffer_size:
+            for trajectory in complete_trajectories[:-self._buffer_size]:
+                part = trajectory.root
+                while part:
                     self._cls.parts_by_node_idx[part.node_idx].remove(part)
+                    part = part.next
                 del self._cls.trajectory_by_bag_id[trajectory.bag_id]
         for trajectory in self._cls.trajectory_by_bag_id.values():
             while trajectory.size > self._cls.max_trajectory_length:

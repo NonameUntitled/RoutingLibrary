@@ -1,3 +1,5 @@
+import copy
+
 from agents import TorchAgent
 from ml.encoders import BaseEncoder
 

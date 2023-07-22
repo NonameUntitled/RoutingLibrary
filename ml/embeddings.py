@@ -59,7 +59,7 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
         if isinstance(graph, nx.DiGraph):
             # TODO [Vladimir Baikalov]: Recognize how it works (line below)
             # graph = nx.relabel_nodes(graph, lambda x: x.id)
-            A = nx.to_numpy_matrix(graph, nodelist=sorted(graph.nodes), weight=weight)
+            A = nx.convert_matrix.to_numpy_array(graph, nodelist=sorted(graph.nodes), weight=weight)
             n = graph.number_of_nodes()
         else:
             A = np.mat(graph)
@@ -89,7 +89,7 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
         assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
         v = self._W[idx]
         if len(idx) == 1:
-            v = [v]
+            v = np.array([v])
         return torch.Tensor(v)
 
 
@@ -119,11 +119,7 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
             graph = nx.from_numpy_array(graph, create_using=nx.DiGraph)
             weight = 'length'
 
-        # TODO [Vladimir Baikalov]: Recognize how it works (line below)
-        # graph = nx.relabel_nodes(
-        #     graph.to_undirected(),
-        #     lambda x: x.id
-        # )
+        graph = graph.to_undirected()
 
         if weight is not None:
             if self._renormalize_weights:
@@ -150,8 +146,6 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
         D = sp.spdiags(diags.flatten(), [0], m, n, format='csr')
         L = D - A
 
-        print(n, m, len(graph.nodes))
-
         # (Changed by Igor):
         # Added v0 parameter, the "starting vector for iteration".
         # Otherwise, the operation behaves nondeterministically, and as a result
@@ -171,7 +165,10 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
 
     def __call__(self, idx):
         assert self._X is not None, 'Embedding matrix isn\'t fitted yet'
-        return self._X[idx]
+        v = self._X[idx]
+        if len(idx) == 1:
+            v = np.array([v])
+        return torch.Tensor(v)
 
 
 @shared
