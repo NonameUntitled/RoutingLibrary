@@ -61,8 +61,8 @@ def main():
     # environment.run(params['schedule'])
     simulation = BaseSimulation.create_from_config(params, topology=topology, agent=agent, logger=logger)
     event_series = simulation.run()
-    # event_series.save_all_series("./results/1")
-    event_series.draw_all_series_with_existing("./results/2", "./results/")
+    event_series.save_all_series("./results/1")
+    # event_series.draw_all_series_with_existing("./results/1", "./results")
 
     # BaseAgent.create_from_config(params['agent_1'])  # random
     # BaseAgent.create_from_config(params['agent_2'])  # dqn

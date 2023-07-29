@@ -1,6 +1,6 @@
+import copy
 from typing import Dict
 
-import numpy as np
 import torch
 
 from agents import TorchAgent
@@ -47,3 +47,6 @@ class RandomAgent(TorchAgent, config_name='random'):
 
     def learn(self):
         pass
+
+    def _copy(self):
+        return copy.deepcopy(self)

@@ -1,5 +1,7 @@
 from typing import List
 
+import torch
+
 from utils import MetaParent
 from topology.utils import only_reachable_from, Section
 
@@ -125,6 +127,12 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 conveyors_sections[upstream_conveyor_id].append(Section(
                     type='junction', id=junction_idx, position=upstream_conveyor_position
                 ))
+
+                graph.add_node(
+                    Section(
+                        type='junction', id=junction_idx, position=upstream_conveyor_position
+                    )
+                )
 
                 junction_idx += 1
             else:
@@ -258,8 +266,12 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                     weight=self.edge_weight_field
                 )
                 # In the line below we append negative value because we want to minimize actual path
-                path_lengths.append(-nx.path_weight(graph, path, weight=self.edge_weight_field))
+                length_to_neighbor = graph[current_node][filtered_out_neighbor][self.edge_weight_field]
+                path_length = nx.path_weight(graph, path, weight=self.edge_weight_field) + length_to_neighbor
+                path_lengths.append(-path_length)
             sample['path_lengths'] = path_lengths
+
+            sample['next_node_probs'] = list(torch.nn.functional.softmax(torch.tensor(path_lengths, dtype=torch.float64), dim=0))
 
             # ppo-specific
             path = nx.dijkstra_path(
@@ -316,6 +328,10 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
             'next_node_idx': {
                 'type': 'long',
                 'is_ragged': False
+            },
+            'next_node_probs': {
+                'type': 'float',
+                'is_ragged': True
             },
             'path_length': {
                 'type': 'float',

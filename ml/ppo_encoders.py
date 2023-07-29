@@ -7,7 +7,7 @@ from torch.distributions.categorical import Categorical
 
 from ml.embeddings import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
-from ml.utils import TensorWithMask, EXP_CLIP, BIG_NEG
+from ml.utils import TensorWithMask
 
 
 class BaseActor(TorchEncoder):
@@ -39,19 +39,22 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             self,
             embedder: TorchEncoder,
             ff_net: TorchEncoder,
-            use_embedding_shift: bool = True
+            use_embedding_shift: bool = True,
+            logits_scale: float = 4.0
     ):
         super().__init__()
         self._embedder = embedder
         self._ff_net = ff_net
         self._use_embedding_shift = use_embedding_shift
+        self._logits_scale = logits_scale
 
     @classmethod
     def create_from_config(cls, config):
         return cls(
             embedder=BaseEmbedding.create_from_config(config['embedder']),
             ff_net=TowerEncoder.create_from_config(config['ff_net']),
-            use_embedding_shift=config.get('use_embedding_shift', True)
+            use_embedding_shift=config.get('use_embedding_shift', True),
+            logits_scale=config.get('logits_scale', 4.0)
         )
 
     def forward(
@@ -59,7 +62,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             current_node_idx: Tensor,
             neighbor_node_ids: TensorWithMask,
             destination_node_idx: Tensor
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         # 0) Create embeddings from indices
         # Shape: [batch_size, embedding_dim]
         current_node_embedding = self._embedder(current_node_idx)
@@ -100,18 +103,21 @@ class TowerActor(BaseActor, config_name='tower_actor'):
 
         # 3) Compute logits for existing next states (here I use dot product for scores receiving)
         # Shape: [batch_size, max_neighbors_num]
+
         neighbors_logits = torch.nn.functional.cosine_similarity(
             next_state_embeddings,
             torch.zeros(next_state_embeddings.shape) + ideal_transition_embedding[:, None, :], dim=2
-        ) * EXP_CLIP
+        ) * self._logits_scale
+
         # neighbors_logits = torch.einsum(
         #     'bnd,bd->bn',
         #     next_state_embeddings,
         #     ideal_transition_embedding
-        # )
+        # ) / 10.0
+
         # TODO[Vladimir Baikalov]: Probably it's a good idea to divide logits to make the distribution smoother
         inf_tensor = torch.zeros(neighbors_logits.shape)
-        inf_tensor[~neighbor_node_embeddings.mask] = BIG_NEG
+        inf_tensor[~neighbor_node_embeddings.mask] = -torch.inf
         neighbors_logits = neighbors_logits + inf_tensor
 
         # 4) Get probs from logits
@@ -131,7 +137,7 @@ class TowerActor(BaseActor, config_name='tower_actor'):
             index=next_neighbor_idx
         ), dim=1)
 
-        return next_neighbor_ids, neighbors_logits
+        return next_neighbor_ids, neighbors_logits, neighbors_probs
 
 
 class TowerCritic(BaseCritic, config_name='tower_critic'):

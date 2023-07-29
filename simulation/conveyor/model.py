@@ -93,7 +93,7 @@ class ConveyorModel:
       (or the end of the conveyor), and also return those checkpoint and object
     """
 
-    def __init__(self, world_env: Environment, length: float, checkpoints: List[Dict[str, Union[int, Section]]],
+    def __init__(self, world_env: Environment, length: float, quality: float, checkpoints: List[Dict[str, Union[int, Section]]],
                  model_id: int,
                  logger: Logger, collision_distance: float = 0.1):
         assert length > 0, "Conveyor length <= 0!"
@@ -117,6 +117,7 @@ class ConveyorModel:
         self._checkpoints = checkpoints
         self._checkpoint_positions = {cp["node"]: cp["position"] for cp in checkpoints}
         self._length = length
+        self._quality = quality
         self._collision_distance = collision_distance
 
         # variables
@@ -125,10 +126,13 @@ class ConveyorModel:
         self._broken_type = None  # broken | dependence | collision {time}
         self._objects = {}
         self._object_positions = []
+        self._queue = []
 
         self._state = "static"
         self._resume_time = 0
         self._resolved_events = set()
+
+        self.source_id = None
 
     def _stateTransfer(self, action: str) -> None:
         try:
@@ -150,6 +154,10 @@ class ConveyorModel:
         self._logger.debug(f"START {self._model_id}: {self._broken_type}")
         self.setSpeed(1)
         self._broken_type = None
+
+        if len(self._queue) > 0 and self._queue[0]["wait"] == 0:
+            self.putObject(self._queue[0]["object"][0], self._queue[0]["object"][1], 0)
+            self._queue.pop(0)
 
     def nearestObject(self, pos: float, after=None, speed=None, not_exact=False,
                       preference="nearest") -> Optional[Tuple[Any, float]]:
@@ -180,7 +188,23 @@ class ConveyorModel:
             return self._objects[oid], o_pos
         return None
 
-    def putObject(self, obj_id: int, obj: Any, pos: float):
+    def putObject(self, obj_id: int, obj: Any, pos: float, no_queue=False) -> None:
+        if pos == 0 and not no_queue:
+            if len(self._queue) > 0:
+                self._queue.append(
+                    {"object": (obj_id, obj), "wait": self._queue[-1]["wait"] + self._collision_distance})
+                return False
+
+            is_collision = self.check_collision(-1, 0)
+
+            if is_collision["is_collision"]:
+                self._queue.append({"object": (obj_id, obj), "wait": is_collision["time"] + self._collision_distance})
+                return False
+
+            if self._speed == 0:
+                self._queue.append({"object": (obj_id, obj), "wait": 0})
+                return False
+
         assert obj_id not in self._objects, f"Object {obj_id} already exists on {self._model_id} conveyor"
         pos = round(pos, POS_ROUND_DIGITS)
 
@@ -263,6 +287,9 @@ class ConveyorModel:
 
     def shift(self, d):
         self._object_positions = shift(self._object_positions, d)
+        rwgwrgwr = [{"object": object_el["object"], "wait": round(object_el["wait"] - d, POS_ROUND_DIGITS)}
+                       for object_el in self._queue]
+        self._queue = rwgwrgwr
 
     def skipTime(self, time: float, clean_ends=True):
         if time == 0:
@@ -270,7 +297,7 @@ class ConveyorModel:
 
         self._stateTransfer("change")
         d = time * self._speed
-        if len(self._objects) == 0:
+        if len(self._objects) == 0 and len(self._queue) == 0:
             return d
 
         self.shift(d)
@@ -329,9 +356,15 @@ class ConveyorModel:
                     diff = (cp["position"] - object_description["position"]) / self._speed
                     events.append((obj, cp["node"], diff))
 
+        if len(self._queue) > 0:
+            obj = self._queue[0]["object"][1]
+            diff = self._queue[0]["wait"]
+            events.append((obj, Section("source", self.source_id, 0), diff))
+
         events.sort(key=lambda p: p[2])
 
-        if self._broken_type is not None and self._broken_type["type"] == "collision" and not (None, None) in self._resolved_events:
+        if self._broken_type is not None and self._broken_type["type"] == "collision" and not (None,
+                                                                                               None) in self._resolved_events:
             diff = self._broken_type["time"] - self._world_env.now
             # TODO[Aleksandr Pakulev]: kostyl
             return [(None, None, 0 if diff <= 0 else diff)] + events
