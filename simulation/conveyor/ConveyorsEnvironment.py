@@ -5,7 +5,6 @@ import torch
 from simpy import Environment, Event, Interrupt
 
 import utils
-from utils import DEVICE
 from agents import TorchAgent
 from ml.utils import TensorWithMask
 from simulation.conveyor.energy import consumption_Zhang, acceleration_consumption_Zhang, deceleration_consumption_Zhang
@@ -166,15 +165,15 @@ class ConveyorsEnvironment:
         for key in sample.keys():
             if key == "neighbors_node_ids":
                 sample_tensor[key] = TensorWithMask(
-                    values=torch.tensor(sample[key], dtype=torch.int64).to(DEVICE),
+                    values=torch.tensor(sample[key], dtype=torch.int64),
                     # values=torch.tensor([sample[key]], dtype=torch.int64),
-                    lengths=torch.tensor([len(sample[key])], dtype=torch.int64).to(DEVICE)
+                    lengths=torch.tensor([len(sample[key])], dtype=torch.int64)
                 )
             else:
-                sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64).to(DEVICE)
+                sample_tensor[key] = torch.tensor([sample[key]], dtype=torch.int64)
 
         # sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id])
-        sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id]).to(DEVICE)
+        sample_tensor[dv_agent._bag_ids_prefix] = torch.LongTensor([bag.id])
 
         output = dv_agent.forward(sample_tensor)
         forward_node_id = output[dv_agent._output_prefix].item()
@@ -318,7 +317,7 @@ class ConveyorsEnvironment:
         if self._learn_counter == self._learn_trigger_bag_count:
             if not hasattr(self, '_step_num'):
                 self._step_num = 0
-            for dv_agent in self._diverter_agents.values():
+            for dv_agent in list(self._diverter_agents.values())[:1]:
                 loss = dv_agent.learn()
                 if loss is not None:
                     if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
@@ -373,6 +372,7 @@ class ConveyorsEnvironment:
         """
         Bag is lost
         """
+        self._path_memory.add_reward_to_trajectory(bag_id, self._wrong_dst_reward, 'sink', terminal=True)
         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
             "Bag lost/time",
             self._lost_bags + 1,

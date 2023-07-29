@@ -178,9 +178,11 @@ class SharedBagTrajectoryMemory(BaseBagTrajectoryMemory, config_name='shared_pat
                 if next_part and next_part.reward_by_type:
                     trajectory.append(next_part)
         self.buffer_update_sample_counter += 1
-        if self._cls.buffer_update_sample_counter == self.buffer_update_sample_count:
-            self._update_buffer()
-            self._cls.buffer_update_sample_counter = 0
+        self._cls.trajectory_by_bag_id = {}
+        self._cls.parts_by_node_idx = defaultdict(set)
+        # if self._cls.buffer_update_sample_counter == self.buffer_update_sample_count:
+        #     self._update_buffer()
+        #     self._cls.buffer_update_sample_counter = 0
         if len(trajectories) == 0:
             return []
         return [[(part, part.get_reward(self._reward_weights)) for part in tr] for tr in trajectories]

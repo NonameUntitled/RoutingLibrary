@@ -48,18 +48,18 @@ class TowerReinforceNetwork(BaseReinforceNetwork, config_name='tower_reinforce_n
             destination_node_idx: Tensor
     ) -> Tuple[Tensor, Tensor]:
         # 0) Create embeddings from indices
-        # Shape: [batch_size, embedding_dim]
+        # Shape: [batch_size, 16]
         current_node_embedding = self._embedder(current_node_idx.cpu())
-        # Shape: [batch_size, embedding_dim]
+        # Shape: [batch_size, 16]
         destination_node_embedding = self._embedder(destination_node_idx)
-        # Shape: [all_batch_neighbors, embedding_dim]
+        # Shape: [all_batch_neighbors, 16]
         all_neighbors_embeddings = self._embedder(neighbor_node_ids.flatten_values)
 
         neighbor_node_embeddings = TensorWithMask(
             values=all_neighbors_embeddings,
             lengths=neighbor_node_ids.lengths
         )
-        # Shape: [batch_size, max_neighbors_num, embedding_dim]
+        # Shape: [?, 2, 16]
         padded_neighbors_node_embeddings = neighbor_node_embeddings.padded_values
 
         # 1) Create representation for current state and next states

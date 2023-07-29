@@ -63,7 +63,7 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
         batch_size = len(current_node_idx)
         # Shape: [batch_size]
         destination_node_idx = inputs[self._destination_node_idx_prefix]
-        # Shape: [all_batch_neighbors]
+        # Shape: [batch_size, max_neighbors_num]
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
 
         # Shape: [batch_size], [batch_size]
@@ -90,18 +90,14 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
     def learn(self) -> Optional[Tensor]:
         # TODO[Vladimir Baikalov] check
         loss = 0
-
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
             node_idx=self._node_id,
             count=self._trajectory_sample_size,
-            length=-1
+            length=10
         )
-
         if not learn_trajectories:
             return None
-
-        for trajectory in learn_trajectories:
-            print([[p.node_idx for p, _ in trajectory]])
+        for trajectory in learn_trajectories[:1]:
             next_neighbor_log_prob = trajectory[0][0].extra_info
 
             total_reward = 0.0

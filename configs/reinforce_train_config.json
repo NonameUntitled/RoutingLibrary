@@ -552,7 +552,7 @@
       }
     }
   },
-  "agent_3": {
+  "agent": {
     "type": "reinforce",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
@@ -589,8 +589,8 @@
         "type": "tower",
         "input_dim": 16,
         "hidden_dims": [
-          256,
-          256
+          16,
+          16
         ],
         "output_dim": 16
       }
@@ -912,6 +912,5 @@
     "shared": true,
     "type": "hope",
     "embedding_dim": 16
-  },
-  "pretrain_model_name": "reinforce_pretrain_model"
+  }
 }
