@@ -7,7 +7,7 @@ from torch.distributions import Categorical
 
 from ml import BaseEmbedding
 from ml.encoders import TorchEncoder, TowerEncoder
-from ml.utils import TensorWithMask, BIG_NEG
+from ml.utils import TensorWithMask
 
 
 class BaseQNetwork(TorchEncoder):

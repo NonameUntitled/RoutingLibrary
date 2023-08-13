@@ -94,8 +94,8 @@ def main():
         collate_fn=partial(collate_fn, schema=topology_data_schema)
     )
 
-    agent = BaseAgent.create_from_config(params['agent_3']).to(DEVICE)
-    loss = BaseLoss.create_from_config(params['loss_2'])
+    agent = BaseAgent.create_from_config(params['agent']).to(DEVICE)
+    loss = BaseLoss.create_from_config(params['loss'])
     optimizer = BaseOptimizer.create_from_config(params['optimizer'], model=agent)
     callback = BaseCallback.create_from_config(
         params['callback'],
