@@ -344,7 +344,7 @@ class ConveyorsEnvironment:
                 if loss is not None:
                     if utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER:
                         utils.tensorboard_writers.GLOBAL_TENSORBOARD_WRITER.add_scalar(
-                            '{}/{}'.format('train', f'agent_{get_node_by_id(self._topology_graph, dv_agent._node_id)}'),
+                            '{}/{}'.format('train', f'agent_{get_node_by_id(self._topology_graph, dv_agent.node_id)}'),
                             loss,
                             self._step_num
                         )

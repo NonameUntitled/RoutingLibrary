@@ -47,7 +47,7 @@ class DijkstraAgent(TorchAgent, config_name='dijkstra'):
             topology_prefix=config['topology_prefix'],
             output_prefix=config['output_prefix'],
             bag_ids_prefix=config.get('bag_ids_prefix', None),
-            static=config.get('static', False)
+            is_static=config.get('static', False)
         )
 
     def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
