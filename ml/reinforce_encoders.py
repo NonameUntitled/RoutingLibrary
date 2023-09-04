@@ -46,7 +46,7 @@ class TowerReinforceNetwork(BaseReinforceNetwork, config_name='tower_reinforce_n
             current_node_idx: Tensor,
             neighbor_node_ids: TensorWithMask,
             destination_node_idx: Tensor
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         # 0) Create embeddings from indices
         # Shape: [batch_size, 16]
         current_node_embedding = self._embedder(current_node_idx.cpu())
@@ -89,11 +89,12 @@ class TowerReinforceNetwork(BaseReinforceNetwork, config_name='tower_reinforce_n
             next_state_embeddings,
             predicted_neighbors_embeddings
         )
+        neighbors_similarity_score[~neighbor_node_embeddings.mask] = -torch.inf
 
         # 3) Get probs from similarity scores
         # Shape: [batch_size, max_neighbors_num]
         neighbors_probs = torch.nn.functional.softmax(neighbors_similarity_score, dim=1)
-        # neighbors_probs = neighbors_probs * neighbor_node_embeddings.mask
+        neighbors_probs = neighbors_probs * neighbor_node_embeddings.mask
 
         # 4) Sample next neighbor idx
         categorical_distribution = Categorical(probs=neighbors_probs)
@@ -109,4 +110,4 @@ class TowerReinforceNetwork(BaseReinforceNetwork, config_name='tower_reinforce_n
 
         return next_neighbor_ids, torch.log(
             torch.gather(neighbors_probs, dim=1, index=next_neighbor_idx)
-        ), neighbors_probs
+        ), neighbors_similarity_score

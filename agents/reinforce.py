@@ -1,3 +1,4 @@
+import copy
 from typing import Dict, Any, Callable, Optional
 
 import torch
@@ -5,12 +6,13 @@ from torch import Tensor, nn
 
 from agents import TorchAgent
 from ml import BaseOptimizer
-from ml.dqn_encoders import BaseQNetwork
+from ml.reinforce_encoders import BaseReinforceNetwork
 from ml.encoders import BaseEncoder
 from utils.bag_trajectory import BaseBagTrajectoryMemory
 
 
 class ReinforceAgent(TorchAgent, config_name='reinforce'):
+
     def __init__(
             self,
             current_node_idx_prefix: str,
@@ -18,9 +20,10 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
             neighbors_node_ids_prefix: str,
             output_prefix: str,
             bag_ids_prefix: str,
-            q_network: BaseQNetwork,
+            q_network: BaseReinforceNetwork,
             discount_factor: float = 0.99,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,
+            trajectory_length: int = 10,
             trajectory_sample_size: int = 30,
             optimizer_factory: Callable[[nn.Module], BaseOptimizer] = None
     ):
@@ -34,11 +37,14 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
         self._bag_ids_prefix = bag_ids_prefix
 
         self._q_network = q_network
-        self._discount_factor = discount_factor
-        self._bag_trajectory_memory = bag_trajectory_memory
-        self._trajectory_sample_size = trajectory_sample_size
 
+        self._discount_factor = discount_factor
+
+        self._bag_trajectory_memory = bag_trajectory_memory
+        self._trajectory_length = trajectory_length
+        self._trajectory_sample_size = trajectory_sample_size
         self._optimizer = optimizer_factory(self) if optimizer_factory is not None else None
+        self._optimizer_factory = optimizer_factory
 
     @classmethod
     def create_from_config(cls, config):
@@ -52,6 +58,7 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
             discount_factor=config.get('discount_factor', 0.99),
             bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory'])
             if 'path_memory' in config else None,
+            trajectory_length=config.get('trajectory_length', 10),
             trajectory_sample_size=config.get('trajectory_sample_size', 30),
             optimizer_factory=lambda m: BaseOptimizer.create_from_config(config['optimizer'], model=m)
             if 'optimizer' in config else None
@@ -66,8 +73,8 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
         # Shape: [batch_size, max_neighbors_num]
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
 
-        # Shape: [batch_size], [batch_size]
-        next_neighbor_ids, next_neighbor_log_prob, _ = self._q_network(
+        # Shape: [batch_size], [batch_size], [batch_size, max_neighbors_num]
+        next_neighbor_ids, next_neighbor_log_prob, next_neighbor_logits = self._q_network(
             current_node_idx=current_node_idx,
             neighbor_node_ids=neighbor_node_ids,
             destination_node_idx=destination_node_idx
@@ -75,29 +82,45 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
 
         if self._bag_trajectory_memory is not None:
             # TODO[Vladimir Baikalov]: Think about how to generalize
+            # Shape: [batch_size] if exists, None otherwise
             bag_ids = inputs.get(self._bag_ids_prefix, None)
 
-            if bag_ids is not None:
-                self._bag_trajectory_memory.add_to_trajectory(
-                    bag_ids=bag_ids,
-                    node_idxs=torch.full([batch_size], self._node_id),
-                    extra_infos=next_neighbor_log_prob
+            self._bag_trajectory_memory.add_to_trajectory(
+                bag_ids=bag_ids,
+                node_idxs=torch.full([batch_size], self.node_id),
+                extra_infos=zip(
+                    current_node_idx,
+                    neighbor_node_ids,
+                    destination_node_idx,
+                    next_neighbor_ids.detach(),
+                    next_neighbor_log_prob.detach(),
+                    next_neighbor_logits.detach(),
                 )
+            )
 
         inputs[self._output_prefix] = next_neighbor_ids
+        inputs.update({
+            'predicted_next_node_idx': next_neighbor_ids,
+            'predicted_next_node_logits': next_neighbor_logits,
+        })
+
         return inputs
 
     def learn(self) -> Optional[Tensor]:
-        # TODO[Vladimir Baikalov] check
+        if self._freeze_weights:
+            return None
         loss = 0
         learn_trajectories = self._bag_trajectory_memory.sample_trajectories_for_node_idx(
-            node_idx=self._node_id,
+            node_idx=self.node_id,
             count=self._trajectory_sample_size,
-            length=10
+            length=self._trajectory_length
         )
         if not learn_trajectories:
             return None
-        for trajectory in learn_trajectories[:1]:
+        for trajectory in learn_trajectories:
+            print(trajectory)
+            print(type(trajectory))
+            input()
             next_neighbor_log_prob = trajectory[0][0].extra_info
 
             total_reward = 0.0
@@ -108,3 +131,8 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
         loss /= len(learn_trajectories)
         self._optimizer.step(loss)
         return loss.detach().item()
+
+    def _copy(self):
+        agent_copy = copy.deepcopy(self)
+        agent_copy._optimizer = agent_copy._optimizer_factory(agent_copy)
+        return agent_copy
