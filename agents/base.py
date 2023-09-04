@@ -27,6 +27,7 @@ class TorchAgent(BaseAgent, nn.Module):
     def copy(self, node_id: int):
         agent_copy = self._copy()
         agent_copy.node_id = node_id
+        return agent_copy
 
     @abstractmethod
     def _copy(self):

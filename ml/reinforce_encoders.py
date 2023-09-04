@@ -47,11 +47,12 @@ class TowerReinforceNetwork(BaseReinforceNetwork, config_name='tower_reinforce_n
             neighbor_node_ids: TensorWithMask,
             destination_node_idx: Tensor
     ) -> Tuple[Tensor, Tensor, Tensor]:
+        batch_size = current_node_idx.shape[0]
         # 0) Create embeddings from indices
         # Shape: [batch_size, 16]
-        current_node_embedding = self._embedder(current_node_idx.cpu())
+        current_node_embedding = self._embedder(current_node_idx.cpu()).view(batch_size, -1)
         # Shape: [batch_size, 16]
-        destination_node_embedding = self._embedder(destination_node_idx)
+        destination_node_embedding = self._embedder(destination_node_idx).view(batch_size, -1)
         # Shape: [all_batch_neighbors, 16]
         all_neighbors_embeddings = self._embedder(neighbor_node_ids.flatten_values)
 
@@ -67,8 +68,11 @@ class TowerReinforceNetwork(BaseReinforceNetwork, config_name='tower_reinforce_n
             # Shape: [batch_size, embedding_dim]
             current_state_embedding = destination_node_embedding - current_node_embedding
             # Shape: [batch_size, max_neighbors_num, embedding_dim]
+            print(padded_neighbors_node_embeddings.shape, current_node_embedding.shape)
             next_state_embeddings = \
                 padded_neighbors_node_embeddings - torch.unsqueeze(current_node_embedding, dim=1)
+            print(next_state_embeddings.shape)
+
         else:
             # Shape: [batch_size, 2 * embedding_dim]
             current_state_embedding = torch.cat(

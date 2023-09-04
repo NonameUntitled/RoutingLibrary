@@ -21,6 +21,7 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
             output_prefix: str,
             bag_ids_prefix: str,
             q_network: BaseReinforceNetwork,
+            freeze_weights: bool = False,
             discount_factor: float = 0.99,
             bag_trajectory_memory: BaseBagTrajectoryMemory = None,
             trajectory_length: int = 10,
@@ -38,6 +39,7 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
 
         self._q_network = q_network
 
+        self._freeze_weights = freeze_weights
         self._discount_factor = discount_factor
 
         self._bag_trajectory_memory = bag_trajectory_memory
@@ -55,6 +57,7 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
             output_prefix=config['output_prefix'],
             bag_ids_prefix=config.get('bag_ids_prefix', None),
             q_network=BaseEncoder.create_from_config(config['q_network']),
+            freeze_weights=config.get('freeze_weights', False),
             discount_factor=config.get('discount_factor', 0.99),
             bag_trajectory_memory=BaseBagTrajectoryMemory.create_from_config(config['path_memory'])
             if 'path_memory' in config else None,
@@ -74,10 +77,10 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
         neighbor_node_ids = inputs[self._neighbors_node_ids_prefix]
 
         # Shape: [batch_size], [batch_size], [batch_size, max_neighbors_num]
-        next_neighbor_ids, next_neighbor_log_prob, next_neighbor_logits = self._q_network(
-            current_node_idx=current_node_idx,
+        next_neighbor_ids, _, next_neighbor_logits = self._q_network(
+            current_node_idx=current_node_idx.view(batch_size, 1),
             neighbor_node_ids=neighbor_node_ids,
-            destination_node_idx=destination_node_idx
+            destination_node_idx=current_node_idx.view(batch_size, 1)
         )
 
         if self._bag_trajectory_memory is not None:
@@ -89,12 +92,9 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
                 bag_ids=bag_ids,
                 node_idxs=torch.full([batch_size], self.node_id),
                 extra_infos=zip(
-                    current_node_idx,
+                    torch.unsqueeze(current_node_idx, dim=1),
                     neighbor_node_ids,
-                    destination_node_idx,
-                    next_neighbor_ids.detach(),
-                    next_neighbor_log_prob.detach(),
-                    next_neighbor_logits.detach(),
+                    torch.unsqueeze(destination_node_idx, dim=1)
                 )
             )
 
@@ -103,7 +103,6 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
             'predicted_next_node_idx': next_neighbor_ids,
             'predicted_next_node_logits': next_neighbor_logits,
         })
-
         return inputs
 
     def learn(self) -> Optional[Tensor]:
@@ -118,10 +117,13 @@ class ReinforceAgent(TorchAgent, config_name='reinforce'):
         if not learn_trajectories:
             return None
         for trajectory in learn_trajectories:
-            print(trajectory)
-            print(type(trajectory))
-            input()
-            next_neighbor_log_prob = trajectory[0][0].extra_info
+            current_node_idx, neighbor_node_ids, destination_node_idx = trajectory[0][0].extra_info
+
+            _, next_neighbor_log_prob, _ = self._q_network(
+                current_node_idx=current_node_idx,
+                neighbor_node_ids=neighbor_node_ids,
+                destination_node_idx=destination_node_idx
+            )  # _, [batch_size], _
 
             total_reward = 0.0
             for _, reward in trajectory[::-1]:

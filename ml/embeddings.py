@@ -55,7 +55,7 @@ class HOPEEmbedding(BaseEmbedding, config_name='hope'):
         self._beta = beta
         self._W = None
 
-    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight='length'):
+    def fit(self, graph: Union[nx.DiGraph, np.ndarray], weight: str = 'length'):
         if isinstance(graph, nx.DiGraph):
             # TODO [Vladimir Baikalov]: Recognize how it works (line below)
             # graph = nx.relabel_nodes(graph, lambda x: x.id)
@@ -157,14 +157,14 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
 
         # End (Changed by Igor)
 
-        self._X = vectors[:, 1:]
+        self._W = vectors[:, 1:]
 
         if weight is not None and self._renormalize_weights:
-            self._X *= avg_w
+            self._W *= avg_w
         # print(self._X.flatten()[:3])
 
     def __call__(self, idx):
-        assert self._X is not None, 'Embedding matrix isn\'t fitted yet'
+        assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
         v = self._X[idx]
         if len(idx) == 1:
             v = np.array([v])

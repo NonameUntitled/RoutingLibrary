@@ -248,8 +248,9 @@
       "type": "tower_reinforce_network",
       "embedder": {
         "shared": true,
-        "type": "hope",
-        "embedding_dim": 16
+        "type": "learnable",
+        "embedding_dim": 16,
+        "vocabulary_size": 1000
       },
       "ff_net": {
         "type": "tower",
@@ -277,7 +278,8 @@
   },
   "shared_embedder": {
     "shared": true,
-    "type": "laplacian",
-    "embedding_dim": 16
+    "type": "learnable",
+    "embedding_dim": 16,
+    "vocabulary_size": 1000
   }
 }
