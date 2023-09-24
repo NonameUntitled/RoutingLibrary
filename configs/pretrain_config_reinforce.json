@@ -1,6 +1,6 @@
 {
-  "experiment_name": "dqn_pretrain",
-  "model_name": "dqn_pretrain_model",
+  "experiment_name": "reinforce_pretrain",
+  "model_name": "reinforce_pretrain_model",
   "num_samples": 10000,
   "num_epochs": 300,
   "topology": {
@@ -210,16 +210,14 @@
     }
   },
   "agent": {
-    "type": "dqn",
+    "type": "reinforce",
     "current_node_idx_prefix": "current_node_idx",
     "destination_node_idx_prefix": "destination_node_idx",
     "neighbors_node_ids_prefix": "neighbors_node_ids",
-    "trajectory_sample_size": 60,
-    "discount_factor": 0.99,
-    "bag_ids_prefix": "bag_ids",
     "output_prefix": "next_nodes",
+    "bag_ids_prefix": "bag_ids",
     "q_network": {
-      "type": "tower_q_network",
+      "type": "tower_reinforce_network",
       "embedder": {
         "shared": true,
         "type": "laplacian",
@@ -227,40 +225,42 @@
       },
       "ff_net": {
         "type": "tower",
-        "input_dim": 32,
+        "input_dim": 16,
         "hidden_dims": [
-          256,
-          256
+          16,
+          16
         ],
-        "output_dim": 1
+        "output_dim": 16
       }
     },
+    "discount_factor": 0.99,
     "path_memory": {
       "type": "shared_path_memory",
       "reward_weights": {
-        "time": 0.0,
-        "energy": 1.0,
+        "time": 1.0,
+        "energy": 5e-4,
         "sink": 1.0
-      },
-      "buffer_size": 100
+      }
     },
+    "trajectory_sample_size": 30,
     "optimizer": {
       "type": "basic",
       "optimizer": {
         "type": "adamw",
         "lr": 1e-3,
-        "eps": 1e-8
-      }
+        "eps": 1e-5
+      },
+      "clip_grad_threshold": 50.0
     }
   },
   "loss": {
     "type": "composite",
     "losses": [
       {
-        "type": "mse",
-        "predictions_prefix": "predicted_next_node_q",
-        "ground_truth_prefix": "path_lengths",
-        "output_prefix": "mse_loss"
+        "type": "cross_entropy",
+        "predictions_prefix": "predicted_next_node_logits",
+        "labels_prefix": "next_node_idx",
+        "output_prefix": "cross_entropy_loss"
       }
     ],
     "output_prefix": "loss"
@@ -282,12 +282,6 @@
         "on_step": 1,
         "regime_prefix": "pretrain",
         "loss_prefix": "loss"
-      },
-      {
-        "type": "loss",
-        "on_step": 1,
-        "regime_prefix": "pretrain",
-        "loss_prefix": "mse_loss"
       },
       {
         "type": "loss",

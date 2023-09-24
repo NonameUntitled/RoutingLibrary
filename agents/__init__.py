@@ -3,3 +3,4 @@ from .ppo import PPOAgent
 from .dqn import DQNAgent
 from .dijkstra import DijkstraAgent
 from .random import RandomAgent
+from .reinforce import ReinforceAgent

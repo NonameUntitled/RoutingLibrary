@@ -1,5 +1,8 @@
 {
   "experiment_name": "ppo_pretrain",
+  "model_name": "ppo_pretrain_model",
+  "num_samples": 10000,
+  "num_epochs": 300,
   "topology": {
     "type": "oriented",
     "sources": {
@@ -297,9 +300,6 @@
       }
     ]
   },
-  "model_name": "ppo_pretrain_model",
-  "num_samples": 10000,
-  "num_epochs": 300,
   "shared_embedder": {
     "shared": true,
     "type": "laplacian",

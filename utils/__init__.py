@@ -9,7 +9,8 @@ from .registry import MetaParent
 from .tensorboard_writers import TensorboardTimer, TensorboardWriter
 
 CHECKPOINT_DIR = './checkpoints'
-DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+# DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+DEVICE = torch.device('cpu')
 
 
 def create_logger(
@@ -28,7 +29,7 @@ def fix_random_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    torch.use_deterministic_algorithms(True)
+    # torch.use_deterministic_algorithms(True)
 
 
 def maybe_to_list(values):

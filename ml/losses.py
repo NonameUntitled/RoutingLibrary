@@ -65,8 +65,7 @@ class CrossEntropyLoss(TorchLoss, config_name='cross_entropy'):
         all_logits = inputs[self._pred_prefix]  # (all_items, num_classes)
         all_labels = inputs[self._labels_prefix]  # (all_items)
         assert all_logits.shape[0] == all_labels.shape[0]
-
-        loss = self._loss(all_logits, all_labels)  # (1)
+        loss = self._loss(all_logits.float(), all_labels)  # (1)
         if self._output_prefix is not None:
             inputs[self._output_prefix] = loss.cpu().item()
 
