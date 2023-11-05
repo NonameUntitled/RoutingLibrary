@@ -1,0 +1,116 @@
+{
+  "experiment_name": "ppo",
+  "type": "conveyor",
+  "path_memory": {
+    "type": "shared_path_memory"
+  },
+  "rewards": {
+    "sink": {
+      "wrong": -1e5,
+      "right": 0
+    }
+  },
+  "debug": false,
+  "animation": true,
+  "learn_trigger_bag_count": 10,
+  "topology": "./topology_for_import.json",
+  "agent": {
+    "type": "ppo",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "trajectory_sample_size": 60,
+    "actor_loss_weight": 1.0,
+    "critic_loss_weight": 1.0,
+    "entropy_loss_weight": 0.1,
+    "trajectory_length": 15,
+    "discount_factor": 0.99,
+    "ratio_clip": 0.5,
+    "bag_ids_prefix": "bag_ids",
+    "output_prefix": "next_nodes",
+    "actor": {
+      "type": "tower_actor",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 8
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 8,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 8
+      }
+    },
+    "critic": {
+      "type": "tower_critic",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 8
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 8,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 1
+      }
+    },
+    "path_memory": {
+      "type": "shared_path_memory",
+      "reward_weights": {
+        "time": 0.0,
+        "energy": 1.0,
+        "sink": 1.0
+      },
+      "buffer_size": 100
+    },
+    "optimizer": {
+      "type": "basic",
+      "optimizer": {
+        "type": "adamw",
+        "lr": 1e-3,
+        "eps": 1e-8
+      }
+    }
+  },
+  "test": {
+    "topology_independence": "only_nodes",
+    "bags_queue": true,
+    "time_outlier": 0,
+    "collision_distance": 11,
+    "data": [
+      {
+        "action": "put_bags",
+        "bags_number": 30,
+        "delta": 10
+      },
+      {
+        "action": "conv_break",
+        "conv_idx": 2,
+        "pause": 0
+      },
+      {
+        "action": "put_bags",
+        "bags_number": 30,
+        "delta": 10
+      },
+      {
+        "action": "conv_restore",
+        "conv_idx": 2,
+        "pause": 0
+      }
+    ]
+  },
+  "shared_embedder": {
+    "shared": true,
+    "type": "laplacian",
+    "embedding_dim": 8
+  }
+}

@@ -51,6 +51,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
     def create_from_config(cls, config):
         # TODO[Vladimir Baikalov]: I am really lazy to write this one field by field right now
         graph_info = cls._create_graph(
+            sinks_cfg=config['sinks'],
             sources_cfg=config['sources'],
             diverters_cfg=config['diverters'],
             conveyors_cfg=config['conveyors']
@@ -59,6 +60,7 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
 
     @staticmethod
     def _create_graph(
+            sinks_cfg,
             sources_cfg,
             diverters_cfg,
             conveyors_cfg
@@ -72,13 +74,17 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
         sinks = []
         sources = []
 
+        graph = nx.DiGraph()
+
         for source_node_id, source_node_cfg in sources_cfg.items():
             upstream_conveyor_id = source_node_cfg['upstream_conv']
             source_node = Section(type='source', id=int(source_node_id), position=0)
             conveyors_sections[upstream_conveyor_id].append(source_node)
             sources.append(source_node)
 
-        graph = nx.DiGraph()
+            graph.add_node(source_node)
+            graph.nodes[source_node]['a_x'] = source_node_cfg['a_x']
+            graph.nodes[source_node]['a_y'] = source_node_cfg['a_y']
 
         for diverter_node_id, diverter_cfg in diverters_cfg.items():
             conveyor_id = diverter_cfg['conveyor']
@@ -102,6 +108,11 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 length=0
             )
 
+            graph.nodes[fst_node_cfg]['a_x'] = diverter_cfg['a_x']
+            graph.nodes[fst_node_cfg]['a_y'] = diverter_cfg['a_y']
+            graph.nodes[snd_node_cfg]['a_x'] = diverter_cfg['a_x']
+            graph.nodes[snd_node_cfg]['a_y'] = diverter_cfg['a_y']
+
         junction_idx = 0
         for conveyor_id, conveyor_cfg in conveyors_cfg.items():
             length = conveyor_cfg['length']
@@ -115,24 +126,35 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 )
                 sinks.append(sink_node)
 
+                graph.add_node(sink_node)
+                sink = [sink for sink in sinks_cfg if sink['id'] == upstream_sink_id][0]
+                graph.nodes[sink_node]['a_x'] = sink['a_x']
+                graph.nodes[sink_node]['a_y'] = sink['a_y']
+
                 conveyors_sections[int(conveyor_id)].append(sink_node)
             elif upstream_cfg['type'] == 'conveyor':
                 upstream_conveyor_id = upstream_cfg['id']
                 upstream_conveyor_position = upstream_cfg['pos']
 
-                conveyors_sections[int(conveyor_id)].append(Section(
+                end_junction = Section(
                     type='junction', id=junction_idx, position=length
-                ))
-
-                conveyors_sections[upstream_conveyor_id].append(Section(
-                    type='junction', id=junction_idx, position=upstream_conveyor_position
-                ))
-
-                graph.add_node(
-                    Section(
-                        type='junction', id=junction_idx, position=upstream_conveyor_position
-                    )
                 )
+
+                start_junction = Section(
+                    type='junction', id=junction_idx, position=upstream_conveyor_position
+                )
+
+                conveyors_sections[int(conveyor_id)].append(end_junction)
+
+                conveyors_sections[upstream_conveyor_id].append(start_junction)
+
+                graph.add_node(start_junction)
+                graph.nodes[start_junction]['a_x'] = upstream_cfg['a_x']
+                graph.nodes[start_junction]['a_y'] = upstream_cfg['a_y']
+
+                graph.add_node(end_junction)
+                graph.nodes[end_junction]['a_x'] = upstream_cfg['a_x']
+                graph.nodes[end_junction]['a_y'] = upstream_cfg['a_y']
 
                 junction_idx += 1
             else:
@@ -271,7 +293,8 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 path_lengths.append(-path_length)
             sample['path_lengths'] = path_lengths
 
-            sample['next_node_probs'] = list(torch.nn.functional.softmax(torch.tensor(path_lengths, dtype=torch.float64), dim=0))
+            sample['next_node_probs'] = list(
+                torch.nn.functional.softmax(torch.tensor(path_lengths, dtype=torch.float64), dim=0))
 
             # ppo-specific
             path = nx.dijkstra_path(
