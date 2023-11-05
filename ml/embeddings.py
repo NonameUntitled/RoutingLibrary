@@ -138,7 +138,7 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
             else:
                 raise ValueError(f'Invalid weight transform: {self._weight_transform}')
 
-        A = nx.to_scipy_sparse_matrix(graph, nodelist=sorted(graph.nodes),
+        A = nx.convert_matrix.to_scipy_sparse_array(graph, nodelist=sorted(graph.nodes),
                                       weight=weight, format='csr', dtype=np.float32)
 
         n, m = A.shape
@@ -165,7 +165,7 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
 
     def __call__(self, idx):
         assert self._W is not None, 'Embedding matrix isn\'t fitted yet'
-        v = self._X[idx]
+        v = self._W[idx]
         if len(idx) == 1:
             v = np.array([v])
         return torch.Tensor(v)

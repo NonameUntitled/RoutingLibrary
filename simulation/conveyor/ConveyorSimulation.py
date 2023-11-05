@@ -8,6 +8,7 @@ from typing import *
 from agents import TorchAgent
 from simulation import BaseSimulation
 from simulation.conveyor.ConveyorsEnvironment import ConveyorsEnvironment
+from simulation.conveyor.animation import Animation
 from simulation.conveyor.events import EventSeries, MultiEventSeries
 from simulation.conveyor.utils import Bag, BagAppearanceEvent, ConveyorBreakEvent, ConveyorRestoreEvent
 from topology import BaseTopology
@@ -30,9 +31,10 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
             {event["name"]: EventSeries(name=event["name"], aggregation=event["aggregation"],
                                         experiment_name=config['experiment_name']) for event in events})
         self._event_series = ev_s
+        self._animation = Animation(topology) if config['animation'] else None
         self._simulation_env = ConveyorsEnvironment(config=self._config, world_env=self._world_env, topology=topology,
-                                                    agent=agent,
-                                                    logger=logger, event_series=self._event_series)
+                                                    agent=agent, logger=logger, event_series=self._event_series,
+                                                    animation=self._animation)
         self._logger = logger
 
     @classmethod
@@ -133,4 +135,4 @@ class ConveyorSimulation(BaseSimulation, config_name='conveyor'):
         self._logger.debug(f"Arrived bags {self._simulation_env._arrived_bags}")
         self._logger.debug(f"Lost bags {self._simulation_env._lost_bags}")
         self._logger.debug(f"Average time {self._simulation_env._bags_whole_time / self._simulation_env._arrived_bags}")
-        return self._event_series
+        return self._event_series, self._animation
