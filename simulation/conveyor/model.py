@@ -93,9 +93,16 @@ class ConveyorModel:
       (or the end of the conveyor), and also return those checkpoint and object
     """
 
-    def __init__(self, world_env: Environment, length: float, quality: float, checkpoints: List[Dict[str, Union[int, Section]]],
-                 model_id: int,
-                 logger: Logger, collision_distance: float = 0.1):
+    def __init__(
+            self,
+            world_env: Environment,
+            length: float,
+            quality: float,
+            checkpoints: List[Dict[str, Union[int, Section]]],
+            model_id: int,
+            logger: Logger,
+            collision_distance: float = 0.1
+    ):
         assert length > 0, "Conveyor length <= 0!"
 
         checkpoints = sorted(checkpoints, key=lambda p: p["position"])
@@ -288,7 +295,7 @@ class ConveyorModel:
     def shift(self, d):
         self._object_positions = shift(self._object_positions, d)
         rwgwrgwr = [{"object": object_el["object"], "wait": round(object_el["wait"] - d, POS_ROUND_DIGITS)}
-                       for object_el in self._queue]
+                    for object_el in self._queue]
         self._queue = rwgwrgwr
 
     def skipTime(self, time: float, clean_ends=True):

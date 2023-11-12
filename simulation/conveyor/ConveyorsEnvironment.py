@@ -8,7 +8,7 @@ from simpy import Environment, Event, Interrupt
 import utils
 from agents import TorchAgent
 from ml.utils import TensorWithMask
-from simulation.conveyor.animation import Animation
+from simulation.conveyor.animation import Animation, Action, ObjectPosition
 from simulation.conveyor.energy import consumption_Zhang, acceleration_consumption_Zhang, deceleration_consumption_Zhang
 from simulation.conveyor.events import MultiEventSeries
 from simulation.conveyor.model import ConveyorModel, all_unresolved_events, all_next_events
@@ -26,8 +26,16 @@ class ConveyorsEnvironment:
     Environment which models the conveyor system and the movement of bags.
     """
 
-    def __init__(self, config: Dict[str, Any], world_env: Environment, topology: BaseTopology, agent: TorchAgent,
-                 logger: Logger, event_series: MultiEventSeries, animation: Animation = None):
+    def __init__(
+            self,
+            config: Dict[str, Any],
+            world_env: Environment,
+            topology: BaseTopology,
+            agent: TorchAgent,
+            logger: Logger,
+            event_series: MultiEventSeries,
+            animation: Animation | None = None
+    ):
         self._topology_config = config['topology']
         self._test_config = config['test']
         self._learn_trigger_bag_count = config['learn_trigger_bag_count']
@@ -94,9 +102,6 @@ class ConveyorsEnvironment:
         for conv_id in conv_ids:
             self._conveyor_energy_consumption[conv_id] = 0
 
-        # self._bags_trajectory = []
-        # self._bags_trajectory_actions = []
-
         self._updateAll()
 
     def handleEvent(self, event: WorldEvent) -> Event:
@@ -116,9 +121,8 @@ class ConveyorsEnvironment:
                 collision = self._conveyor_models[conv_idx].check_collision(bag._id, 0)
                 if self._conveyor_broken[conv_idx] or collision['is_collision']:
                     self._bag_lost_report(bag._id, f'Bag #{bag._id} came to the broken conveyor')
-                    # self._bags_trajectory_actions.append({"type": "bag_lost", "node": src})
                     if self._animation is not None:
-                        self._animation.add_action("node", src, "r", "once")
+                        self._animation.add_action(Action(type="node", id=src, color="r", duration="once"))
                     return Event(self._world_env).succeed()
             return self._checkInterrupt(lambda: self._putBagOnConveyor(conv_idx, bag, src))
         if isinstance(event, ConveyorBreakEvent):
@@ -215,9 +219,8 @@ class ConveyorsEnvironment:
         if self._conveyor_broken[conv_idx] and not (
                 topology_independence == 'full' or topology_independence == 'only_collisions'):
             self._bag_lost_report(bag._id, f'Bag #{bag._id} came to the broken conveyor')
-            # self._bags_trajectory_actions.append({"type": "bag_lost", "node": node})
             if self._animation is not None:
-                self._animation.add_action("node", node, "r", "once")
+                self._animation.add_action(Action(type="node", id=node, color="r", duration="once"))
             return
 
         pos = node_conv_pos(self._topology_graph.graph, conv_idx, node)
@@ -226,13 +229,11 @@ class ConveyorsEnvironment:
         model = self._conveyor_models[conv_idx]
         is_collision = model.putObject(bag._id, bag, pos, no_queue)
 
-        # TODODO: smth here
         if is_collision:
             self._bag_collision_report()
             self._bag_lost_report(bag._id, f'Bag #{bag._id} lost because of collision')
-            # self._bags_trajectory_actions.append({"type": "bag_lost", "node": node})
             if self._animation is not None:
-                self._animation.add_action("node", node, "r", "once")
+                self._animation.add_action(Action(type="node", id=node, color="r", duration="once"))
             return
 
         bag.last_conveyor = conv_idx
@@ -249,9 +250,8 @@ class ConveyorsEnvironment:
 
         self._conveyor_broken[conv_idx] = True
         self._logger.debug(f'Conveyor #{conv_idx} breaks')
-        # self._bags_trajectory_actions.append({"type": "conveyor_break", "conveyor": self._conveyors[conv_idx]})
         if self._animation is not None:
-            self._animation.add_action("edge", self._conveyors[conv_idx], "r", "continuous")
+            self._animation.add_action(Action(type="edge", id=self._conveyors[conv_idx], color="r", duration="once"))
 
     def _conveyorRestore(self, conv_idx: int):
         """
@@ -269,9 +269,9 @@ class ConveyorsEnvironment:
 
         self._conveyor_broken[conv_idx] = False
         self._logger.debug(f'Conveyor #{conv_idx} restores')
-        # self._bags_trajectory_actions.append({"type": "conveyor_restore", "conveyor": self._conveyors[conv_idx]})
         if self._animation is not None:
-            self._animation.add_action("edge", self._conveyors[conv_idx], "k", "continuous")
+            self._animation.add_action(
+                Action(type="edge", id=self._conveyors[conv_idx], color="k", duration="continuous"))
 
     def _leaveConveyorEnd(self, conv_idx: int, bag_id: int) -> bool:
         up_node = self._conveyor_upstreams[conv_idx]
@@ -289,17 +289,15 @@ class ConveyorsEnvironment:
             if up_node.id != bag._dst_id:
                 self._bag_lost_report(bag._id,
                                       f'Bag #{bag._id} came to {up_node.id} sink, but its destination was {bag._dst_id}')
-                # self._bags_trajectory_actions.append({"type": "bag_lost", "node": up_node})
                 if self._animation is not None:
-                    self._animation.add_action("node", up_node, "r", "once")
+                    self._animation.add_action(Action(type="node", id=up_node, color="r", duration="once"))
                 return True
             else:
                 self._logger.debug(f'Bag {bag._id} arrived to {up_node}.')
                 self._arrived_bags += 1
                 self._current_bags.pop(bag._id)
-                # self._bags_trajectory_actions.append({"type": "bag_arrived", "node": up_node})
                 if self._animation is not None:
-                    self._animation.add_action("node", up_node, "g", "once")
+                    self._animation.add_action(Action(type="node", id=up_node, color="g", duration="once"))
                 return True
 
         if up_type == 'junction':
@@ -312,9 +310,9 @@ class ConveyorsEnvironment:
             if topology_independence == 'full' or topology_independence == 'only_collisions':
                 if self._conveyor_broken[up_conv]:
                     model.stop_conveyor({'type': 'dependence'})
-                    # self._bags_trajectory_actions.append({"type": "conveyor_break", "conveyor": self._conveyors[conv_idx]})
                     if self._animation is not None:
-                        self._animation.add_action("edge", self._conveyors[conv_idx], "r", "continuous")
+                        self._animation.add_action(
+                            Action(type="edge", id=self._conveyors[conv_idx], color="r", duration="continuous"))
                     self._conveyor_broken[conv_idx] = True
                     self._conveyor_broken_dependencies[up_conv].append(conv_idx)
                     self._conveyorStartStopEnergyConsumption(conv_idx, 'stop')
@@ -323,9 +321,9 @@ class ConveyorsEnvironment:
                 collision_check = up_model.check_collision(bag_id, pos)
                 if collision_check['is_collision']:
                     model.stop_conveyor({'type': 'collision', 'time': self._world_env.now + collision_check['time']})
-                    # self._bags_trajectory_actions.append({"type": "conveyor_break", "conveyor": self._conveyors[conv_idx]})
                     if self._animation is not None:
-                        self._animation.add_action("edge", self._conveyors[conv_idx], "r", "continuous")
+                        self._animation.add_action(
+                            Action(type="edge", id=self._conveyors[conv_idx], color="r", duration="continuous"))
                     self._conveyor_broken[conv_idx] = True
                     self._conveyorStartStopEnergyConsumption(conv_idx, 'stop')
                     return False
@@ -448,10 +446,18 @@ class ConveyorsEnvironment:
 
         model = self._conveyor_models[conv_idx]
         # TODO for test
-        new_energy_consumption = 0 * acceleration_consumption_Zhang(model._length, model._speed,
-                                                                    len(
-                                                                        model._objects)) if type == "start" else deceleration_consumption_Zhang(
-            model._length, model._speed, len(model._objects))
+        if type == 'start':
+            new_energy_consumption = acceleration_consumption_Zhang(
+                model._length,
+                model.speed,
+                len(model._objects)
+            ) * 0
+        else:
+            new_energy_consumption = deceleration_consumption_Zhang(
+                model._length,
+                model._speed,
+                len(model._objects)
+            )
         self._energy_reward_update(new_energy_consumption, [obj._id for obj in model._objects.values()])
 
         self._system_energy_consumption += new_energy_consumption
@@ -558,29 +564,24 @@ class ConveyorsEnvironment:
             model.resume()
 
         if self._animation is not None:
-            # bag_positions = []
             for conv_idx, model in self._conveyor_models.items():
                 objects = model._object_positions
                 conveyor = self._conveyors[conv_idx]
-                # bag_positions_on_conveyor = []
                 for object in objects:
                     i = 1
                     while i < len(conveyor):
-                        if conveyor[i - 1].position <= object["position"] and conveyor[i].position >= object["position"]:
-                            # bag_positions_on_conveyor.append({
-                            #     "source": conveyor[i-1],
-                            #     "target": conveyor[i],
-                            #     "bag_id": object["id"],
-                            #     "position": (object["position"] - conveyor[i-1].position) / (conveyor[i].position - conveyor[i-1].position)})
-                            self._animation.add_object_position(conveyor[i - 1], conveyor[i], object["id"],
-                                                                (object["position"] - conveyor[i - 1].position) / (
-                                                                        conveyor[i].position - conveyor[
-                                                                    i - 1].position))
+                        if conveyor[i - 1].position <= object["position"] <= conveyor[i].position:
+                            self._animation.add_object_position(
+                                ObjectPosition(
+                                    source=conveyor[i - 1],
+                                    target=conveyor[i],
+                                    id=object["id"],
+                                    position=(object["position"] - conveyor[i - 1].position) /
+                                             (conveyor[i].position - conveyor[i - 1].position)
+                                )
+                            )
                             break
                         i += 1
-                # bag_positions += bag_positions_on_conveyor
-            # self._bags_trajectory.append({"positions": bag_positions, "actions": self._bags_trajectory_actions})
-            # self._bags_trajectory_actions = []
             self._animation.commit_step()
         self.conveyors_move_proc = self._world_env.process(self._move())
 

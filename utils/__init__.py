@@ -45,20 +45,26 @@ def read_json_file(file_path):
         return json.load(f)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--params', required=True)
-    args = parser.parse_args()
-    params = read_json_file(args.params)
+def parse_topology(params, params_path):
     if 'topology' in params and isinstance(params['topology'], str):
         topology_path = params['topology']
         if not os.path.exists(topology_path):
-            topology_path = os.path.join(os.path.dirname(args.params), topology_path)
+            topology_path = os.path.join(os.path.dirname(params_path), topology_path)
         if os.path.exists(topology_path):
             topology_data = read_json_file(topology_path)
             params['topology'] = topology_data['topology']
         else:
             raise FileNotFoundError(f"Could not find the topology file at {topology_path}")
+    return params
+
+
+def parse_args(with_topology=True):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--params', required=True)
+    args = parser.parse_args()
+    params = read_json_file(args.params)
+    if with_topology:
+        params = parse_topology(params, args.params)
     return params
 
 

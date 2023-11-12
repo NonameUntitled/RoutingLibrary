@@ -246,18 +246,21 @@ def parse_draw_io_to_topology():
 
     conveyors_config = {}
     for conveyor in conveyors:
-        conveyors_config[str(conveyor['id'])] = {"length": sum([edge['length'] for edge in conveyor['edges']]),
-                                                 "upstream": get_conveyor_upstream(conveyor['edges'][-1]['target']),
-                                                 "quality": min([edge['quality'] for edge in conveyor['edges']])}
+        conveyors_config[str(conveyor['id'])] = {
+            "length": sum([edge['length'] for edge in conveyor['edges']]),
+            "upstream": get_conveyor_upstream(conveyor['edges'][-1]['target']),
+            "quality": min([edge['quality'] for edge in conveyor['edges']])
+        }
 
     with open(args.output, 'w') as outfile:
-        json.dump({"topology": {
-            "type": "oriented",
-            "sinks": sinks_config,
-            "sources": sources_config,
-            "diverters": diverters_config,
-            "conveyors": conveyors_config,
-        }
+        json.dump({
+            "topology": {
+                "type": "oriented",
+                "sinks": sinks_config,
+                "sources": sources_config,
+                "diverters": diverters_config,
+                "conveyors": conveyors_config,
+            }
         }, outfile, indent=2)
 
 

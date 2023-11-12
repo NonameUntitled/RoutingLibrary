@@ -293,8 +293,13 @@ class OrientedTopology(BaseTopology, config_name='oriented'):
                 path_lengths.append(-path_length)
             sample['path_lengths'] = path_lengths
 
-            sample['next_node_probs'] = list(
-                torch.nn.functional.softmax(torch.tensor(path_lengths, dtype=torch.float64), dim=0))
+            sample['next_node_probs'] = list(torch.nn.functional.softmax(
+                torch.tensor(
+                    path_lengths,
+                    dtype=torch.float64
+                ),
+                dim=0
+            ))
 
             # ppo-specific
             path = nx.dijkstra_path(
