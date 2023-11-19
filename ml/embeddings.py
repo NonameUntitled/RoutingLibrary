@@ -138,8 +138,13 @@ class LaplacianEigenmap(BaseEmbedding, config_name='laplacian'):
             else:
                 raise ValueError(f'Invalid weight transform: {self._weight_transform}')
 
-        A = nx.to_scipy_sparse_matrix(graph, nodelist=sorted(graph.nodes),
-                                      weight=weight, format='csr', dtype=np.float32)
+        A = nx.convert_matrix.to_scipy_sparse_array(
+            graph,
+            nodelist=sorted(graph.nodes),
+            weight=weight,
+            format='csr',
+            dtype=np.float32
+        )
 
         n, m = A.shape
         diags = A.sum(axis=1)

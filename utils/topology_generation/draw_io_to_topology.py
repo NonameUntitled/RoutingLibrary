@@ -4,7 +4,8 @@ import xml.etree.ElementTree as ET
 import re
 
 
-# Open example_with_instruction.xml file in draw.io (https://app.diagrams.net/) to see instructions on how to use it
+# Open misc/example_with_instruction.xml file in draw.io (https://app.diagrams.net/)
+# to see instructions on how to use it
 def parse_draw_io_to_topology():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', required=True)
