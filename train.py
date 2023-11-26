@@ -1,5 +1,3 @@
-import pandas as pd
-
 from agents import BaseAgent
 from ml import BaseEmbedding
 
@@ -11,7 +9,6 @@ import os
 import torch
 import json
 from topology import BaseTopology
-from utils import parse_args
 
 from simulation import BaseSimulation
 
@@ -60,8 +57,11 @@ def main():
     #
     # environment.run(params['schedule'])
     simulation = BaseSimulation.create_from_config(params, topology=topology, agent=agent, logger=logger)
-    event_series = simulation.run()
-    event_series.save_all_series("./results/1")
+    _, animation = simulation.run()
+
+    animation.draw_animation()
+
+    # event_series.save_all_series("./results/1")
     # event_series.draw_all_series_with_existing("./results/1", "./results")
 
     # BaseAgent.create_from_config(params['agent_1'])  # random

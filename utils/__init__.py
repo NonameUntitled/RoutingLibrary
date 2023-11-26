@@ -1,6 +1,8 @@
 import argparse
 import json
 import logging
+import os
+
 import numpy as np
 import random
 import torch
@@ -38,12 +40,31 @@ def maybe_to_list(values):
     return values
 
 
-def parse_args():
+def read_json_file(file_path):
+    with open(file_path) as f:
+        return json.load(f)
+
+
+def parse_topology(params, params_path):
+    if 'topology' in params and isinstance(params['topology'], str):
+        topology_path = params['topology']
+        if not os.path.exists(topology_path):
+            topology_path = os.path.join(os.path.dirname(params_path), topology_path)
+        if os.path.exists(topology_path):
+            topology_data = read_json_file(topology_path)
+            params['topology'] = topology_data['topology']
+        else:
+            raise FileNotFoundError(f"Could not find the topology file at {topology_path}")
+    return params
+
+
+def parse_args(with_topology=True):
     parser = argparse.ArgumentParser()
     parser.add_argument('--params', required=True)
     args = parser.parse_args()
-    with open(args.params) as f:
-        params = json.load(f)
+    params = read_json_file(args.params)
+    if with_topology:
+        params = parse_topology(params, args.params)
     return params
 
 

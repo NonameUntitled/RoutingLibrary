@@ -1,0 +1,103 @@
+{
+  "experiment_name": "ppo_pretrain",
+  "model_name": "ppo_pretrain_model",
+  "num_samples": 10000,
+  "num_epochs": 300,
+  "topology": "./topology_for_import.json",
+  "agent": {
+    "type": "ppo",
+    "current_node_idx_prefix": "current_node_idx",
+    "destination_node_idx_prefix": "destination_node_idx",
+    "neighbors_node_ids_prefix": "neighbors_node_ids",
+    "output_prefix": "next_nodes",
+    "actor": {
+      "type": "tower_actor",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 8
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 8,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 8
+      }
+    },
+    "critic": {
+      "type": "tower_critic",
+      "embedder": {
+        "shared": true,
+        "type": "laplacian",
+        "embedding_dim": 8
+      },
+      "ff_net": {
+        "type": "tower",
+        "input_dim": 8,
+        "hidden_dims": [
+          256,
+          256
+        ],
+        "output_dim": 1
+      }
+    }
+  },
+  "loss": {
+    "type": "composite",
+    "losses": [
+      {
+        "type": "mse",
+        "predictions_prefix": "predicted_current_state_v_value",
+        "ground_truth_prefix": "path_length",
+        "output_prefix": "mse_loss_critic"
+      },
+      {
+        "type": "cross_entropy",
+        "labels_prefix": "next_node_idx",
+        "predictions_prefix": "predicted_next_node_logits",
+        "output_prefix": "cross_entropy_loss"
+      }
+    ],
+    "output_prefix": "loss"
+  },
+  "optimizer": {
+    "type": "basic",
+    "optimizer": {
+      "type": "adamw",
+      "lr": 3e-4,
+      "eps": 1e-8
+    },
+    "clip_grad_threshold": 5.0
+  },
+  "callback": {
+    "type": "composite",
+    "callbacks": [
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "mse_loss"
+      },
+      {
+        "type": "loss",
+        "on_step": 1,
+        "regime_prefix": "pretrain",
+        "loss_prefix": "cross_entropy_loss"
+      }
+    ]
+  },
+  "shared_embedder": {
+    "shared": true,
+    "type": "laplacian",
+    "embedding_dim": 8
+  }
+}
